@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Forge Report: Test Search</title>
+<style>
+:root{--bg:#f6f1e7;--paper:#fffdf8;--ink:#2a2420;--muted:#6b6058;--line:#e3d9c9;--seal:#2f6b4f;--seal2:#1f4a36;--crack:#a8462e;--chip:#efe6d6}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1c1916;--paper:#25211d;--ink:#eee6da;--muted:#a99d90;--line:#3a332c;--seal:#4f9a76;--seal2:#356d53;--crack:#d9765b;--chip:#322c26}}
+:root[data-theme="dark"]{--bg:#1c1916;--paper:#25211d;--ink:#eee6da;--muted:#a99d90;--line:#3a332c;--seal:#4f9a76;--seal2:#356d53;--crack:#d9765b;--chip:#322c26}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Georgia,"Iowan Old Style",serif}
+main{max-width:860px;margin:0 auto;padding:40px 16px 64px}
+.paper{background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:36px clamp(18px,4vw,44px);position:relative}
+header{display:flex;gap:28px;align-items:center;flex-wrap:wrap;border-bottom:2px solid var(--line);padding-bottom:24px;margin-bottom:8px}
+header .t{flex:1;min-width:240px}
+.kicker{font:600 12px/1 system-ui,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+h1{font-size:clamp(26px,4vw,34px);margin:8px 0 6px;line-height:1.15}
+.sub{color:var(--muted);margin:0}
+h2{font:700 13px/1 system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:32px 0 12px}
+ul{margin:0;padding-left:20px}
+li{margin:6px 0}
+.lock li::marker{content:"🔒  "}
+.rej li::marker{content:"✕  ";color:var(--crack)}
+.risk li::marker{content:"⚠  ";color:var(--crack)}
+.v2{background:var(--chip);border-radius:6px;padding:12px 16px}
+code{font:13px ui-monospace,Menlo,monospace;background:var(--chip);padding:1px 5px;border-radius:3px}
+.cast{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.p{border:1px solid var(--line);border-radius:6px;padding:10px 12px;font-size:14px}
+.p b{display:block;font-family:system-ui,sans-serif}
+.p span{color:var(--muted);font-size:13px}
+.seal{width:150px;height:150px;flex:none;transform:rotate(-8deg)}
+footer{margin-top:32px;color:var(--muted);font-size:13px;font-family:system-ui,sans-serif}
+</style>
+</head>
+<body>
+<main><div class="paper">
+<header>
+  <svg class="seal" viewBox="0 0 200 200" role="img" aria-label="Hardened seal">
+    <defs><path id="c" d="M100,100 m-66,0 a66,66 0 1,1 132,0 a66,66 0 1,1 -132,0"/></defs>
+    <path fill="var(--seal)" d="M100 8l12 10 16-4 7 15 16 2 1 16 14 8-4 16 10 13-10 13 4 16-14 8-1 16-16 2-7 15-16-4-12 10-12-10-16 4-7-15-16-2-1-16-14-8 4-16-10-13 10-13-4-16 14-8 1-16 16-2 7-15 16 4z"/>
+    <circle cx="100" cy="100" r="74" fill="none" stroke="var(--paper)" stroke-width="2" opacity=".7"/>
+    <circle cx="100" cy="100" r="52" fill="var(--seal2)"/>
+    <text font-family="system-ui,sans-serif" font-size="11" font-weight="700" letter-spacing="3" fill="var(--paper)"><textPath href="#c" startOffset="2%">BMAD FORGE · 25 OCT 2026 · BMAD FORGE · 25 OCT 2026 ·</textPath></text>
+    <text x="100" y="98" text-anchor="middle" font-family="Georgia,serif" font-size="19" font-weight="700" fill="var(--paper)" letter-spacing="1">HARDENED</text>
+    <text x="100" y="118" text-anchor="middle" font-size="18" fill="var(--paper)">⚒</text>
+  </svg>
+  <div class="t">
+    <div class="kicker">Forge report · bgtsearch</div>
+    <h1>Einbürgerungstest appointment search</h1>
+    <p class="sub">One page to find citizenship test dates across Bavarian test centres, by distance, instead of checking 5–10 sites by hand. The central claim, that the dates can be read by machine, held up for about 70% of VHS sites.</p>
+  </div>
+</header>
+
+<h2>Locked decisions</h2>
+<ul class="lock">
+  <li><b>Search only.</b> No booking; every result links to the provider's page.</li>
+  <li><b>v1 = Bavaria only:</b> all ~116 BAMF test centres (≈101 VHS + ≈15 others). Tests need residence in Bavaria.</li>
+  <li><b>Per date:</b> date/time, place, free / booked out / unknown, deadline, how to register, link.</li>
+  <li><b>Coverage A:</b> automatic readers for KuferWeb (~30 sites) and the ITEM KG TYPO3 setup (~25 sites, incl. MVHS). Every other centre is shown as "not checked automatically, see website". A gap never looks like "nothing available".</li>
+  <li><b>Straight-line km</b> distance, with a link out to directions.</li>
+  <li><b>Check 2–4×/day</b>, identified bot, robots.txt respected, drop any centre on request. "Last checked" is shown everywhere.</li>
+  <li><b>History from day one:</b> a first-seen time per date gives a "new since yesterday" badge.</li>
+  <li><b>Free public side project</b>, near-zero running cost, no personal data stored.</li>
+</ul>
+
+<h2>Version 2</h2>
+<div class="v2">Alerts: "a new date or free seat appeared within X km of me." The real pain is not knowing when something new appears; v1's history makes this cheap to add.</div>
+
+<h2>Rejected, and why</h2>
+<ul class="rej">
+  <li><b>Booking through the site:</b> out of scope; the provider's own process stays the source of truth.</li>
+  <li><b>Region-first 100% coverage:</b> partial coverage with visible gaps helps more people sooner.</li>
+  <li><b>"Registration opens at…" as a field:</b> the Bavarian sample sites don't publish it. They publish deadlines (3–5 weeks before) and booked-out flags.</li>
+  <li><b>Nationwide from day one:</b> formats differ per state (Berlin portal, Pankow email forms, NRW PDFs).</li>
+</ul>
+
+<h2>Weak points that survived</h2>
+<ul class="risk">
+  <li>~23 VHS sites of unknown or bot-blocking build, plus ~15 non-VHS providers: links only.</li>
+  <li>Readers break silently when Kufer or ITEM KG change their markup. "Last checked" makes this visible, but someone has to fix it.</li>
+  <li>The ~70% vendor share comes from a homepage fingerprint, not from checking each site's test page.</li>
+  <li>"No competitor exists" rests on two web searches.</li>
+  <li>Some dates can't be booked remotely (Bad Kissingen: in person, cash only).</li>
+</ul>
+
+<h2>Who pressure-tested it</h2>
+<div class="cast">
+  <div class="p"><b>📏 Level</b><span>Claim Checker: "Is the pain ten sites, or not knowing when something new appears?"</span></div>
+  <div class="p"><b>😤 Grumbal</b><span>The Adversary: "116 sites, 116 scrapers. Who fixes it at 3am?"</span></div>
+  <div class="p"><b>🎨 Sally</b><span>UX Designer: "Only works if a few standard systems cover most of the sites."</span></div>
+  <div class="p"><b>🚢 Dana</b><span>The Pragmatist: "Everything's red, they close the tab, same chore tomorrow."</span></div>
+  <div class="p"><b>🏗️ Winston</b><span>Architect: "Two shared systems are cheap; every bespoke site costs as much and covers one centre."</span></div>
+  <div class="p"><b>📊 Mary</b><span>Analyst: "Who pays, and who's on the hook when it breaks?"</span></div>
+  <div class="p"><b>🌶️ Boundary</b><span>Edge-Case Hunter: residence rule, state borders, no car.</span></div>
+  <div class="p"><b>🏛️ Frau Brandt</b><span>Made-up VHS administrator: "We don't track free seats online."</span></div>
+  <div class="p"><b>🧳 Aylin</b><span>Made-up applicant, Neu-Ulm: "If my centre is missing, your site is wrong and I trusted it."</span></div>
+  <div class="p"><b>⚖️ Dr. Kessler</b><span>Made-up IT lawyer: "Facts are low-risk; politeness is your protection."</span></div>
+</div>
+
+<footer>Forged with Eleni · 25 October 2026 · Distilled brief: forged-idea.md · Full log: .memlog.md</footer>
+</div></main>
+</body>
+</html>

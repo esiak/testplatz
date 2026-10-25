@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Results Mock (Phone)</title>
+<style>
+/* Governs: DESIGN.md Components (search-bar, result-card, address-line, destination-line,
+   key-facts-row, status-chip, freshness-line, sort-control, uncovered-card,
+   new badge, count line, hide-booked-out toggle, language switch); EXPERIENCE.md Component
+   Patterns, State Patterns (Results, Card older than update), Key Flows 1-3.
+   Revision 2 after Eleni's review. Mock data is illustrative. Spines win on conflict. */
+:root{
+  --surface-base:#FFFFFF;--surface-muted:#F4F5F7;--ink-primary:#1B1F24;--ink-secondary:#5A6370;--border:#DDE1E6;--action:#0B5CAD;
+  --free:#1E7A3E;--free-bg:#E6F4EA;--booked:#5A6370;--booked-bg:#EEF0F2;--unknown:#8A5A00;--unknown-bg:#FFF4D6;
+  --font:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+.dark{
+  --surface-base:#14171B;--surface-muted:#1E2227;--ink-primary:#ECEEF1;--ink-secondary:#A3ABB5;--border:#2E343B;--action:#7DB7F5;
+  --free:#7BD596;--free-bg:#16301F;--booked:#A3ABB5;--booked-bg:#262B31;--unknown:#F2C86B;--unknown-bg:#3A2E10;
+}
+*{box-sizing:border-box}
+body{margin:0;background:#C9CDD3;font-family:var(--font);padding:24px 16px;color:#1B1F24}
+.page-title{max-width:820px;margin:0 auto 20px;font-size:14px;line-height:1.5}
+.page-title b{font-size:17px}
+.stage{display:flex;gap:32px;justify-content:center;flex-wrap:wrap}
+.col{display:flex;flex-direction:column;align-items:center;gap:10px}
+.caption{font-size:13px;color:#2b3036;max-width:375px;text-align:center}
+.phone{width:375px;max-width:100%;height:812px;border-radius:44px;border:10px solid #111;background:var(--surface-base);color:var(--ink-primary);overflow:hidden;display:flex;flex-direction:column;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+.status-bar{height:36px;flex:none;display:flex;justify-content:space-between;align-items:center;padding:0 22px;font-size:13px;font-weight:600}
+.screen{flex:1;overflow:hidden;padding:0 16px 16px}
+header{display:flex;justify-content:space-between;align-items:center;padding:6px 0 12px}
+.logo{font-weight:600;font-size:17px}
+.lang{font-size:14px;color:var(--ink-secondary)}
+.lang b{color:var(--ink-primary)}
+.search{border:1px solid var(--border);border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:8px}
+.field{height:48px;border:1px solid var(--border);border-radius:6px;display:flex;align-items:center;padding:0 12px;gap:8px;font-size:16px}
+.field .loc{margin-left:auto;color:var(--action);font-size:18px}
+.row2{display:flex;gap:8px}
+.radius{flex:1;height:48px;border:1px solid var(--border);border-radius:6px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;font-size:16px}
+.btn{height:48px;padding:0 20px;border-radius:6px;background:var(--action);color:var(--surface-base);font-weight:600;display:flex;align-items:center;font-size:16px}
+.count{font-size:16px;line-height:1.5;margin:14px 0 0}
+.updated{font-size:13px;color:var(--ink-secondary);margin:2px 0 10px}
+.controls{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px}
+.seg{display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden;height:36px;font-size:14px}
+.seg span{padding:0 12px;display:flex;align-items:center}
+.seg .on{background:var(--ink-primary);color:var(--surface-base);font-weight:600}
+.toggle{font-size:13px;color:var(--ink-secondary);display:flex;align-items:center;gap:6px}
+.box{width:18px;height:18px;border:1.5px solid var(--ink-secondary);border-radius:3px;flex:none}
+.card{border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:12px;background:var(--surface-base)}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.date{font-size:18px;font-weight:600;line-height:1.3}
+.new{display:inline-block;font-size:12px;padding:1px 8px;border-radius:9999px;background:var(--surface-muted);color:var(--action);font-weight:600;margin-left:6px;vertical-align:2px}
+.chip{font-size:13px;padding:3px 10px;border-radius:9999px;white-space:nowrap;font-weight:500}
+.chip.free{background:var(--free-bg);color:var(--free)}
+.chip.booked{background:var(--booked-bg);color:var(--booked)}
+.chip.unknown{background:var(--unknown-bg);color:var(--unknown)}
+.centre{font-size:16px;line-height:1.4;margin:4px 0 2px}
+.addr{font-size:13px;color:var(--ink-secondary);margin-bottom:10px}
+.addr a{color:var(--action);font-weight:600;text-decoration:none;margin-left:4px}
+.facts{display:grid;grid-template-columns:repeat(4,1fr);background:var(--surface-muted);border-radius:6px;padding:8px 4px}
+.facts div{padding:0 6px;border-left:1px solid var(--border)}
+.facts div:first-child{border-left:0}
+.facts small{display:block;font-size:12px;color:var(--ink-secondary)}
+.facts span{font-size:15px;font-weight:500}
+.reg{font-size:14px;line-height:1.5;margin:10px 0 0}
+.bottom{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:13px}
+.dest{color:var(--action);font-weight:600}
+.fresh{color:var(--ink-secondary)}
+.why{font-size:13px;color:var(--action);font-weight:600;margin-top:8px}
+.section{font-size:13px;font-weight:600;color:var(--ink-secondary);text-transform:none;margin:4px 0 8px}
+.home{height:5px;width:134px;background:var(--ink-primary);border-radius:3px;margin:8px auto;flex:none;opacity:.8}
+</style>
+</head>
+<body>
+<div class="page-title"><b>Results screen, phone (revision 4)</b><br>Aylin searches 89231 Neu-Ulm, 40 km. Sorted Soonest (default). Left: light, top of the list, including a waitlist date. Right: dark, further down: a card that is behind, a new date, and an unchecked centre listed after all dated cards. The whole card is the link; "Map ↗" and "Why?" are separate. Mock data is made up.</div>
+<div class="stage">
+
+<div class="col">
+<div class="phone">
+  <div class="status-bar"><span>7:41</span><span>●●● 5G ▮</span></div>
+  <div class="screen">
+    <header><span class="logo">Test dates Bavaria</span><span class="lang">DE | <b>EN</b></span></header>
+    <div class="search">
+      <div class="field">89231 Neu-Ulm <span class="loc" aria-label="Use my location">⌖</span></div>
+      <div class="row2"><div class="radius">40 km <span>▾</span></div><div class="btn">Search</div></div>
+    </div>
+    <div class="count">9 dates and 2 unchecked centres within 40 km</div>
+    <div class="controls">
+      <div class="seg"><span class="on">Soonest</span><span>Nearest</span></div>
+      <div class="toggle"><span class="box"></span>Hide booked out</div>
+    </div>
+
+    <div class="card">
+      <div class="top"><div class="date">Thu 12 Nov, 14:30</div><span class="chip booked">Booked out</span></div>
+      <div class="centre">vhs Neu-Ulm</div>
+      <div class="addr">Eckstraße 25, 89231 Neu-Ulm <a>Map ↗</a></div>
+      <div class="facts"><div><small>Distance</small><span>2 km</span></div><div><small>Status</small><span>Booked out</span></div><div><small>Deadline</small><span>15 Oct</span></div><div><small>Register</small><span>Online</span></div></div>
+      <div class="bottom"><span class="dest">vhs-neu-ulm.de ↗</span><span class="fresh">Checked 2 h ago</span></div>
+    </div>
+
+    <div class="card">
+      <div class="top"><div class="date">Fri 27 Nov, 09:00</div><span class="chip booked">Booked out · Waitlist</span></div>
+      <div class="centre">vhs Illertissen</div>
+      <div class="addr">Marktplatz 4, 89257 Illertissen <a>Map ↗</a></div>
+      <div class="facts"><div><small>Distance</small><span>27 km</span></div><div><small>Status</small><span>Waitlist</span></div><div><small>Deadline</small><span>unknown</span></div><div><small>Register</small><span>In person</span></div></div>
+      <div class="reg">Register in person at the vhs office. Bring ID and €25 in cash.</div>
+      <div class="bottom"><span class="dest">vhs-illertissen.de ↗</span><span class="fresh">Checked 4 h ago</span></div>
+    </div>
+  </div>
+  <div class="home"></div>
+</div>
+<div class="caption">Every card shows when it was last checked. No separate link button: the card opens its site. Waitlist dates stay grey and are never hidden by the toggle.</div>
+</div>
+
+<div class="col">
+<div class="phone dark">
+  <div class="status-bar"><span>7:42</span><span>●●● 5G ▮</span></div>
+  <div class="screen">
+    <div class="card">
+      <div class="top"><div class="date">Tue 1 Dec, 13:00</div><span class="chip free">Free seats</span></div>
+      <div class="centre">vhs Krumbach</div>
+      <div class="addr">Bahnhofstr. 8, 86381 Krumbach <a>Map ↗</a></div>
+      <div class="facts"><div><small>Distance</small><span>36 km</span></div><div><small>Status</small><span>Free</span></div><div><small>Deadline</small><span>3 Nov</span></div><div><small>Register</small><span>Email</span></div></div>
+      <div class="bottom"><span class="dest">vhs-krumbach.de ↗</span><span class="fresh">◷ Checked Tue 14:00</span></div>
+    </div>
+
+    <div class="card">
+      <div class="top"><div class="date">Wed 9 Dec, 10:00<span class="new">New</span></div><span class="chip free">Free seats</span></div>
+      <div class="centre">vhs Günzburg</div>
+      <div class="addr">Krankenhausstr. 40, 89312 Günzburg <a>Map ↗</a></div>
+      <div class="facts"><div><small>Distance</small><span>24 km</span></div><div><small>Status</small><span>Free</span></div><div><small>Deadline</small><span>11 Nov</span></div><div><small>Register</small><span>Online</span></div></div>
+      <div class="bottom"><span class="dest">vhs-guenzburg.de ↗</span><span class="fresh">Checked 3 h ago</span></div>
+    </div>
+
+    <div class="section">Not checked automatically</div>
+    <div class="card">
+      <div class="top"><div class="date">Kolping Bildungswerk</div><span class="chip unknown">Not checked</span></div>
+      <div class="addr" style="margin-top:6px">Hauptstr. 12, 89264 Weißenhorn <a>Map ↗</a></div>
+      <div class="facts"><div><small>Distance</small><span>18 km</span></div><div><small>Status</small><span>not checked</span></div><div><small>Deadline</small><span>see website</span></div><div><small>Register</small><span>see website</span></div></div>
+      <div class="bottom"><span class="dest">kolping-example.de ↗</span><span class="why">Why?</span></div>
+    </div>
+  </div>
+  <div class="home"></div>
+</div>
+<div class="caption">A card older than 12 h shows the exact time with ◷, still grey, no banner. In Soonest order, unchecked centres come after all dated cards, in the same card layout.</div>
+</div>
+
+</div>
+</body>
+</html>

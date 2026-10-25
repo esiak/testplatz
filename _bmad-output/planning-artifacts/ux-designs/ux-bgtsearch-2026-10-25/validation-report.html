@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>UX Design Validation: bgtsearch</title>
+<style>
+  :root {
+    --bg: #fafaf9;
+    --surface: #ffffff;
+    --border: #e7e5e4;
+    --text: #1c1917;
+    --muted: #78716c;
+
+    --verdict-strong: #16a34a;
+    --verdict-adequate: #65a30d;
+    --verdict-thin: #d97706;
+    --verdict-broken: #dc2626;
+
+    --sev-low: #64748b;
+    --sev-medium: #ca8a04;
+    --sev-high: #ea580c;
+    --sev-critical: #dc2626;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    font-size: 15px;
+  }
+  .container { max-width: 960px; margin: 0 auto; padding: 32px 24px 64px; }
+
+  header.report-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 24px;
+  }
+  .title h1 { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -0.01em; }
+  .title .subtitle { color: var(--muted); font-size: 13px; margin-top: 4px; font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+
+  .synthesis {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--muted);
+    border-radius: 8px;
+    padding: 18px 22px;
+    margin-bottom: 24px;
+    font-size: 15.5px;
+  }
+  .synthesis p { margin: 0 0 10px; }
+  .synthesis p:last-child { margin-bottom: 0; }
+
+  .dimension-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .dim-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+  }
+  .dim-card .dim-name { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+  .dim-card .dim-verdict { font-size: 14px; font-weight: 600; }
+
+  section.dimension, section.reviewer-section { margin-bottom: 14px; }
+  section.dimension details, section.reviewer-section details {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  section summary {
+    padding: 14px 20px;
+    cursor: pointer;
+    user-select: none;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  section summary::-webkit-details-marker { display: none; }
+  section summary::before {
+    content: "▸";
+    display: inline-block;
+    color: var(--muted);
+    transition: transform 0.15s ease;
+  }
+  section details[open] summary::before { transform: rotate(90deg); }
+  section summary h2 {
+    display: inline;
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    flex: 1;
+  }
+  .verdict-pill {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: white;
+  }
+  .verdict-strong { background: var(--verdict-strong); }
+  .verdict-adequate { background: var(--verdict-adequate); }
+  .verdict-thin { background: var(--verdict-thin); }
+  .verdict-broken { background: var(--verdict-broken); }
+
+  .dim-body { padding: 4px 20px 18px; }
+  .dim-judgment { color: var(--text); font-size: 14.5px; }
+  .dim-judgment p { margin: 0 0 10px; }
+
+  .findings-list { padding: 0 20px 4px; }
+  article.finding {
+    padding: 14px 0;
+    border-top: 1px solid var(--border);
+  }
+  article.finding:first-child { border-top: none; }
+  article.finding header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+  }
+  .badge {
+    font-size: 10.5px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    line-height: 1.4;
+  }
+  .badge-sev-low { background: rgba(100, 116, 139, 0.12); color: var(--sev-low); }
+  .badge-sev-medium { background: rgba(202, 138, 4, 0.14); color: var(--sev-medium); }
+  .badge-sev-high { background: rgba(234, 88, 12, 0.14); color: var(--sev-high); }
+  .badge-sev-critical { background: rgba(220, 38, 38, 0.14); color: var(--sev-critical); }
+  .finding-title { margin: 0; font-size: 15px; font-weight: 500; flex: 1; min-width: 200px; }
+  .finding-location { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12.5px; color: var(--muted); }
+  .finding-note, .finding-fix { margin-top: 6px; font-size: 14px; }
+  .finding-fix strong { color: var(--muted); font-weight: 500; }
+
+  .reviewer-source {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+
+  .mechanical {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-top: 24px;
+    font-size: 14px;
+  }
+  .mechanical h3 { margin: 0 0 10px; font-size: 14px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .mechanical ul { margin: 0; padding-left: 20px; }
+  .mechanical li { margin-bottom: 4px; color: var(--text); }
+
+  footer.report-footer {
+    margin-top: 40px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--muted);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  footer .meta { display: flex; gap: 24px; flex-wrap: wrap; }
+</style>
+</head>
+<body><div class="container">
+<header class="report-header"><div class="title"><h1>bgtsearch — UX Design Validation Report</h1><div class="subtitle">_bmad-output/planning-artifacts/ux-designs/ux-bgtsearch-2026-10-25/</div></div></header>
+<div class="synthesis"><p>The pair is lean, in the right shape, and easy to extract: every token reference resolves, every colour has a light/dark pair, and all text pairs pass AA (re-computed independently by both reviewers; lowest 4.73:1). The core result card is fully specified in both files.</p><p>The gaps sit at the edges of the main path, and both reviewers converged on the same ones: the place-suggestion field every visit starts with has no spec; there is no focus style; control borders are 1.3:1, below the 3:1 non-text minimum; and the card layout does not reflow at 320 px. The rubric adds two coverage holes: a covered centre with no current dates silently disappears (breaking CAP-4/CAP-5), and About the data has no content or states. Fix the 7 high findings and the pair is ready to finalize; most mediums are one-line additions.</p></div>
+<div class="dimension-summary"><div class="dim-card"><div class="dim-name">1. Flow coverage</div><div class="dim-verdict" style="color: var(--verdict-adequate)">adequate</div></div><div class="dim-card"><div class="dim-name">2. Token completeness</div><div class="dim-verdict" style="color: var(--verdict-adequate)">adequate</div></div><div class="dim-card"><div class="dim-name">3. Component coverage</div><div class="dim-verdict" style="color: var(--verdict-thin)">thin</div></div><div class="dim-card"><div class="dim-name">4. State coverage</div><div class="dim-verdict" style="color: var(--verdict-thin)">thin</div></div><div class="dim-card"><div class="dim-name">5. Visual reference coverage</div><div class="dim-verdict" style="color: var(--verdict-adequate)">adequate</div></div><div class="dim-card"><div class="dim-name">6. Bloat &amp; overspecification</div><div class="dim-verdict" style="color: var(--verdict-strong)">strong</div></div><div class="dim-card"><div class="dim-name">7. Inheritance discipline</div><div class="dim-verdict" style="color: var(--verdict-adequate)">adequate</div></div><div class="dim-card"><div class="dim-name">8. Shape fit</div><div class="dim-verdict" style="color: var(--verdict-strong)">strong</div></div></div>
+<section class="dimension"><details><summary><h2>1. Flow coverage</h2><span class="verdict-pill verdict-adequate">adequate</span></summary><div class="dim-body"><div class="dim-judgment"><p>All three flows have a named protagonist, numbered steps and a climax. CAP-1, 2, 4, 5, 6 and 9 are served; CAP-3 and CAP-7 are back-end, surfacing as freshness and About the data.</p></div></div><div class="findings-list"><article class="finding"><header><span class="badge badge-sev-high">high</span><h3 class="finding-title">Covered centre with no current dates drops out of results</h3><span class="finding-location">EXPERIENCE Component/State Patterns; DESIGN Components</span></header><div class="finding-note">One card per date means a centre whose reader works but lists nothing, or returned nothing, has no card. Breaks CAP-4 (never absent) and CAP-5 (flagged, not empty).</div><div class="finding-fix"><strong>Fix:</strong> Add a &#x27;No dates listed&#x27; card variant (uncovered-card layout, chip, freshness line) and a &#x27;reader failing&#x27; variant; say where each sorts.</div></article><article class="finding"><header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">CAP-4 marker missing on uncovered cards in Nearest sort</h3><span class="finding-location">EXPERIENCE Sort control; DESIGN uncovered card</span></header><div class="finding-note">The &#x27;Not checked automatically&#x27; wording only exists as a Soonest section heading.</div><div class="finding-fix"><strong>Fix:</strong> Put the full marker text on the card itself.</div></article><article class="finding"><header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">CAP-8 opt-out never mentioned</h3><span class="finding-location">EXPERIENCE Uncovered card</span></header><div class="finding-note">Spec says opted-out centres show as not checked.</div><div class="finding-fix"><strong>Fix:</strong> Uncovered card covers reader type none and opted-out centres; decide whether &#x27;Why?&#x27; differs.</div></article><article class="finding"><header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">Registration method &#x27;post&#x27; dropped</h3><span class="finding-location">DESIGN key-facts row</span></header><div class="finding-note">data-sources lists online/email/post/in_person.</div><div class="finding-fix"><strong>Fix:</strong> Add &#x27;Post&#x27; (and DE string) or log a mapping.</div></article><article class="finding"><header><span class="badge badge-sev-low">low</span><h3 class="finding-title">Flow 2 has no failure path; Nearest, toggle, use-my-location and Why? are unexercised</h3><span class="finding-location">EXPERIENCE Key Flows</span></header><div class="finding-fix"><strong>Fix:</strong> Add a failure line to Flow 2; optional short Flow 4.</div></article><article class="finding"><header><span class="badge badge-sev-low">low</span><h3 class="finding-title">Flow 1 link/typing mismatch</h3><span class="finding-location">EXPERIENCE Flow 1 steps 1-2</span></header><div class="finding-note">A shared results link would not need typing.</div><div class="finding-fix"><strong>Fix:</strong> Say &#x27;a link to the site&#x27;.</div></article></div></details></section>
+<section class="dimension"><details><summary><h2>2. Token completeness</h2><span class="verdict-pill verdict-adequate">adequate</span></summary><div class="dim-body"><div class="dim-judgment"><p>30 colour tokens (15 paired), 5 type roles, 3 radii, 8 spacing, 9 component blocks; every reference resolves.</p></div></div><div class="findings-list"><article class="finding"><header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">No focus-ring token</h3><span class="finding-location">DESIGN frontmatter; EXPERIENCE Accessibility Floor</span></header><div class="finding-note">&#x27;Visible focus on the whole card&#x27; has nothing behind it.</div><div class="finding-fix"><strong>Fix:</strong> Add focus-ring tokens (width, offset) and a Components line.</div></article><article class="finding"><header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">Control borders 1.31:1 light / 1.43:1 dark (WCAG 1.4.11)</h3><span class="finding-location">DESIGN search-bar, sort-control</span></header><div class="finding-note">Contrast statement covers text only.</div><div class="finding-fix"><strong>Fix:</strong> Add a control-border token ≥ 3:1; widen the contrast statement to non-text pairs.</div></article><article class="finding"><header><span class="badge badge-sev-low">low</span><h3 class="finding-title">Missing component tokens</h3><span class="finding-location">DESIGN frontmatter</span></header><div class="finding-note">No status-chip variants, new-badge, button-primary blocks.</div><div class="finding-fix"><strong>Fix:</strong> Add them.</div></article><article class="finding"><header><span class="badge badge-sev-low">low</span><h3 class="finding-title">px font sizes contradict &#x27;text scales with browser font size&#x27;</h3><span class="finding-location">DESIGN Typography</span></header><div class="finding-fix"><strong>Fix:</strong> Implement tokens as rem.</div></article><article class="finding"><header><span class="badge badge-sev-low">low</span><h3 class="finding-title">Key-facts label style undefined</h3><span class="finding-location">DESIGN key-facts row</span></header><div class="finding-note">Mock uses 12px, below meta.</div><div class="finding-fix"><strong>Fix:</strong> Name the label role (meta, ink-secondary).</div></article></div></details></section>
+<section class="dimension"><details open><summary><h2>3. Component coverage</h2><span class="verdict-pill verdict-thin">thin</span></summary><div class="dim-body"><div class="dim-judgment"><p>The core card family has identical names and real rules in both files; edge elements are named without rows.</p></div></div><div class="findings-list"><article class="finding"><header><span class="badge badge-sev-high">high</span><h3 class="finding-title">Place-suggestion list has no spec</h3><span class="finding-location">EXPERIENCE Search bar; DESIGN Elevation</span></header><div class="finding-note">No keyboard/combobox rules, no disambiguation of duplicate towns (&#x27;Neustadt&#x27;), no rule for Enter without a pick, no max items. Contradicts &#x27;the only overlay is the radius picker&#x27;.</div><div class="finding-fix"><strong>Fix:</strong> Add a &#x27;Place suggestions&#x27; row to both files with ARIA combobox rules; fix the Elevation sentence.</div></article><article class="finding"><header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">Named elements without rows</h3><span class="finding-location">EXPERIENCE State Patterns; DESIGN Shapes</span></header><div class="finding-note">Skeleton card, retry button, next-radius button, section heading, notice line, inline field messages, header/footer; &#x27;banners&#x27; mentioned in Shapes but banned.</div><div class="finding-fix"><strong>Fix:</strong> Add one-line rows; drop &#x27;banners&#x27;.</div></article><article class="finding"><header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">Status cell wording differs from chip</h3><span class="finding-location">DESIGN key-facts row</span></header><div class="finding-note">Mock: Free / Waitlist / not checked; chip: Free seats / Booked out · Waitlist / Not checked.</div><div class="finding-fix"><strong>Fix:</strong> List exact strings or replace the Status cell.</div></article><article class="finding"><header><span class="badge badge-sev-low">low</span><h3 class="finding-title">Count line has no behaviour row</h3><span class="finding-location">EXPERIENCE Component Patterns</span></header><div class="finding-note">Live region, plural and zero rules scattered.</div><div class="finding-fix"><strong>Fix:</strong> Add a row; say whether hidden dates count.</div></article><article class="finding"><header><span class="badge badge-sev-low">low</span><h3 class="finding-title">&#x27;Why?&#x27; position and freshness scope inconsistent</h3><span class="finding-location">DESIGN uncovered card</span></header><div class="finding-fix"><strong>Fix:</strong> Pick one position; say &#x27;every result card&#x27; for freshness.</div></article></div></details></section>
+<section class="dimension"><details open><summary><h2>4. State coverage</h2><span class="verdict-pill verdict-thin">thin</span></summary><div class="dim-body"><div class="dim-judgment"><p>Search and Results states are mostly covered; About the data and Impressum/Privacy have none.</p></div></div><div class="findings-list"><article class="finding"><header><span class="badge badge-sev-high">high</span><h3 class="finding-title">About the data has no content or states</h3><span class="finding-location">EXPERIENCE IA</span></header><div class="finding-note">Only place that shows per-reader status (CAP-5) and the target of &#x27;Why?&#x27;.</div><div class="finding-fix"><strong>Fix:</strong> Specify per-system rows (last run, centres, failing wording), the uncovered/opted-out anchor, sources, attribution.</div></article><article class="finding"><header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">Deadline passed / past dates unhandled</h3><span class="finding-location">EXPERIENCE State Patterns</span></header><div class="finding-note">Mock shows a passed deadline.</div><div class="finding-fix"><strong>Fix:</strong> &#x27;Deadline passed: cell reads passed; card stays&#x27;; &#x27;past dates not listed&#x27;.</div></article><article class="finding"><header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">Missing Results states</h3><span class="finding-location">EXPERIENCE State Patterns</span></header><div class="finding-note">0 dates but N unchecked centres; all cards hidden by toggle.</div><div class="finding-fix"><strong>Fix:</strong> Add both rows with copy.</div></article><article class="finding"><header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">Missing Search states</h3><span class="finding-location">EXPERIENCE State Patterns; IA</span></header><div class="finding-note">Several towns match; Enter without pick; geolocation unsupported or outside Bavaria; what q becomes after &#x27;use my location&#x27;.</div><div class="finding-fix"><strong>Fix:</strong> Decide q (e.g. nearest table town, &#x27;Near Neu-Ulm&#x27;) and add rows.</div></article><article class="finding"><header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">ODbL attribution placement on results page not stated</h3><span class="finding-location">EXPERIENCE; DESIGN</span></header><div class="finding-note">Spec requires visible attribution.</div><div class="finding-fix"><strong>Fix:</strong> Footer attribution line on Results.</div></article><article class="finding"><header><span class="badge badge-sev-low">low</span><h3 class="finding-title">Impressum/Privacy and invalid URL params have no states</h3><span class="finding-location">EXPERIENCE</span></header><div class="finding-fix"><strong>Fix:</strong> One row each.</div></article></div></details></section>
+<section class="dimension"><details><summary><h2>5. Visual reference coverage</h2><span class="verdict-pill verdict-adequate">adequate</span></summary><div class="dim-body"><div class="dim-judgment"><p>One mock in .working/, linked once from EXPERIENCE with &#x27;spines win on conflict&#x27;; no orphans.</p></div></div><div class="findings-list"><article class="finding"><header><span class="badge badge-sev-low">low</span><h3 class="finding-title">DESIGN.md does not link the mock; it lives in scratch space</h3><span class="finding-location">DESIGN Components</span></header><div class="finding-fix"><strong>Fix:</strong> Promote to mockups/ at finalize and link from both files.</div></article><article class="finding"><header><span class="badge badge-sev-low">low</span><h3 class="finding-title">Mock drift</h3><span class="finding-location">key-results-phone.html</span></header><div class="finding-note">&#x27;Register&#x27; vs &#x27;Registration&#x27;, leftover .updated style, &#x27;Why?&#x27; position, state name.</div><div class="finding-fix"><strong>Fix:</strong> Tidy at promotion.</div></article></div></details></section>
+<section class="dimension"><details><summary><h2>6. Bloat &amp; overspecification</h2><span class="verdict-pill verdict-strong">strong</span></summary><div class="dim-body"><div class="dim-judgment"><p>Both files are tight; nearly every line is a rule or a string a builder needs.</p></div></div><div class="findings-list"><article class="finding"><header><span class="badge badge-sev-low">low</span><h3 class="finding-title">Unused stale tokens</h3><span class="finding-location">DESIGN Colors</span></header><div class="finding-note">Defined then declared unused.</div><div class="finding-fix"><strong>Fix:</strong> Drop them.</div></article></div></details></section>
+<section class="dimension"><details><summary><h2>7. Inheritance discipline</h2><span class="verdict-pill verdict-adequate">adequate</span></summary><div class="dim-body"><div class="dim-judgment"><p>Sources resolve; CAP IDs cited; status words match data-sources; component names identical.</p></div></div><div class="findings-list"><article class="finding"><header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">Unlisted spec delta: dead-link fallback</h3><span class="finding-location">EXPERIENCE Result card; data-sources.md</span></header><div class="finding-note">Needs link checking and a fallback/test-page URL per centre that data-sources lacks.</div><div class="finding-fix"><strong>Fix:</strong> Add link_ok / fallback_url fields to the spec-delta list.</div></article><article class="finding"><header><span class="badge badge-sev-low">low</span><h3 class="finding-title">CAP-4 marker string drift</h3><span class="finding-location">Voice; key-facts cells</span></header><div class="finding-note">&#x27;see website&#x27; vs &#x27;See the centre&#x27;s page.&#x27;</div><div class="finding-fix"><strong>Fix:</strong> Settle one string.</div></article><article class="finding"><header><span class="badge badge-sev-low">low</span><h3 class="finding-title">CAP-3 and CAP-8 not cited</h3><span class="finding-location">EXPERIENCE</span></header><div class="finding-fix"><strong>Fix:</strong> Cite on Freshness line and Uncovered card.</div></article></div></details></section>
+<section class="dimension"><details><summary><h2>8. Shape fit</h2><span class="verdict-pill verdict-strong">strong</span></summary><div class="dim-body"><div class="dim-judgment"><p>DESIGN in canonical order; EXPERIENCE has every required section plus triggered Responsive and Inspiration.</p></div></div><div class="findings-list"></div></details></section>
+<section class="reviewer-section"><details><summary><h2>Accessibility review</h2><span class="reviewer-source">review-accessibility.md</span></summary><div class="dim-body"><div class="dim-judgment"><p>Adversarial voice preserved. The colour math is honest: every text pair passes AA in both modes. Everything around it is thinner: the hard parts are one-line promises (&#x27;works at 200% zoom&#x27;, &#x27;live region&#x27;, &#x27;suggests as you type&#x27;) and the mock shows some won&#x27;t hold. Nothing blocks the whole site, but the place field is where every visit starts, and anxious, phone-first, second-language users are the ones who will hit these gaps. 0 critical, 4 high, 11 medium, 6 low.</p></div></div><div class="findings-list"><article class="finding"><header><span class="badge badge-sev-high">high</span><h3 class="finding-title">Reflow fails at 320 px / 200% zoom (1.4.10)</h3><span class="finding-location">DESIGN key-facts row, status chip; EXPERIENCE Responsive</span></header><div class="finding-note">Fixed 4-column facts row leaves ~50 px per cell; no-wrap chip overflows; sort and toggle forced onto one row.</div><div class="finding-fix"><strong>Fix:</strong> 4 columns only when each cell ≥ 9em, else 2×2; chip may wrap below date; toggle wraps; verify with longest German strings.</div></article><article class="finding"><header><span class="badge badge-sev-high">high</span><h3 class="finding-title">Control borders fail non-text contrast (1.4.11)</h3><span class="finding-location">DESIGN Colors, search-bar, sort-control</span></header><div class="finding-note">Border 1.31:1 light, 1.43:1 dark; field and radius identified only by it.</div><div class="finding-fix"><strong>Fix:</strong> control-border token ≥ 3:1 for field, radius, segments, checkbox; keep pale border for cards.</div></article><article class="finding"><header><span class="badge badge-sev-high">high</span><h3 class="finding-title">No focus indicator (2.4.7, 2.4.11)</h3><span class="finding-location">DESIGN; EXPERIENCE Accessibility Floor</span></header><div class="finding-note">Nothing for card, Map, Why?, segments, DE|EN, suggestions; a sticky bar could cover focus.</div><div class="finding-fix"><strong>Fix:</strong> 2px action ring, 2px offset; card ring via :focus-within/:has; state whether search bar is sticky (scroll-padding-top).</div></article><article class="finding"><header><span class="badge badge-sev-high">high</span><h3 class="finding-title">Typeahead has no combobox spec; conflicts with &#x27;Enter submits&#x27; (4.1.2, 1.3.1, 2.1.1)</h3><span class="finding-location">EXPERIENCE Search bar</span></header><div class="finding-fix"><strong>Fix:</strong> ARIA 1.2 combobox; arrows/Enter/Escape defined; polite suggestion count; umlaut-tolerant matching; ≤ 6 suggestions, ≥ 44 px each.</div></article><article class="finding"><header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">Card link name noisy and duplicated (1.3.1, 2.4.4)</h3><span class="finding-location">EXPERIENCE Accessibility Floor</span></header><div class="finding-note">Status announced three times; ↗ ◷ · read aloud; new tab not conveyed.</div><div class="finding-fix"><strong>Fix:</strong> Link name starting with visible date incl. &#x27;opens … in a new tab&#x27;; aria-hidden on chip/destination/glyphs; Status cell wording matches chip.</div></article><article class="finding"><header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">&#x27;Map ↗&#x27; and &#x27;Why?&#x27; ambiguous and easy to miss (2.4.4, 2.5.8)</h3><span class="finding-location">EXPERIENCE Address line</span></header><div class="finding-note">Identical names; 13 px inline target inside the card tap area.</div><div class="finding-fix"><strong>Fix:</strong> Descriptive accessible names; 44×44 (or 24 + spacing) target with 8 px dead zone.</div></article><article class="finding"><header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">Overlay blocks copying the address and registration note</h3><span class="finding-location">EXPERIENCE Result card</span></header><div class="finding-fix"><strong>Fix:</strong> Layer address and note above the overlay; taps there do nothing.</div></article><article class="finding"><header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">New tabs inside in-app browsers (G201)</h3><span class="finding-location">EXPERIENCE Interaction Primitives, Flow 1</span></header><div class="finding-note">WhatsApp/Instagram webviews may lose the way back.</div><div class="finding-fix"><strong>Fix:</strong> Say &#x27;new tab&#x27; in names; rel=noopener; test Flow 1 in in-app browsers.</div></article><article class="finding"><header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">Live region underspecified (4.1.3)</h3><span class="finding-location">EXPERIENCE Accessibility Floor</span></header><div class="finding-note">Re-rendered regions don&#x27;t announce; sort/toggle/loading/errors undefined.</div><div class="finding-fix"><strong>Fix:</strong> One persistent role=status; announce count, sort, toggle, loading; errors role=alert.</div></article><article class="finding"><header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">Field errors not tied to the field (3.3.1, 3.3.3)</h3><span class="finding-location">EXPERIENCE State Patterns</span></header><div class="finding-fix"><strong>Fix:</strong> aria-describedby + aria-invalid, alert, keep focus, offer up to 3 near matches, &#x27;Error&#x27; prefix in error colour.</div></article><article class="finding"><header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">Headings and focus after search undefined (2.4.3, 1.3.1)</h3><span class="finding-location">EXPERIENCE</span></header><div class="finding-fix"><strong>Fix:</strong> h1 site/task, h3 per card, h2 section; focus stays in field; results as a list.</div></article><article class="finding"><header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">Sort control and radius overlay lack semantics (4.1.2)</h3><span class="finding-location">DESIGN Elevation; EXPERIENCE Foundation</span></header><div class="finding-note">Custom overlay contradicts &#x27;native controls&#x27;; segments 36 px.</div><div class="finding-fix"><strong>Fix:</strong> Native select for radius; sort as fieldset + radios, min-height 44 px.</div></article><article class="finding"><header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">Language switch unclear (3.1.2, 2.5.8)</h3><span class="finding-location">DESIGN Language switch</span></header><div class="finding-note">14 px &#x27;DE | EN&#x27; links.</div><div class="finding-fix"><strong>Fix:</strong> Accessible names &#x27;Deutsch&#x27;/&#x27;English&#x27; with lang, aria-current, ≥ 44 px.</div></article><article class="finding"><header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">&#x27;Use my location&#x27; unlabelled glyph</h3><span class="finding-location">DESIGN Search bar</span></header><div class="finding-fix"><strong>Fix:</strong> Real button &#x27;Use my location&#x27;, 44×44, progress and denied announcements.</div></article><article class="finding"><header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">Fixed heights and px fonts (1.4.4, 1.4.12)</h3><span class="finding-location">DESIGN Typography, Components</span></header><div class="finding-fix"><strong>Fix:</strong> rem type; min-height instead of height; test text-spacing with German strings.</div></article><article class="finding"><header><span class="badge badge-sev-low">low</span><h3 class="finding-title">Key-facts row should be a description list (1.3.1)</h3><span class="finding-location">DESIGN key-facts row</span></header><div class="finding-fix"><strong>Fix:</strong> dl/dt/dd; align &#x27;Registration&#x27; label.</div></article><article class="finding"><header><span class="badge badge-sev-low">low</span><h3 class="finding-title">Freshness has no machine-readable time</h3><span class="finding-location">DESIGN freshness line</span></header><div class="finding-fix"><strong>Fix:</strong> &lt;time datetime&gt;, spoken &#x27;hours&#x27;.</div></article><article class="finding"><header><span class="badge badge-sev-low">low</span><h3 class="finding-title">&#x27;New&#x27; badge and destination line look like separate links</h3><span class="finding-location">DESIGN</span></header><div class="finding-fix"><strong>Fix:</strong> &#x27;New&#x27; in ink-primary; include &#x27;New&#x27; in link name.</div></article><article class="finding"><header><span class="badge badge-sev-low">low</span><h3 class="finding-title">Card boundary 1.31:1 hides tappability</h3><span class="finding-location">DESIGN result-card</span></header><div class="finding-note">Passes 1.4.11 via text.</div><div class="finding-fix"><strong>Fix:</strong> Acceptable with focus/hover ring.</div></article><article class="finding"><header><span class="badge badge-sev-low">low</span><h3 class="finding-title">Reduced motion and auto-update not stated</h3><span class="finding-location">EXPERIENCE</span></header><div class="finding-fix"><strong>Fix:</strong> Static skeletons under reduced motion; results never refresh while open.</div></article><article class="finding"><header><span class="badge badge-sev-low">low</span><h3 class="finding-title">Focus when toggle hides cards</h3><span class="finding-location">EXPERIENCE</span></header><div class="finding-fix"><strong>Fix:</strong> Focus stays on the checkbox, which sits above the list.</div></article></div></details></section>
+<div class="mechanical"><h3>Mechanical notes</h3><ul><li>Name drift: &#x27;Registration&#x27; (DESIGN) vs &#x27;Register&#x27; (mock); sort labels &#x27;Soonest | Nearest&#x27; vs &#x27;Soonest first&#x27; in memlog; uncovered marker strings vary.</li><li>Component count: memlog says 12; DESIGN prose 13, frontmatter 9, EXPERIENCE 12 (no Count line).</li><li>DESIGN Elevation says the only overlay is the radius picker; EXPERIENCE has a suggestion list and native controls.</li><li>Contrast verified for text (min 4.73:1 light, 6.15:1 dark); non-text pairs and focus not covered.</li></ul></div>
+<footer class="report-footer"><div class="meta"><span>Rubric: review-rubric.md</span><span>Accessibility: review-accessibility.md</span><span>Generated: 2026-10-25</span></div></footer></div></body></html>
