@@ -1,2 +1,4 @@
 .claude/
 _bmad/
+node_modules/
+dist/

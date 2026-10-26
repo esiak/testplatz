@@ -1,0 +1,56 @@
+name: pipeline
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: pipeline
+  cancel-in-progress: false
+
+# Only the deploy job gets the Pages/OIDC token; the build job runs third-party
+# install scripts (npm ci) and must not hold it.
+permissions:
+  contents: read
+
+jobs:
+  # Story 1.6 adds the "commit data/public/ once, then deploy that SHA" step before the build.
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - name: Check build output
+        run: |
+          for page in dist/index.html dist/about/index.html; do
+            if [ ! -f "$page" ]; then
+              echo "::error::missing $page"
+              exit 1
+            fi
+          done
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5
