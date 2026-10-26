@@ -106,7 +106,7 @@ Arrows are the only allowed imports. `readers` never imports `fetch` or `stages`
   - sends `User-Agent: bgtsearch-bot/<version> (+<stable About URL>)`;
   - fetches serially per host with a delay and a timeout;
   - decodes the charset into strings;
-  - refuses a host already visited 4 times in the last 24 h, using the visit log in `data/state/`. This also applies to manual and local reruns.
+  - refuses a host already visited 4 times in the last 24 h, using the visit log in `data/state/`. This also applies to manual and local reruns. Fetch only reads the log and returns this run's visits; merge persists them (AD-6).
 
   Detail-page fetch results set each listing's `link_ok`; there are no separate link-check requests. Nominatim calls (`tools/geocode` only) are manual, cached, and limited to ≤ 1 req/s.
 
@@ -116,7 +116,7 @@ Arrows are the only allowed imports. `readers` never imports `fetch` or `stages`
 - **Prevents:** stages updating history differently; `first_seen_at` resetting; skipped centres looking checked.
 - **Rule:**
   - Each centre's run outcome is `ok`, `failed` or `skipped`. `skipped` covers opted out, reader `none`, robots disallow and budget exhausted.
-  - Only `pipeline/stages/merge` writes `data/state/`.
+  - Only `pipeline/stages/merge` writes `data/state/`, including the per-host visit log.
   - `ok` sets `last_checked_at`, `last_success_at` and `last_result=ok`, and replaces that centre's current listings.
   - `failed` sets `last_checked_at` and `last_result=failed` and keeps the previous listings unchanged.
   - `skipped` sets no timestamps.
