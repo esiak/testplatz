@@ -16,7 +16,7 @@ Counts come from homepage fingerprints (2026-10-25), not from each site's test p
 |---|---|---|
 | centre_id | yes | links to directory entry |
 | starts_at | yes | date and time, Europe/Berlin |
-| place | yes | room, if given |
+| place | no | room, if given; `null` otherwise |
 | address | yes | full street address of the test location; falls back to the centre address |
 | status | yes | `free` / `booked_out` / `waitlist` / `unknown` |
 | deadline | no | local date, e.g. 3–5 weeks before the test; `null` if not published (shown as "unknown") |

@@ -196,7 +196,7 @@ Arrows are the only allowed imports. `readers` never imports `fetch` or `stages`
 | Missing values | `null`, never `"unknown"` strings or omitted keys. |
 | Errors | Reader failures are values, never thrown. Any error that would make a published file invalid fails the run, so the last good site stays deployed. |
 | Logging | One line per centre per run: `centre_id`, reader, outcome, listing count, duration. No page content. |
-| Config | Schedule, delays, timeouts, UA, budget in `pipeline/config.ts`. Secrets: only the default workflow token (plus a fine-grained token for the home fallback). |
+| Config | Schedule, delays, timeouts, UA, budget in `pipeline/config.ts`. Secrets: the default workflow token, one repository secret for the dead-man ping URL, and a fine-grained token for the home fallback. |
 | Tests | Readers against committed HTML fixtures, including a "structure missing" one (AD-4). Merge tests cover tombstones, baseline, same-minute ids. |
 | Indexing | `noindex` meta while in private beta. |
 

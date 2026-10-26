@@ -199,7 +199,7 @@ So that every later story ships to a live URL at no cost.
 
 **Acceptance Criteria:**
 
-**Given** an empty repository
+**Given** the public GitHub repository `esiak/testplatz` (operator confirms it is public, sets Pages to deploy from GitHub Actions, and allows workflows to push to `main`)
 **When** the project is scaffolded with `npm create preact` (no ESLint option)
 **Then** there is one root `package.json`, `.nvmrc` pins Node 26, TypeScript is pinned to 6.0, and Vite 8.3, Preact 11.0, @preact/preset-vite 2.10, zod 4.6, cheerio 1.2 and Vitest 5.0 are installed
 **And** the folders `shared/`, `pipeline/{fetch,readers,stages}`, `web/`, `tools/`, `data/{directory,state,public}` exist per the architecture spine
@@ -215,6 +215,7 @@ So that every later story ships to a live URL at no cost.
 **Given** a push to `main` or a manual dispatch
 **When** `pipeline.yml` runs
 **Then** it builds `web/` and deploys it to GitHub Pages with `actions/deploy-pages` from the pushed SHA, in a single concurrency group with `cancel-in-progress: false`
+**And** the site is served at `https://esiak.github.io/testplatz/` (Vite `base` set to match), and this URL's About page is the one named in the bot's user agent
 **And** the deployed page carries `<meta name="robots" content="noindex">` and `<meta name="referrer" content="no-referrer">`, and loads no third-party resource
 **And** hosting, build and deploy use only free tiers of a public repository, with no paid service or secret beyond the default workflow token (NFR1)
 
@@ -267,7 +268,7 @@ So that no centre near me is missing.
 
 **Given** the shared HTTP client in `pipeline/fetch`
 **When** it is created
-**Then** every request sends `User-Agent: bgtsearch-bot/<version> (+<About page URL>)`, requests to one host run one at a time with a configurable delay and timeout, and responses are decoded to text by their charset (AD-5)
+**Then** every request sends `User-Agent: bgtsearch-bot/<version> (+<About page URL>)`, requests to one host run one at a time with a configurable delay and timeout, robots.txt is checked once per host per run and disallowed paths are never requested, and responses are decoded to text by their charset (AD-5)
 
 **Given** a seeded entry
 **When** it is checked against the centre's own website (one visit per site, through `pipeline/fetch`)
@@ -326,7 +327,7 @@ So that the page loads fast and nothing about my search leaves the browser.
 
 **Given** the directory
 **When** `npm run pipeline` runs the publish stage
-**Then** it writes `data/public/snapshot.json` with `{schemaVersion: 1, generated_at, systems: [], centres[], listings: []}`, every directory centre included once with `coverage: "not_checked"` (no readers exist yet) and `last_result`, `last_checked_at`, `last_success_at` as `null` (AD-8, AD-9)
+**Then** it writes `data/public/snapshot.json` with `{schemaVersion: 1, generated_at, systems: [], centres[], listings: []}` (listing entries are defined in Epic 2), every directory centre included once with `coverage: "not_checked"` (no readers exist yet) and `last_result`, `last_checked_at`, `last_success_at` as `null` (AD-8, AD-9)
 **And** an opted-out centre is published as `not_checked` (FR22)
 
 **Given** a snapshot that fails the zod schema
@@ -347,7 +348,7 @@ So that I know when to check a centre's own page.
 
 **Given** the footer link
 **When** I open About the data
-**Then** I see, in the chosen language: how it works ("we read the centres' websites several times a day; always check the centre's page before you register"); centres not checked automatically at `#not-checked` with the reasons (system we can't read yet, centre asked not to be checked, or our last check failed) and the list of those centres with links; sources (BAMF list, each centre's website); attribution (OSM/ODbL, Nominatim); and a contact address for centres to ask to be removed (FR33, NFR11)
+**Then** I see, in the chosen language: how it works ("we read the centres' websites several times a day; always check the centre's page before you register"); centres not checked automatically at `#not-checked` with the reasons (system we can't read yet, centre asked not to be checked, or our last check failed) and the list of those centres with links; sources (BAMF list, each centre's website); attribution (OSM/ODbL, Nominatim); and, for centres asking to be removed, a link that opens a new GitHub issue in `esiak/testplatz` from an "Opt-out request" issue template (centre name, website, contact) (FR33, NFR11)
 
 **Given** the About page
 **When** it renders
@@ -598,7 +599,7 @@ So that what I see is never more than half a day old.
 
 **Given** publish
 **When** it writes `snapshot.json`
-**Then** centres with a working reader have `coverage: covered` and their `last_result`, `last_checked_at`, `last_success_at`; `systems[]` lists each reader with `centres_covered`, `centres_ok`, `centres_failed`, `last_success_at`; centres skipped for opt-out, reader `none` or robots are published as `not_checked`; listings with `starts_at ≤ runAt`, removed listings and `not_checked` centres' listings are excluded (FR5, AD-8, AD-9)
+**Then** centres with a working reader have `coverage: covered` and their `last_result`, `last_checked_at`, `last_success_at`; `systems[]` lists each reader with `centres_covered`, `centres_ok`, `centres_failed`, `last_success_at`; `schemaVersion` becomes 2 now that listings carry entries, with `web/` updated in the same commit (AD-9); centres skipped for opt-out, reader `none` or robots are published as `not_checked`; listings with `starts_at ≤ runAt`, removed listings and `not_checked` centres' listings are excluded (FR5, AD-8, AD-9)
 
 **Given** `pipeline.yml`
 **When** the schedule fires at 05:17, 11:17, 17:17 and 23:17 UTC
@@ -778,7 +779,7 @@ So that I can fix a broken reader before users notice.
 
 **Given** each successful run
 **When** it finishes
-**Then** it pings an external dead-man check (free provider chosen and recorded in this story) that alerts the operator if no ping arrives for 13 h
+**Then** it pings an external dead-man check (free provider chosen and recorded in this story) that alerts the operator if no ping arrives for 13 h; the ping URL is stored as a repository secret
 
 **Given** the operator's notes in the repo
 **When** read
