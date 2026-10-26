@@ -4,6 +4,7 @@ companions:
   - data-sources.md
   - ../../planning-artifacts/ux-designs/ux-bgtsearch-2026-10-25/DESIGN.md
   - ../../planning-artifacts/ux-designs/ux-bgtsearch-2026-10-25/EXPERIENCE.md
+  - ../../planning-artifacts/architecture/architecture-bgtsearch-2026-10-25/ARCHITECTURE-SPINE.md
 sources:
   - ../../forge/einbuergerungstest-search/forged-idea.md
 ---
@@ -28,11 +29,11 @@ Pain to solve. People in Bavaria applying for citizenship must pass the Einbürg
   - **intent:** The system collects test dates automatically from centres on the two shared systems (KuferWeb, ITEM KG) several times a day.
   - **success:** Every centre on a supported system has dates no older than 12 hours; a new date published on a covered site appears within 12 hours.
 - **CAP-4**
-  - **intent:** Centres without an automatic reader still appear in results, marked "not checked automatically, see website", with a link.
+  - **intent:** Centres without an automatic reader still appear in results, marked "not checked automatically, see website", with a link. A covered centre whose last check failed (or never ran) and has no dates left appears the same way, marked "not checked right now".
   - **success:** A search covering an uncovered centre lists it with that marker; no directory centre within the radius is ever absent.
 - **CAP-5**
   - **intent:** Users see how fresh each listing is, and a failing reader is shown as failing.
-  - **success:** Each listing shows "last checked"; when a site's collection fails or returns nothing unexpectedly, its listings are flagged stale rather than shown as current or empty.
+  - **success:** Each listing shows when its centre was last checked successfully (freshness is per centre, not per date); when a site's collection fails or returns nothing unexpectedly, its listings are flagged stale rather than shown as current or empty, and a failing centre with no dates left shows as "not checked right now", never as "No dates listed".
 - **CAP-6**
   - **intent:** Test dates that appeared recently are marked "new".
   - **success:** A date first seen within the last 24 hours shows a "new" badge; the first-seen time is stored per date and survives later checks.
@@ -47,8 +48,8 @@ Pain to solve. People in Bavaria applying for citizenship must pass the Einbürg
   - **success:** Every UI string, status, and registration method appears in the selected language; no UI text is hard-coded, so adding a language means adding a translation file. Provider free text (place names, rooms) is shown as published.
 
 - **CAP-10**
-  - **intent:** A covered centre within the radius that currently lists no test dates still appears in results, marked "No dates listed".
-  - **success:** A search covering a covered centre with no current dates (or whose reader has never returned any) lists it with that marker, its last-checked time, and a link to its test page; it is never omitted.
+  - **intent:** A covered centre within the radius whose last check succeeded but found no test dates still appears in results, marked "No dates listed".
+  - **success:** A search covering such a centre lists it with that marker, its last successful check time, and a link to its test page; it is never omitted. A centre whose last check failed or never ran is not shown with this marker (see CAP-4).
 
 ## Constraints
 
@@ -58,7 +59,7 @@ Pain to solve. People in Bavaria applying for citizenship must pass the Einbürg
 - Polite collection: identified bot user agent, robots.txt respected, at most 4 checks per site per day.
 - Store only date, time, place, status, deadline, registration method, and link; no personal data from provider pages (e.g. instructor names).
 - A gap in data must never read as "nothing available".
-- The user's location never leaves the browser: search matches against a built-in Bavarian postcode/town table and distance is computed client-side (see `data-sources.md`).
+- The user's location never leaves the browser: search matches against a built-in postcode/town table and distance is computed client-side (see `data-sources.md`). Shareable search state lives in the URL fragment (`#q=…`), never the query string, so the place never reaches the server.
 - Public launch requires an Impressum (named operator, deliverable postal address) and a privacy policy; a private beta may run without. Operator choice is deferred.
 - OpenStreetMap-derived data requires visible ODbL attribution.
 

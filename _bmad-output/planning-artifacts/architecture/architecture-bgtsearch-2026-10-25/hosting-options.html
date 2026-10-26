@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>bgtsearch hosting options</title>
+<style>
+  :root {
+    --bg: #FFFFFF; --muted: #F4F5F7; --ink: #1B1F24; --ink2: #5A6370; --border: #DDE1E6;
+    --accent: #0B5CAD; --good: #1E7A3E; --good-bg: #E6F4EA; --warn: #8A5A00; --warn-bg: #FFF4D6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #14171B; --muted: #1E2227; --ink: #ECEEF1; --ink2: #A3ABB5; --border: #2E343B;
+      --accent: #7DB7F5; --good: #7BD596; --good-bg: #16301F; --warn: #F2C86B; --warn-bg: #3A2E10; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 900px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 1.6rem; margin: 0 0 4px; }
+  h2 { font-size: 1.15rem; margin: 40px 0 12px; }
+  .sub { color: var(--ink2); margin: 0 0 24px; }
+  .pick { background: var(--good-bg); border-left: 4px solid var(--good); padding: 16px 18px; border-radius: 8px; }
+  .pick strong { color: var(--good); }
+  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; }
+  table { border-collapse: collapse; width: 100%; min-width: 640px; font-size: .94rem; }
+  th, td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+  thead th { background: var(--muted); font-weight: 600; }
+  tbody tr:last-child td { border-bottom: 0; }
+  .chosen td:first-child { font-weight: 600; }
+  .tag { display: inline-block; font-size: .78rem; font-weight: 600; padding: 1px 8px; border-radius: 99px; }
+  .tag.ok { background: var(--good-bg); color: var(--good); }
+  .tag.warn { background: var(--warn-bg); color: var(--warn); }
+  ul { padding-left: 20px; }
+  li { margin: 4px 0; }
+  .flow { display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+  .step { background: var(--muted); border-radius: 8px; padding: 12px; font-size: .92rem; }
+  .step b { display: block; margin-bottom: 2px; }
+  a { color: var(--accent); }
+  footer { margin-top: 48px; color: var(--ink2); font-size: .85rem; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Hosting bgtsearch for (almost) nothing</h1>
+  <p class="sub">Options compared for v1 · checked 25–26 Oct 2026 · companion to <a href="ARCHITECTURE-SPINE.md">ARCHITECTURE-SPINE.md</a></p>
+
+  <div class="pick">
+    <strong>Chosen: €0/month.</strong> GitHub Actions runs the collector 4× a day, commits the data into the repo, builds the site, and deploys it to GitHub Pages. Nothing runs when someone visits. The only optional cost is a custom domain.
+  </div>
+
+  <h2>How it runs</h2>
+  <div class="flow">
+    <div class="step"><b>1 · Schedule</b>GitHub Actions cron, 05:17 / 11:17 / 17:17 / 23:17 UTC</div>
+    <div class="step"><b>2 · Collect</b>Fetch ~55 centre sites politely, parse KuferWeb and ITEM KG pages</div>
+    <div class="step"><b>3 · Remember</b>Merge with history in <code>data/</code>, commit to the repo</div>
+    <div class="step"><b>4 · Publish</b>Build the Preact site + one JSON snapshot, deploy to Pages</div>
+    <div class="step"><b>5 · Visit</b>Browser loads static files; search and distance run on the phone</div>
+  </div>
+
+  <h2>The three shapes compared</h2>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Shape</th><th>Monthly cost</th><th>Key limits</th><th>Good</th><th>Watch out</th></tr></thead>
+    <tbody>
+      <tr class="chosen">
+        <td>A · Static snapshot<br><span class="tag ok">chosen</span></td>
+        <td>€0</td>
+        <td>Actions free on public repos; Pages 1 GB site, 100 GB/month soft bandwidth</td>
+        <td>No server to run or secure. Location never leaves the browser by design. Data history is in git.</td>
+        <td>Cron can start late at busy times (fine for a 12 h target). Some sites may block GitHub's datacenter IPs. Repo must be public.</td>
+      </tr>
+      <tr>
+        <td>B · Serverless + database<br>(Cloudflare Workers + D1)</td>
+        <td>$0 in theory, $5 in practice</td>
+        <td>Free plan: 10 ms CPU per cron run, 50 subrequests. Paid: 30 s CPU for sub-hourly cron</td>
+        <td>Fast global edge, real database</td>
+        <td>Parsing ~55 sites won't fit 10 ms or 50 subrequests. Adds an API the design doesn't need.</td>
+      </tr>
+      <tr>
+        <td>C · Small VPS<br>(Hetzner)</td>
+        <td>~€5–6 + VAT</td>
+        <td>Entry CX23 / CAX11 after the April 2026 price rise (+ €0.50 IPv4); availability reported limited</td>
+        <td>Full control, German datacenter, residential-looking fixed IP</td>
+        <td>You patch the OS, manage TLS and backups. Oracle's "Always Free" box is not an option: idle machines get reclaimed.</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h2>Static host alternatives</h2>
+  <p>The build output is a plain folder, so these are swaps, not rewrites.</p>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Host</th><th>Free limits</th><th>When to switch</th></tr></thead>
+    <tbody>
+      <tr class="chosen"><td>GitHub Pages <span class="tag ok">chosen</span></td><td>1 GB site · 100 GB/month soft · not for commercial use (bgtsearch isn't)</td><td>—</td></tr>
+      <tr><td>Cloudflare Pages</td><td>500 builds/month · 20,000 files · 25 MiB per file · no bandwidth cap listed</td><td>If traffic ever nears 100 GB/month, or you want Cloudflare's CDN in Germany</td></tr>
+      <tr><td>Codeberg Pages</td><td>Free, run by a German non-profit</td><td>If an EU-hosted site makes the privacy policy simpler at public launch</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h2>Plan B for each risk</h2>
+  <ul>
+    <li><b>A site blocks GitHub's IPs:</b> a home machine (e.g. a Raspberry Pi) runs the pipeline on a cron and pushes the data with a limited token; GitHub still deploys. Not a self-hosted GitHub runner: on a public repo, anyone's pull request could run code on your home machine.</li>
+    <li><b>GitHub disables the cron after 60 quiet days:</b> every run commits fresh data, which should count as activity, but GitHub doesn't define the term. A free dead-man check alerts you if no run arrives for 13 h; re-enable the workflow in the Actions tab.</li>
+    <li><b>A reader breaks:</b> its centres keep their last dates, marked stale, and any failed run opens a GitHub issue, which emails you.</li>
+    <li><b>GitHub's Actions terms:</b> scraping on GitHub's runners is fine while it is the repo's own purpose, but it's a grey zone; the home fallback covers it.</li>
+    <li><b>v2 alerts need a backend:</b> Cloudflare Workers Paid ($5/month) is the natural next step; the git history is the data source.</li>
+  </ul>
+
+  <h2>What still costs money or effort</h2>
+  <ul>
+    <li><b>Custom domain</b> (optional, yearly fee). The free <code>*.github.io</code> address works for the private beta.</li>
+    <li><b>Impressum and privacy policy</b> before public launch: needs a named operator with a postal address, and the policy must say GitHub Pages hosts the site and sees visitor IPs.</li>
+  </ul>
+
+  <footer>
+    Sources:
+    <a href="https://docs.github.com/en/billing/concepts/product-billing/github-actions">GitHub Actions billing</a> ·
+    <a href="https://github.blog/changelog/2025-12-16-coming-soon-simpler-pricing-and-a-better-experience-for-github-actions/">Actions 2026 pricing</a> ·
+    <a href="https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows">Actions schedule</a> ·
+    <a href="https://docs.github.com/en/pages/getting-started-with-github-pages/github-pages-limits">Pages limits</a> ·
+    <a href="https://developers.cloudflare.com/pages/platform/limits/">Cloudflare Pages limits</a> ·
+    <a href="https://developers.cloudflare.com/workers/platform/limits/">Workers limits</a> ·
+    <a href="https://findstack.com/resources/hetzner-price-increase-2026">Hetzner 2026 prices</a> ·
+    <a href="https://docs.oracle.com/en-us/iaas/Content/FreeTier/resourceref.htm">Oracle Always Free</a>
+  </footer>
+</main>
+</body>
+</html>

@@ -27,9 +27,9 @@ Audience: foreigners who have lived in Germany for a while, B1+ German, many mor
 
 Search and Results are one page. No detail page per date: the card opens the provider's page for that date [ASSUMPTION].
 
-Every centre in the directory within the radius appears exactly once, as one of three card types: one **result card** per current test date; a **no-dates card** if its reader works but lists no current dates (or has never returned any); an **uncovered card** if it has no reader or opted out (CAP-8). Past test dates are not listed.
+Every centre in the directory within the radius appears exactly once, as one of three card types: one **result card** per current test date; a **no-dates card** if its reader's last check succeeded and found no current dates; an **uncovered card** if it has no reader, opted out (CAP-8), or its reader's last check failed (or never ran) and no dates are left to show. Past test dates are not listed.
 
-Results URL carries place, radius, sort and language (`?q=Neu-Ulm&r=40&sort=soonest&lang=en`) so a friend can send a link. Never coordinates. After "use my location", `q` becomes the nearest town in the built-in table, the field reads "Near Neu-Ulm", and the shareable link uses that town.
+Results URL carries place, radius, sort and language in the fragment (`#q=Neu-Ulm&r=40&sort=soonest&lang=en`) so a friend can send a link. Never the query string (the fragment never reaches the server), never coordinates. After "use my location", `q` becomes the nearest town in the built-in table, the field reads "Near Neu-Ulm", and the shareable link uses that town.
 
 → Composition reference: [`mockups/key-results-phone.html`](mockups/key-results-phone.html). Spines win on conflict.
 
@@ -37,7 +37,7 @@ Results URL carries place, radius, sort and language (`?q=Neu-Ulm&r=40&sort=soon
 
 1. **How it works**: one paragraph: we read the centres' websites several times a day; always check the centre's page before you register.
 2. **Booking systems**: table, one row per system (KuferWeb, ITEM KG): centres covered, last successful run, status "Working" or "Not updated since Tue 14:00" (CAP-5).
-3. **Centres not checked automatically** (`#not-checked`): why (their website uses a system we can't read yet, or the centre asked us not to check it), then the list of those centres with links.
+3. **Centres not checked automatically** (`#not-checked`): why (their website uses a system we can't read yet, the centre asked us not to check it, or our last check of their site failed), then the list of those centres with links.
 4. **Sources**: BAMF list of test centres; each centre's own website.
 5. **Attribution**: "Place data © OpenStreetMap contributors (ODbL)"; Nominatim for centre locations.
 6. **For test centres**: contact address to ask to be removed (CAP-8).
@@ -51,6 +51,7 @@ Microcopy. Plain words, short sentences, no exclamation marks. Same meaning in D
 | "Free seats" / "Booked out" / "Booked out · Waitlist" / "Status unknown" | "Hurry, only a few left!" |
 | "No dates listed" | "0 results" |
 | "Not checked automatically. See the centre's page." | "Not supported" |
+| "Not checked right now. See the centre's page." (reader failing, no dates left) | "No dates listed" / "Error" |
 | "Checked 2 h ago" / "◷ Checked Tue 14:00" | "Live" / "Warning: outdated data" |
 | "vhs-guenzburg.de ↗" | "More info" / "Click here" |
 | "No test centres within 20 km. Try 40 km." | "No results" |
@@ -79,8 +80,8 @@ Behavioural. Visual specs in `DESIGN.md.Components`.
 | Sort control | Radio group "Sort by": Soonest (default) and Nearest; applies on change. Soonest: dated cards by date, then distance; then section "No dates to show" with no-dates and uncovered cards by distance. Nearest: all cards by distance, then date. |
 | Hide booked-out toggle | Hides only "Booked out". Never hides "Booked out · Waitlist" [ASSUMPTION], "Status unknown", no-dates or uncovered cards. Shows "4 booked-out dates hidden · Show". Focus stays on the checkbox. |
 | No-dates card | Whole card opens the centre's test page. |
-| Uncovered card | Whole card opens the centre's test page. "Why?" opens About the data `#not-checked`, own target. Covers reader type none and opted-out centres (CAP-8); same text for both. |
-| Language switch | Switches immediately, keeps search and sort, updates `lang` in the URL; focus stays on the switch. |
+| Uncovered card | Whole card opens the centre's test page. "Why?" opens About the data `#not-checked`, own target. Covers reader type none and opted-out centres (CAP-8) with "Not checked automatically. See the centre's page." Also covers a covered centre whose last check failed or never ran and has no dates left, with "Not checked right now. See the centre's page." Never shows "No dates listed" for those. |
+| Language switch | Switches immediately, keeps search and sort, updates `lang` in the URL fragment; focus stays on the switch. |
 | Footer | On every page: About the data, Impressum, Privacy, OSM attribution. Impressum / Privacy links appear once those pages exist [ASSUMPTION: hidden in private beta]. |
 
 ## State Patterns

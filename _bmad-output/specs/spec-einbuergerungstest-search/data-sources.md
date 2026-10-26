@@ -19,12 +19,25 @@ Counts come from homepage fingerprints (2026-10-25), not from each site's test p
 | place | yes | room, if given |
 | address | yes | full street address of the test location; falls back to the centre address |
 | status | yes | `free` / `booked_out` / `waitlist` / `unknown` |
-| deadline | no | e.g. 3–5 weeks before the test; `unknown` if not published |
+| deadline | no | local date, e.g. 3–5 weeks before the test; `null` if not published (shown as "unknown") |
 | registration_method | no | `online` / `email` / `post` / `in_person` (e.g. Bad Kissingen: in person, cash only) |
 | source_url | yes | provider page for the date |
 | link_ok | yes | whether `source_url` was reachable at the last check; if false, UI links to the centre's `test_page_url` |
 | first_seen_at | yes | set once, never overwritten (CAP-6) |
-| last_checked_at | yes | per collection run (CAP-5) |
+
+Absent optional fields are `null`, never guessed. Freshness is not stored per date; it comes from the centre's check fields below.
+
+## Centre check fields
+
+Per centre, per collection run (CAP-5, CAP-10):
+
+| Field | Notes |
+|---|---|
+| last_checked_at | last run that contacted the site, success or failure |
+| last_success_at | last run whose reader succeeded; `null` if never. Shown as "last checked" in the UI |
+| last_result | `ok` / `failed` / `null` (never ran). Opted-out, no-reader or robots-blocked centres are skipped and get no timestamps |
+
+A failed run keeps the centre's previous dates (shown stale). "No dates listed" is shown only when `last_result` is `ok`; otherwise a centre with no dates left shows "not checked right now".
 
 ## Status mapping
 
@@ -37,11 +50,11 @@ Counts come from homepage fingerprints (2026-10-25), not from each site's test p
 - v1 seed: rtpartner.de "Prüfstellen für den Einbürgerungstest in Bayern" (~116 entries, cites BAMF, reuse licence unclear). Each entry is verified against the centre's own website before going live.
 - Official source: none machine-readable found (bamf.de links only BAMF-NAvI, which covers integration courses and authorities; oet.bamf.de hosts practice tests only). Request the list from BAMF by email, then by IFG request via FragDenStaat; switch to it when received.
 - Refresh: monthly diff for added or removed centres.
-- Each entry: name, address, coordinates, website, test_page_url (the centre's Einbürgerungstest page), reader type, opted_out flag (CAP-8).
+- Each entry: name, address, coordinates, website, test_page_url (the centre's Einbürgerungstest page), reader type, optional reader config, opted_out flag (CAP-8), source (e.g. rtpartner.de, later BAMF), verified_at.
 - Centre coordinates: geocoded once with Nominatim (max 1 req/s, attribution), stored; re-geocode only changed addresses.
 
 ## User location
 
-- Built-in table of Bavarian postcodes and towns with coordinates, derived from OpenStreetMap (ODbL, attribution shown).
+- Built-in table of German postcodes and towns with coordinates and state, derived from OpenStreetMap (ODbL, attribution shown). Only Bavarian rows are searchable; others give the "Bavaria only" message. A simplified Bavaria boundary checks device locations.
 - Matching and straight-line distance run in the browser; no runtime geocoding service.
 - Optional: browser geolocation ("use my location"), also client-side only.
