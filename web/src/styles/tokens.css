@@ -1,0 +1,179 @@
+/*
+ * Design tokens from DESIGN.md frontmatter. The only file allowed to hold literal colours,
+ * px sizes and font sizes. Names follow fixed rules checked by tests/design-tokens.test.ts:
+ *   colors.X        → --color-X (X-dark goes in the dark block under the same name)
+ *   typography.N    → --font-N-family / -size / -weight / -line-height, shorthand --font-N
+ *   rounded.K       → --radius-K
+ *   spacing.K       → --space-K
+ *   components.C.P  → --C-P (status-chip variants: --status-chip-<variant>-<prop>)
+ * Edit by hand when DESIGN.md changes; the test fails until this file matches.
+ */
+
+:root {
+	color-scheme: light dark;
+
+	/* colors */
+	--color-surface-base: #FFFFFF;
+	--color-surface-muted: #F4F5F7;
+	--color-ink-primary: #1B1F24;
+	--color-ink-secondary: #5A6370;
+	--color-border: #DDE1E6;
+	--color-control-border: #7A838F;
+	--color-action: #0B5CAD;
+	--color-status-free: #1E7A3E;
+	--color-status-free-bg: #E6F4EA;
+	--color-status-booked: #5A6370;
+	--color-status-booked-bg: #EEF0F2;
+	--color-status-unknown: #8A5A00;
+	--color-status-unknown-bg: #FFF4D6;
+	--color-error: #B3261E;
+
+	/* typography */
+	--font-title-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+	--font-title-size: 1.375rem;
+	--font-title-weight: 600;
+	--font-title-line-height: 1.3;
+	--font-title: var(--font-title-weight) var(--font-title-size)/var(--font-title-line-height) var(--font-title-family);
+
+	--font-section-family: var(--font-title-family);
+	--font-section-size: 1rem;
+	--font-section-weight: 600;
+	--font-section-line-height: 1.4;
+	--font-section: var(--font-section-weight) var(--font-section-size)/var(--font-section-line-height) var(--font-section-family);
+
+	--font-card-date-family: var(--font-title-family);
+	--font-card-date-size: 1.125rem;
+	--font-card-date-weight: 600;
+	--font-card-date-line-height: 1.3;
+	--font-card-date: var(--font-card-date-weight) var(--font-card-date-size)/var(--font-card-date-line-height) var(--font-card-date-family);
+
+	--font-body-family: var(--font-title-family);
+	--font-body-size: 1rem;
+	--font-body-weight: 400;
+	--font-body-line-height: 1.5;
+	--font-body: var(--font-body-weight) var(--font-body-size)/var(--font-body-line-height) var(--font-body-family);
+
+	--font-fact-family: var(--font-title-family);
+	--font-fact-size: 0.9375rem;
+	--font-fact-weight: 500;
+	--font-fact-line-height: 1.35;
+	--font-fact: var(--font-fact-weight) var(--font-fact-size)/var(--font-fact-line-height) var(--font-fact-family);
+
+	--font-meta-family: var(--font-title-family);
+	--font-meta-size: 0.8125rem;
+	--font-meta-weight: 400;
+	--font-meta-line-height: 1.4;
+	--font-meta: var(--font-meta-weight) var(--font-meta-size)/var(--font-meta-line-height) var(--font-meta-family);
+
+	/* rounded */
+	--radius-sm: 6px;
+	--radius-md: 10px;
+	--radius-full: 9999px;
+
+	/* spacing */
+	--space-1: 4px;
+	--space-2: 8px;
+	--space-3: 12px;
+	--space-4: 16px;
+	--space-5: 24px;
+	--space-6: 32px;
+	--space-gutter-mobile: 16px;
+	--space-content-max: 720px;
+	--space-target-min: 44px;
+	--space-fact-cell-min: 9em;
+
+	/* components */
+	--focus-ring-color: var(--color-action);
+	--focus-ring-width: 2px;
+	--focus-ring-offset: 2px;
+
+	--search-bar-background: var(--color-surface-base);
+	--search-bar-field-border: var(--color-control-border);
+	--search-bar-rounded: var(--radius-md);
+	--search-bar-min-height: var(--space-target-min);
+
+	--place-suggestions-background: var(--color-surface-base);
+	--place-suggestions-border: var(--color-control-border);
+	--place-suggestions-highlight-background: var(--color-surface-muted);
+	--place-suggestions-item-min-height: var(--space-target-min);
+	--place-suggestions-rounded: var(--radius-sm);
+	--place-suggestions-max-items: 6;
+
+	--button-primary-background: var(--color-action);
+	--button-primary-color: var(--color-surface-base);
+	--button-primary-rounded: var(--radius-sm);
+	--button-primary-min-height: var(--space-target-min);
+
+	--button-secondary-background: var(--color-surface-base);
+	--button-secondary-color: var(--color-action);
+	--button-secondary-border: var(--color-control-border);
+	--button-secondary-rounded: var(--radius-sm);
+	--button-secondary-min-height: var(--space-target-min);
+
+	--result-card-background: var(--color-surface-base);
+	--result-card-border: var(--color-border);
+	--result-card-rounded: var(--radius-md);
+	--result-card-padding: var(--space-4);
+
+	--key-facts-row-background: var(--color-surface-muted);
+	--key-facts-row-label-typography: var(--font-meta);
+	--key-facts-row-label-color: var(--color-ink-secondary);
+	--key-facts-row-value-typography: var(--font-fact);
+	--key-facts-row-cell-min-width: var(--space-fact-cell-min);
+	--key-facts-row-rounded: var(--radius-sm);
+
+	--status-chip-rounded: var(--radius-full);
+	--status-chip-typography: var(--font-meta);
+	--status-chip-free-color: var(--color-status-free);
+	--status-chip-free-background: var(--color-status-free-bg);
+	--status-chip-booked-color: var(--color-status-booked);
+	--status-chip-booked-background: var(--color-status-booked-bg);
+	--status-chip-unknown-color: var(--color-status-unknown);
+	--status-chip-unknown-background: var(--color-status-unknown-bg);
+
+	--new-badge-color: var(--color-ink-primary);
+	--new-badge-background: var(--color-surface-muted);
+	--new-badge-rounded: var(--radius-full);
+	--new-badge-typography: var(--font-meta);
+
+	--freshness-line-typography: var(--font-meta);
+	--freshness-line-color: var(--color-ink-secondary);
+
+	--destination-line-typography: var(--font-meta);
+	--destination-line-color: var(--color-action);
+
+	--address-line-typography: var(--font-meta);
+	--address-line-color: var(--color-ink-secondary);
+	--address-line-link-color: var(--color-action);
+
+	--sort-control-border: var(--color-control-border);
+	--sort-control-selected-background: var(--color-ink-primary);
+	--sort-control-selected-color: var(--color-surface-base);
+	--sort-control-rounded: var(--radius-sm);
+	--sort-control-min-height: var(--space-target-min);
+
+	--notice-line-typography: var(--font-body);
+	--notice-line-color: var(--color-ink-primary);
+
+	--field-message-typography: var(--font-meta);
+	--field-message-color: var(--color-error);
+}
+
+@media (prefers-color-scheme: dark) {
+	:root {
+		--color-surface-base: #14171B;
+		--color-surface-muted: #1E2227;
+		--color-ink-primary: #ECEEF1;
+		--color-ink-secondary: #A3ABB5;
+		--color-border: #2E343B;
+		--color-control-border: #737C88;
+		--color-action: #7DB7F5;
+		--color-status-free: #7BD596;
+		--color-status-free-bg: #16301F;
+		--color-status-booked: #A3ABB5;
+		--color-status-booked-bg: #262B31;
+		--color-status-unknown: #F2C86B;
+		--color-status-unknown-bg: #3A2E10;
+		--color-error: #F2B8B5;
+	}
+}

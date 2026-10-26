@@ -1,0 +1,102 @@
+/* Base styles and the page shell. Every value is a token from tokens.css. */
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+	font: var(--font-body);
+	color: var(--color-ink-primary);
+	background: var(--color-surface-base);
+	overflow-wrap: break-word;
+}
+
+h1 {
+	font: var(--font-title);
+	margin-block: var(--space-4);
+}
+
+a {
+	color: var(--color-action);
+}
+
+:focus-visible {
+	outline: var(--focus-ring-width) solid var(--focus-ring-color);
+	outline-offset: var(--focus-ring-offset);
+}
+
+/* Single centred column. */
+.page {
+	max-width: var(--space-content-max);
+	margin-inline: auto;
+	padding-inline: var(--space-gutter-mobile);
+}
+
+/* Header: "DE | EN" */
+.site-header {
+	display: flex;
+	justify-content: flex-end;
+	padding-block: var(--space-2);
+}
+
+.lang-switch {
+	display: flex;
+	align-items: center;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.lang-switch__item + .lang-switch__item {
+	border-inline-start: thin solid var(--color-border);
+}
+
+.lang-switch__link {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: var(--space-target-min);
+	min-width: var(--space-target-min);
+	padding-inline: var(--space-2);
+	font: var(--font-meta);
+	color: var(--color-action);
+}
+
+.lang-switch__link[aria-current='true'] {
+	color: var(--color-ink-primary);
+	font-weight: bold;
+	text-decoration: none;
+}
+
+/* Footer */
+.site-footer {
+	margin-block-start: var(--space-6);
+	padding-block: var(--space-4);
+	border-block-start: thin solid var(--color-border);
+	font: var(--font-meta);
+	color: var(--color-ink-secondary);
+}
+
+.site-footer__links {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-4);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.site-footer__link {
+	display: inline-flex;
+	align-items: center;
+	min-height: var(--space-target-min);
+	min-width: var(--space-target-min);
+	color: var(--color-action);
+}
+
+.site-footer__attribution {
+	margin-block: var(--space-2) 0;
+}

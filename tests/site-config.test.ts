@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { posix, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -31,4 +31,24 @@ describe('site config', () => {
 		expect(pageDir).toBe('about/');
 		expect(aboutPath).toBe(pageDir);
 	});
+});
+
+describe('page entries', () => {
+	const read = (rel: string): string => readFileSync(fileURLToPath(new URL(`../web/${rel}`, import.meta.url)), 'utf8');
+	const pages = [
+		{ html: 'index.html', script: './src/main.tsx', entry: 'src/main.tsx' },
+		{ html: 'about/index.html', script: '../src/about-main.tsx', entry: 'src/about-main.tsx' },
+	];
+
+	for (const { html, script, entry } of pages) {
+		it(`${html} loads ${script} as a module`, () => {
+			const tags = [...read(html).matchAll(/<script\b[^>]*>/g)].map((m) => m[0]);
+			expect(tags.some((tag) => /type="module"/.test(tag) && tag.includes(`src="${script}"`)), tags.join('\n')).toBe(true);
+		});
+
+		it(`${entry} imports tokens.css then base.css`, () => {
+			const imports = [...read(entry).matchAll(/^import\s+['"]([^'"]+\.css)['"]/gm)].map((m) => m[1]);
+			expect(imports).toEqual(['./styles/tokens.css', './styles/base.css']);
+		});
+	}
 });
