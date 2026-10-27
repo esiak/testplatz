@@ -35,6 +35,17 @@ export interface FetchClientOptions {
 	timeoutMs?: number;
 	fetchImpl?: FetchImpl;
 	sleep?: (ms: number) => Promise<void>;
+	/**
+	 * URLs whose origin and pathname exactly match an entry skip the robots check (no robots.txt
+	 * is fetched for them). Every other URL, including redirect targets, keeps the full rules.
+	 * The only user is tools/geocode with Nominatim's `/search` (AD-5).
+	 */
+	robotsExempt?: readonly RobotsExemption[];
+}
+
+export interface RobotsExemption {
+	origin: string;
+	path: string;
 }
 
 /** What one client (one run) sent, counted by the client itself, never from URL paths. */
@@ -82,6 +93,8 @@ export function createFetchClient(options: FetchClientOptions = {}): FetchClient
 	const timeoutMs = options.timeoutMs ?? FETCH_TIMEOUT_MS;
 	const fetchImpl = options.fetchImpl ?? nativeFetch;
 	const sleep = options.sleep ?? defaultSleep;
+	const robotsExempt = [...(options.robotsExempt ?? [])];
+	const isExempt = (url: URL): boolean => robotsExempt.some((e) => e.origin === url.origin && e.path === url.pathname);
 
 	/** Per host: the tail of its request chain and whether it has been contacted yet. */
 	const queues = new Map<string, { tail: Promise<unknown>; used: boolean }>();
@@ -221,9 +234,11 @@ export function createFetchClient(options: FetchClientOptions = {}): FetchClient
 			if (current.protocol !== 'http:' && current.protocol !== 'https:') {
 				return { ok: false, reason: 'network-error', url: current.href, status: null };
 			}
-			const { rules } = await robotsFor(current.origin);
-			if (!rules.isAllowed(current.pathname + current.search)) {
-				return { ok: false, reason: 'robots-disallowed', url: current.href, status: null };
+			if (!isExempt(current)) {
+				const { rules } = await robotsFor(current.origin);
+				if (!rules.isAllowed(current.pathname + current.search)) {
+					return { ok: false, reason: 'robots-disallowed', url: current.href, status: null };
+				}
 			}
 
 			const raw = await request(current);

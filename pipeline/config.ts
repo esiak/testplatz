@@ -14,3 +14,15 @@ export const FETCH_DELAY_MS = 2000;
 
 /** Default per-request timeout, covering headers and body (pipeline/fetch). */
 export const FETCH_TIMEOUT_MS = 20000;
+
+/** Nominatim structured search, the only Nominatim endpoint used (tools/geocode, AD-5). */
+export const NOMINATIM_SEARCH_URL = 'https://nominatim.openstreetmap.org/search';
+
+/** Pause between two Nominatim requests: ≤ 1 req/s per the OSMF usage policy. */
+export const NOMINATIM_DELAY_MS = 1100;
+
+/**
+ * The one robots exemption in pipeline/fetch (AD-5): Nominatim's `/search`, governed by the
+ * OSMF usage policy rather than its crawler robots.txt. Passed only by tools/geocode.
+ */
+export const NOMINATIM_ROBOTS_EXEMPT = { origin: 'https://nominatim.openstreetmap.org', path: '/search' } as const;

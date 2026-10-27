@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { centreSchema, directorySchema, isPlausibleHostname, serializeDirectory, slugify, type Centre } from '../shared/directory.ts';
+import { BAVARIA_BBOX, centreSchema, directorySchema, isInBavariaBox, isPlausibleHostname, serializeDirectory, slugify, type Centre } from '../shared/directory.ts';
 import { checkDirectoryText } from '../tools/check-directory.ts';
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
@@ -43,6 +43,8 @@ describe('centreSchema', () => {
 		['an unknown reader', { reader: 'foo' }, 'reader'],
 		['a reader_config with reader none', { reader_config: { list_url: 'https://x.de/' } }, 'reader_config'],
 		['lat without lon', { lat: 48.1 }, 'lon'],
+		['a latitude north of Bavaria', { lat: 52.5, lon: 13.4 }, 'lat'],
+		['a longitude west of Bavaria', { lat: 48.8, lon: 8.4 }, 'lon'],
 		['a bad postcode', { address: { street: 'A 1', postcode: '9076', city: 'Fürth' } }, 'address.postcode'],
 		['a non-http website', { website: 'ftp://x.de/' }, 'website'],
 		['a website with a comma in the host', { website: 'http://www.vhs-kisshab,de/' }, 'website'],
@@ -61,6 +63,19 @@ describe('centreSchema', () => {
 		expect(centreSchema.safeParse({ ...centre(), phone: '0911' }).success).toBe(false);
 		const { verified_at: _, ...missing } = centre();
 		expect(centreSchema.safeParse(missing).success).toBe(false);
+	});
+});
+
+describe('BAVARIA_BBOX', () => {
+	it('contains Bavarian points (edges included) and excludes others', () => {
+		expect(BAVARIA_BBOX).toEqual({ minLat: 47.2, maxLat: 50.6, minLon: 8.9, maxLon: 13.9 });
+		expect(isInBavariaBox(48.137, 11.575)).toBe(true);
+		expect(isInBavariaBox(47.2, 8.9)).toBe(true);
+		expect(isInBavariaBox(50.6, 13.9)).toBe(true);
+		expect(isInBavariaBox(52.52, 13.405)).toBe(false);
+		expect(isInBavariaBox(48.78, 8.8)).toBe(false);
+		expect(isInBavariaBox(47.1, 11)).toBe(false);
+		expect(isInBavariaBox(49, 14)).toBe(false);
 	});
 });
 
@@ -110,6 +125,7 @@ describe('check-directory', () => {
 		[{ extra: true }, 'entry 0 (vhs-fuerth) extra'],
 		[{ reader_config: { list_url: 'https://x.de/' } }, 'entry 0 (vhs-fuerth) reader_config'],
 		[{ lat: 49.4 }, 'entry 0 (vhs-fuerth) lon'],
+		[{ lat: 52.5, lon: 11 }, 'entry 0 (vhs-fuerth) lat'],
 	])('names the entry index and field for %j', (overrides, expected) => {
 		const result = checkDirectoryText(JSON.stringify([{ ...centre(), ...overrides }]));
 		expect(result.ok).toBe(false);
@@ -165,9 +181,10 @@ describe('committed data/directory/centres.json', () => {
 		expect(serializeDirectory(directorySchema.parse(JSON.parse(text)))).toBe(text);
 	});
 
-	it('holds one rtpartner entry per source row and no coordinates yet', () => {
+	it('holds one rtpartner entry per source row, every coordinate inside Bavaria', () => {
 		const centres = directorySchema.parse(JSON.parse(text));
 		expect(centres).toHaveLength(120);
-		expect(centres.every((c) => c.source === 'rtpartner' && c.lat === null && c.lon === null)).toBe(true);
+		expect(centres.every((c) => c.source === 'rtpartner')).toBe(true);
+		expect(centres.every((c) => c.lat === null || isInBavariaBox(c.lat, c.lon!))).toBe(true);
 	});
 });

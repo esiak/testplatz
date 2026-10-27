@@ -22,6 +22,13 @@ export const isHttpUrl = (value: string): boolean => {
 
 const httpUrl = z.string().refine(isHttpUrl, { message: 'must be an http(s) URL with a plausible hostname' });
 
+/** A generous bounding box around Bavaria; every stored coordinate must lie inside it. */
+export const BAVARIA_BBOX = { minLat: 47.2, maxLat: 50.6, minLon: 8.9, maxLon: 13.9 } as const;
+
+/** True when the point lies inside `BAVARIA_BBOX` (edges included). */
+export const isInBavariaBox = (lat: number, lon: number): boolean =>
+	lat >= BAVARIA_BBOX.minLat && lat <= BAVARIA_BBOX.maxLat && lon >= BAVARIA_BBOX.minLon && lon <= BAVARIA_BBOX.maxLon;
+
 export const addressSchema = z.strictObject({
 	street: z.string().min(1),
 	postcode: z.string().regex(/^\d{5}$/, { message: 'must be 5 digits' }),
@@ -52,6 +59,12 @@ export const centreSchema = z
 				path: [centre.lat === null ? 'lat' : 'lon'],
 				message: 'lat and lon must both be numbers or both be null',
 			});
+		}
+		if (centre.lat !== null && (centre.lat < BAVARIA_BBOX.minLat || centre.lat > BAVARIA_BBOX.maxLat)) {
+			ctx.addIssue({ code: 'custom', path: ['lat'], message: `must lie inside Bavaria (${BAVARIA_BBOX.minLat}–${BAVARIA_BBOX.maxLat})` });
+		}
+		if (centre.lon !== null && (centre.lon < BAVARIA_BBOX.minLon || centre.lon > BAVARIA_BBOX.maxLon)) {
+			ctx.addIssue({ code: 'custom', path: ['lon'], message: `must lie inside Bavaria (${BAVARIA_BBOX.minLon}–${BAVARIA_BBOX.maxLon})` });
 		}
 		if (centre.reader === 'none' && centre.reader_config !== null) {
 			ctx.addIssue({ code: 'custom', path: ['reader_config'], message: 'must be null when reader is "none"' });

@@ -342,3 +342,43 @@ describe('decodeBody', () => {
 		expect(decodeBody(utf8, null)).toBe('Fürth');
 	});
 });
+
+describe('createFetchClient robotsExempt', () => {
+	const NOMI = 'https://nominatim.openstreetmap.org';
+	const exempt = [{ origin: NOMI, path: '/search' }] as const;
+	const json = (body: string) => () => new Response(body, { status: 200, headers: { 'content-type': 'application/json' } });
+
+	it('requests an exempt URL without fetching robots.txt, and keeps robots rules for other paths', async () => {
+		const net = fakeNetwork({
+			[`${NOMI}/robots.txt`]: text('User-agent: *\nDisallow: /\n'),
+			[`${NOMI}/search?q=a`]: json('[]'),
+			[`${NOMI}/details?x=1`]: json('{}'),
+		});
+		const client = createFetchClient({ fetchImpl: net.fetchImpl, delayMs: 0, robotsExempt: exempt });
+		expect(await client.get(`${NOMI}/search?q=a`)).toMatchObject({ ok: true, text: '[]' });
+		expect(net.calls.map((c) => c.url)).toEqual([`${NOMI}/search?q=a`]);
+		expect(client.stats().robotsRequests).toBe(0);
+		expect(await client.get(`${NOMI}/details?x=1`)).toMatchObject({ ok: false, reason: 'robots-disallowed' });
+		expect(await client.get(`${NOMI}/search/more`)).toMatchObject({ ok: false, reason: 'robots-disallowed' });
+		expect(net.calls.map((c) => c.url)).toEqual([`${NOMI}/search?q=a`, `${NOMI}/robots.txt`]);
+		expect(net.calls.every((c) => c.userAgent === USER_AGENT)).toBe(true);
+	});
+
+	it('exempts only the exact origin, and applies robots to non-matching redirect targets', async () => {
+		const net = fakeNetwork({
+			[`${NOMI}/search?q=r`]: redirect(`${NOMI}/details?q=r`),
+			[`${NOMI}/robots.txt`]: text('User-agent: *\nDisallow: /\n'),
+			'http://nominatim.openstreetmap.org/robots.txt': text('User-agent: *\nDisallow: /\n'),
+		});
+		const client = createFetchClient({ fetchImpl: net.fetchImpl, delayMs: 0, robotsExempt: exempt });
+		expect(await client.get(`${NOMI}/search?q=r`)).toMatchObject({ ok: false, reason: 'robots-disallowed', url: `${NOMI}/details?q=r` });
+		expect(await client.get('http://nominatim.openstreetmap.org/search?q=r')).toMatchObject({ ok: false, reason: 'robots-disallowed' });
+	});
+
+	it('without the option, /search is robots-disallowed', async () => {
+		const net = fakeNetwork({ [`${NOMI}/robots.txt`]: text('User-agent: *\nDisallow: /search\n'), [`${NOMI}/search?q=a`]: json('[]') });
+		const client = createFetchClient({ fetchImpl: net.fetchImpl, delayMs: 0 });
+		expect(await client.get(`${NOMI}/search?q=a`)).toMatchObject({ ok: false, reason: 'robots-disallowed' });
+		expect(net.calls.map((c) => c.url)).toEqual([`${NOMI}/robots.txt`]);
+	});
+});
