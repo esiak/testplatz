@@ -1,0 +1,1840 @@
+{
+	"centres": {
+		"akademia-zentrum-fuer-kommunikation-und-bildung-gmbh": {
+			"lat": 49.445926,
+			"lon": 11.080259,
+			"query": "Bahnhofsplatz 6, 90443 Nürnberg"
+		},
+		"anderwerk-deutschkurse": {
+			"lat": 48.188558,
+			"lon": 11.565015,
+			"query": "Hamburger Straße 32, 80809 München"
+		},
+		"berufliche-fortbildungszentren-der-bayerischen-wirtschaft": {
+			"lat": 48.707751,
+			"lon": 10.760546,
+			"query": "Dr. Friedrich-Drechsler-Str. 14, 86609 Donauwörth"
+		},
+		"bildungszentrum-stadt-nuernberg": {
+			"lat": 49.451914,
+			"lon": 11.083874,
+			"query": "Gewerbemuseumsplatz 1, 90403 Nürnberg"
+		},
+		"deutsche-angestellten-akademie-gmbh": {
+			"lat": 48.144797,
+			"lon": 11.554777,
+			"query": "Marsstraße 42, 80335 München"
+		},
+		"euro-bildungswerk-nuernberg-euro-schulen-nordbayern": {
+			"lat": 49.45302,
+			"lon": 11.062547,
+			"query": "Solgerstr. 16a/18, 90429 Nürnberg"
+		},
+		"euro-schulen-aschaffenburg": {
+			"lat": 49.978663,
+			"lon": 9.151619,
+			"query": "Goldbacher Str. 6, 63739 Aschaffenburg"
+		},
+		"euro-schulen-nordbayern": {
+			"lat": 49.795482,
+			"lon": 9.932643,
+			"query": "Herzogenstr. 8, 97070 Würzburg"
+		},
+		"hilfe-von-mensch-zu-mensch": {
+			"lat": 48.143579,
+			"lon": 11.55644,
+			"query": "Marsstr. 25, 80335 München"
+		},
+		"inlingua-sprachenschule-e-k": {
+			"lat": 48.764179,
+			"lon": 11.426635,
+			"query": "Ludwigstraße 18, 85049 Ingolstadt"
+		},
+		"inlingua-sprachschule-u-c-bernau-gmbh": {
+			"lat": 48.132767,
+			"lon": 11.566212,
+			"query": "Sendlinger Torplatz 6, 80336 München"
+		},
+		"ise-sprach-und-berufsbildungszentrum-gmbh": {
+			"lat": 49.446044,
+			"lon": 11.864197,
+			"query": "Kaiser-Ludwig-Ring 9, 92224 Amberg"
+		},
+		"kolping-akademie-ingolstadt-ggmbh": {
+			"lat": 48.76588,
+			"lon": 11.4215,
+			"query": "Johannesstraße 11, 85049 Ingolstadt"
+		},
+		"kommunaler-zweckverband-der-volkshochschule-passau": {
+			"lat": 48.571937,
+			"lon": 13.460383,
+			"query": "Nikolastr. 18, 94032 Passau"
+		},
+		"mas-sprachschule-muenchen": {
+			"lat": 48.12803,
+			"lon": 11.55555,
+			"query": "Lindwurmstr. 109, 80337 München"
+		},
+		"oberallgaeuer-vhs": {
+			"lat": 47.512522,
+			"lon": 10.291026,
+			"query": "Hindelanger Str. 37, 87527 Sonthofen"
+		},
+		"vhs-aichach-friedberg-e-v": {
+			"lat": 48.458956,
+			"lon": 11.129586,
+			"query": "Steubstr. 3, 86551 Aichach"
+		},
+		"vhs-alt-neuoetting-und-toeging-e-v": {
+			"lat": 48.229033,
+			"lon": 12.679565,
+			"query": "Neuöttinger Str. 32, 84503 Altötting"
+		},
+		"vhs-arberland": {
+			"lat": 48.972251,
+			"lon": 13.127653,
+			"query": "Amtsgerichtstr. 6 - 8, 94209 Regen"
+		},
+		"vhs-aschaffenburg": {
+			"lat": 49.975849,
+			"lon": 9.144366,
+			"query": "Luitpoldstr. 2, 63739 Aschaffenburg"
+		},
+		"vhs-augsburg-e-v": {
+			"lat": 48.365172,
+			"lon": 10.905333,
+			"query": "Willy-Brandt-Platz 3a, 86153 Augsburg"
+		},
+		"vhs-bad-kisingen-und-hammelburg": {
+			"lat": 50.201018,
+			"lon": 10.075862,
+			"query": "Rathausplatz 1, 97688 Bad Kissingen"
+		},
+		"vhs-bad-reichenhall": {
+			"lat": 47.723384,
+			"lon": 12.87707,
+			"query": "Aegidiplatz 3, 83435 Bad Reichenhall"
+		},
+		"vhs-bamberg": {
+			"lat": 49.896273,
+			"lon": 10.893308,
+			"query": "Tränkgasse 4, 96052 Bamberg"
+		},
+		"vhs-bamberg-land-e-v": {
+			"lat": 49.899115,
+			"lon": 10.899252,
+			"query": "Ludwigstraße 25, 96052 Bamberg"
+		},
+		"vhs-bayreuth": {
+			"lat": 49.942887,
+			"lon": 11.580654,
+			"query": "Richard-Wagner-Str. 21, 95444 Bayreuth"
+		},
+		"vhs-beilngries-e-v": {
+			"lat": 49.034352,
+			"lon": 11.470594,
+			"query": "Ringstr. 16, 92339 Beilngries"
+		},
+		"vhs-buchloe-e-v": {
+			"lat": 48.034082,
+			"lon": 10.717089,
+			"query": "Bahnhofstr. 60, 86807 Buchloe"
+		},
+		"vhs-burghausen-burgkirchen-e-v": {
+			"lat": 48.169336,
+			"lon": 12.831315,
+			"query": "Marktler Str. 16, 84489 Burghausen"
+		},
+		"vhs-coburg-ggmbh": {
+			"lat": 50.260737,
+			"lon": 10.962208,
+			"query": "Löwenstr. 15, 96450 Coburg"
+		},
+		"vhs-dachau-gmbh": {
+			"lat": 48.25894,
+			"lon": 11.438107,
+			"query": "Dr.-Engert-Str. 4, 85221 Dachau"
+		},
+		"vhs-deggendorfer-land-e-v": {
+			"lat": 48.83711,
+			"lon": 12.962494,
+			"query": "Amanstr. 11, 94469 Deggendorf"
+		},
+		"vhs-der-stadt-landsberg-lech": {
+			"lat": 48.048261,
+			"lon": 10.876275,
+			"query": "Hubert-von-Herkomer-Str. 110, 86899 Landsberg am Lech"
+		},
+		"vhs-der-stadt-schweinfurt": {
+			"lat": 50.044726,
+			"lon": 10.234838,
+			"query": "Markt 1, 97421 Schweinfurt"
+		},
+		"vhs-des-landkreises-ansbach": {
+			"lat": 49.296294,
+			"lon": 10.561698,
+			"query": "Crailsheimstr. 1, 91522 Ansbach"
+		},
+		"vhs-des-landkreises-forchheim": {
+			"lat": 49.720003,
+			"lon": 11.059937,
+			"query": "Hornschuchallee 20, 91301 Forchheim"
+		},
+		"vhs-des-landkreises-wunsiedel": {
+			"lat": 50.037881,
+			"lon": 12.006131,
+			"query": "Jean-Paul-Str. 9, 95632 Wunsiedel"
+		},
+		"vhs-des-lk-freyung-grafenau": {
+			"lat": 48.856079,
+			"lon": 13.384588,
+			"query": "Frauenberg 17, 94481 Grafenau"
+		},
+		"vhs-dillingen-e-v": {
+			"lat": 48.577168,
+			"lon": 10.494149,
+			"query": "Königstraße 37/38, 89407 Dillingen a. d. Donau"
+		},
+		"vhs-dingolfing-e-v": {
+			"lat": 48.631224,
+			"lon": 12.509335,
+			"query": "Stadionstr. 50, 84130 Dingolfing"
+		},
+		"vhs-donauwoerth": {
+			"lat": 48.720232,
+			"lon": 10.779956,
+			"query": "Spindeltal 5, 86609 Donauwörth"
+		},
+		"vhs-ebersberger-land-grafing-bei-muenchen": {
+			"lat": 48.044506,
+			"lon": 11.966448,
+			"query": "Griesstr. 27, 85567 Grafing b. München"
+		},
+		"vhs-erlangen": {
+			"lat": 49.595651,
+			"lon": 11.006944,
+			"query": "Friedrichstr. 19/21, 91054 Erlangen"
+		},
+		"vhs-f-d-landkreis-regensburg-e-v": {
+			"lat": 48.981128,
+			"lon": 12.192745,
+			"query": "Pommernstr. 4, 93073 Neutraubling"
+		},
+		"vhs-freising-e-v": {
+			"lat": 48.403015,
+			"lon": 11.744462,
+			"query": "Kammergasse 12, 85354 Freising"
+		},
+		"vhs-fuerth-ggmbh": {
+			"lat": 49.474718,
+			"lon": 10.987298,
+			"query": "Hirschenstr. 27/29, 90762 Fürth"
+		},
+		"vhs-garmisch-partenkirchen-e-v": {
+			"lat": 47.498958,
+			"lon": 11.087088,
+			"query": "Burgstr. 21, 82467 Garmisch-Partenkirchen"
+		},
+		"vhs-germering-e-v": {
+			"lat": 48.130249,
+			"lon": 11.366708,
+			"query": "Therese-Giehse-Platz 6, 82110 Germering"
+		},
+		"vhs-geschaeftsstelle-neufarn-hallbergmoos": {
+			"lat": 48.317104,
+			"lon": 11.662832,
+			"query": "Bahnhofstraße 32, 85375 Neufahrn"
+		},
+		"vhs-groebenzell-e-v": {
+			"lat": 48.193792,
+			"lon": 11.371007,
+			"query": "Rathausstr. 1, 82194 Gröbenzell"
+		},
+		"vhs-gunzenhausen-e-v": {
+			"lat": 49.115851,
+			"lon": 10.755354,
+			"query": "Dr.-Martin-Luther-Platz 4, 91710 Gunzenhausen"
+		},
+		"vhs-herrsching": {
+			"lat": 47.997757,
+			"lon": 11.174892,
+			"query": "Kienbachstr. 3, 82211 Herrsching"
+		},
+		"vhs-herzogenaurach": {
+			"lat": 49.56811,
+			"lon": 10.881388,
+			"query": "Badgasse 4, 91074 Herzogenaurach"
+		},
+		"vhs-im-ldkr-neumarkt-opf": {
+			"lat": 49.276652,
+			"lon": 11.45767,
+			"query": "Gartenstr. 1, 92318 Neumarkt i.d.OPf."
+		},
+		"vhs-im-norden-des-landkreises-muenchen": {
+			"lat": 48.250783,
+			"lon": 11.649372,
+			"query": "Telschowstraße 5-7, 85748 Garching b. München"
+		},
+		"vhs-ingolstadt": {
+			"lat": 48.763962,
+			"lon": 11.427951,
+			"query": "Hallstr. 5, 85049 Ingolstadt"
+		},
+		"vhs-kaufbeuren-e-v": {
+			"lat": 47.880883,
+			"lon": 10.623901,
+			"query": "Spitaltor 5, 87600 Kaufbeuren"
+		},
+		"vhs-kempten": {
+			"lat": 47.725671,
+			"lon": 10.311269,
+			"query": "Bodmanstr. 2, 87435 Kempten (Allgäu)"
+		},
+		"vhs-landkreis-amberg-sulzbach": {
+			"lat": 49.504041,
+			"lon": 11.747076,
+			"query": "Obere Gartenstr. 3, 92237 Sulzbach-Rosenberg"
+		},
+		"vhs-landkreis-pfaffenhofen-a-d-ilm": {
+			"lat": 48.530366,
+			"lon": 11.506484,
+			"query": "Ingolstädter Str. 3, 85276 Pfaffenhofen"
+		},
+		"vhs-landshut-e-v": {
+			"lat": 48.533675,
+			"lon": 12.149543,
+			"query": "Ländgasse 41, 84028 Landshut"
+		},
+		"vhs-lindau": {
+			"lat": 47.546076,
+			"lon": 9.676555,
+			"query": "Uferweg 7, 88131 Lindau"
+		},
+		"vhs-lohr-gemuenden": {
+			"lat": 49.995378,
+			"lon": 9.569961,
+			"query": "Ludwigstraße 16, 97816 Lohr a. Main"
+		},
+		"vhs-mainburg-e-v": {
+			"lat": 48.641305,
+			"lon": 11.76714,
+			"query": "Mitterweg 8, 84048 Mainburg"
+		},
+		"vhs-memmingen": {
+			"lat": 47.988367,
+			"lon": 10.179782,
+			"query": "Ulmer Str. 19, 87700 Memmingen"
+		},
+		"vhs-moosburg-e-v": {
+			"lat": 48.468349,
+			"lon": 11.935767,
+			"query": "Stadtplatz 2, 85368 Moosburg"
+		},
+		"vhs-muehldorf-e-v": {
+			"lat": 48.25594,
+			"lon": 12.526903,
+			"query": "Schlörstr. 1, 84453 Mühldorf a. Inn"
+		},
+		"vhs-neuburg-donau-e-v": {
+			"lat": 48.733514,
+			"lon": 11.178076,
+			"query": "Franziskanerstr. 200, 86633 Neuburg"
+		},
+		"vhs-oberland-e-v-holzkirchen": {
+			"lat": 47.791836,
+			"lon": 11.832425,
+			"query": "Wallenburger Str. 16a, 83714 Miesbach"
+		},
+		"vhs-oberschleissheim-e-v": {
+			"lat": 48.254229,
+			"lon": 11.552398,
+			"query": "Theodor-Heuss-Str. 27, 85764 Oberschleißheim"
+		},
+		"vhs-puchheim-e-v": {
+			"lat": 48.170747,
+			"lon": 11.351963,
+			"query": "Am Grünen Markt 7, 82178 Puchheim"
+		},
+		"vhs-rhoen-grabfeld-gemeinnuetzige-gmbh": {
+			"lat": 50.428649,
+			"lon": 10.302155,
+			"query": "Marktplatz 2, 97638 Mellrichstadt"
+		},
+		"vhs-rieser-noerdlingen-e-v": {
+			"lat": 48.852023,
+			"lon": 10.488234,
+			"query": "Marktplatz 20, 86720 Nördlingen"
+		},
+		"vhs-rosenheim": {
+			"lat": 47.849633,
+			"lon": 12.135526,
+			"query": "Innsbrucker Str. 3, 83022 Rosenheim"
+		},
+		"vhs-rottal-inn-west-geschaeftsstelle-eggenfelden": {
+			"lat": 48.401511,
+			"lon": 12.761369,
+			"query": "Rathausplatz 1, 84307 Eggenfelden"
+		},
+		"vhs-schrobenhausen-e-v": {
+			"lat": 48.562094,
+			"lon": 11.264431,
+			"query": "Lenbachstraße 22, 86529 Schrobenhausen"
+		},
+		"vhs-schwabach": {
+			"lat": 49.328578,
+			"lon": 11.020175,
+			"query": "Königsplatz 29a, 91126 Schwabach"
+		},
+		"vhs-schwarzachtal": {
+			"lat": 49.387766,
+			"lon": 11.302971,
+			"query": "Penzenhofener Str. 1, 90610 Winkelhaid"
+		},
+		"vhs-stadt-fuerstenfeldbruck-e-v": {
+			"lat": 48.178804,
+			"lon": 11.257754,
+			"query": "Niederbronnerweg 5, 82256 Fürstenfeldbruck"
+		},
+		"vhs-staedtedreieck-e-v": {
+			"lat": 49.199297,
+			"lon": 12.101967,
+			"query": "Bahnhofstr. 44, 93142 Maxhütte-Haidhof"
+		},
+		"vhs-starnberger-see-e-v": {
+			"lat": 47.996051,
+			"lon": 11.340787,
+			"query": "Bahnhofplatz 14, 82319 Starnberg"
+		},
+		"vhs-straubing-bogen": {
+			"lat": 48.917469,
+			"lon": 12.666994,
+			"query": "Klosterhof 2, 94327 Bogen"
+		},
+		"vhs-straubing-ggmbh": {
+			"lat": 48.870387,
+			"lon": 12.582652,
+			"query": "Steinweg 56, 94315 Straubing"
+		},
+		"vhs-taufkirchen": {
+			"lat": 48.048001,
+			"lon": 11.599125,
+			"query": "Ahornring 121, 82024 Taufkirchen"
+		},
+		"vhs-traunreut-e-v": {
+			"lat": 47.961437,
+			"lon": 12.58831,
+			"query": "Marienstr. 20, 83301 Traunreut"
+		},
+		"vhs-traunstein-e-v": {
+			"lat": 47.869185,
+			"lon": 12.647726,
+			"query": "Stadtplatz 38a, 83278 Traunstein"
+		},
+		"vhs-trostberg-e-v": {
+			"lat": 48.024986,
+			"lon": 12.552299,
+			"query": "Heinrich-Braun-Str. 6, 83308 Trostberg"
+		},
+		"vhs-unterhaching-e-v": {
+			"lat": 48.062004,
+			"lon": 11.613817,
+			"query": "Jahnstr. 1, 82008 Unterhaching"
+		},
+		"vhs-verband-landau-e-v": {
+			"lat": 48.669273,
+			"lon": 12.69185,
+			"query": "Fleischgasse 60, 94405 Landau"
+		},
+		"vhs-vilsbiburg": {
+			"lat": 48.448796,
+			"lon": 12.354982,
+			"query": "Stadtplatz 30, 84137 Vilsbiburg"
+		},
+		"vhs-waldkraiburg-e-v": {
+			"lat": 48.206029,
+			"lon": 12.399252,
+			"query": "Am Kalander 1, 84478 Waldkraiburg"
+		},
+		"vhs-wasserburg-inn-e-v": {
+			"lat": 48.054257,
+			"lon": 12.230573,
+			"query": "Salzburger Str. 19, 83512 Wasserburg a. Inn"
+		},
+		"vhs-weiden-neustadt-ggmbh-weiden-i-d-opf": {
+			"lat": 49.677761,
+			"lon": 12.164328,
+			"query": "Luitpoldstr. 24, 92637 Weiden i.d.OPf."
+		},
+		"vhs-weiterbildungsakademie-kehlheim-e-v": {
+			"lat": 48.9183,
+			"lon": 11.870051,
+			"query": "Lederergasse 2, 93309 Kelheim"
+		},
+		"vhs-wuerzburg": {
+			"lat": 49.7973,
+			"lon": 9.932578,
+			"query": "Juliuspromenade 68, 97070 Würzburg"
+		},
+		"vhs-zv-unteres-pegnitztal": {
+			"lat": 49.51094,
+			"lon": 11.281901,
+			"query": "Spitalstraße 5, 91207 Lauf"
+		},
+		"volksbildungswerk-pfarrkirchen": {
+			"lat": 48.432208,
+			"lon": 12.93923,
+			"query": "Stadtplatz 2, 84347 Pfarrkirchen"
+		},
+		"volkshochschule-arnstorf": {
+			"lat": 48.560844,
+			"lon": 12.817083,
+			"query": "Marktplatz 8, 94424 Arnstorf"
+		},
+		"volkshochschule-der-stadt-ansbach": {
+			"lat": 49.30179,
+			"lon": 10.572989,
+			"query": "Kannenstraße 16, 91522 Ansbach"
+		},
+		"volkshochschule-der-stadt-regensburg": {
+			"lat": 49.020051,
+			"lon": 12.093269,
+			"query": "Haidplatz 8, 93047 Regensburg"
+		},
+		"volkshochschule-der-stadt-selb": {
+			"lat": 50.171926,
+			"lon": 12.130056,
+			"query": "Lessingstr. 8, 95100 Selb"
+		},
+		"volkshochschule-des-landkreises-tirschenreuth": {
+			"lat": 49.880925,
+			"lon": 12.342591,
+			"query": "Mähringer Str. 9, 95643 Tirschenreuth"
+		},
+		"volkshochschule-guenzburg": {
+			"lat": 48.45406,
+			"lon": 10.277895,
+			"query": "Bgm.-Landmann-Platz 2, 89312 Günzburg"
+		},
+		"volkshochschule-hofer-land-e-v": {
+			"lat": 50.322797,
+			"lon": 11.91916,
+			"query": "Ludwigstraße 7, 95028 Hof"
+		},
+		"volkshochschule-im-landkreis-cham-e-v": {
+			"lat": 49.226342,
+			"lon": 12.657157,
+			"query": "Pfarrer-Seidl-Str. 1, 93413 Cham"
+		},
+		"volkshochschule-im-landkreis-unterallgaeu-e-v": {
+			"lat": 48.045938,
+			"lon": 10.486064,
+			"query": "Maximilianstr. 60, 87719 Mindelheim"
+		},
+		"volkshochschule-karlstadt": {
+			"lat": 49.962251,
+			"lon": 9.766674,
+			"query": "Langgasse 17, 97753 Karlstadt"
+		},
+		"volkshochschule-rottenburg-an-der-laaber-e-v": {
+			"lat": 48.703834,
+			"lon": 12.04102,
+			"query": "Georg-Pöschl-Straße 16, 84056 Rottenburg a.d.Laaber"
+		},
+		"volkshochschule-straubing-bogen-ggmbh": {
+			"lat": 48.917469,
+			"lon": 12.666994,
+			"query": "Klosterhof 2, 94327 Bogen"
+		},
+		"volkshochschule-suedost-im-lkr-muenchen": {
+			"lat": 48.072052,
+			"lon": 11.652869,
+			"query": "Haidgraben 1c, 85521 Ottobrunn"
+		},
+		"wbb-gmbh": {
+			"lat": 48.395888,
+			"lon": 11.754363,
+			"query": "Erdingerstraße 26, 85356 Freising"
+		},
+		"zweckverband-vhs-im-landkreis-erding": {
+			"lat": 48.302145,
+			"lon": 11.911826,
+			"query": "Lethnerstr. 13, 85435 Erding"
+		}
+	},
+	"queries": {
+		"Aegidiplatz 3, 83435 Bad Reichenhall": {
+			"fetched_at": "2026-10-27T18:54:39.191Z",
+			"result": {
+				"display_name": "VHS, 3, Aegidiplatz, Kirchberg, Nonn, Bad Reichenhall, Landkreis Berchtesgadener Land, Bayern, 83435, Deutschland",
+				"lat": 47.7233835,
+				"lon": 12.8770698,
+				"place_rank": 30,
+				"postcode": "83435",
+				"state_code": "DE-BY"
+			}
+		},
+		"Ahornring 121, 82024 Taufkirchen": {
+			"fetched_at": "2026-10-27T18:56:04.903Z",
+			"result": {
+				"display_name": "Volkshochschule Taufkirchen e.V., 121, Ahornring, Am Wald, Taufkirchen, Landkreis München, Bayern, 82024, Deutschland",
+				"lat": 48.048001,
+				"lon": 11.5991248,
+				"place_rank": 30,
+				"postcode": "82024",
+				"state_code": "DE-BY"
+			}
+		},
+		"Albert-Schweizer-Str.4a, 86916 Kaufering": {
+			"fetched_at": "2026-10-27T18:55:27.484Z",
+			"result": null
+		},
+		"Am Grünen Markt 7, 82178 Puchheim": {
+			"fetched_at": "2026-10-27T18:55:47.961Z",
+			"result": {
+				"display_name": "Bürgertreff - Volkshochschule, 7, Am Grünen Markt, Puchheim-Bahnhof, Puchheim, Landkreis Fürstenfeldbruck, Bayern, 82178, Deutschland",
+				"lat": 48.1707466,
+				"lon": 11.3519632,
+				"place_rank": 30,
+				"postcode": "82178",
+				"state_code": "DE-BY"
+			}
+		},
+		"Am Kalander 1, 84478 Waldkraiburg": {
+			"fetched_at": "2026-10-27T18:56:14.064Z",
+			"result": {
+				"display_name": "1, Am Kalander, Sankt Erasmus, Waldkraiburg, Landkreis Mühldorf am Inn, Bayern, 84478, Deutschland",
+				"lat": 48.2060293,
+				"lon": 12.3992518,
+				"place_rank": 30,
+				"postcode": "84478",
+				"state_code": "DE-BY"
+			}
+		},
+		"Amanstr. 11, 94469 Deggendorf": {
+			"fetched_at": "2026-10-27T18:54:51.815Z",
+			"result": {
+				"display_name": "VHS Deggendorf, 11, Amanstraße, Altstadtviertel, Fischerdorf, Gailberg, Deggendorf, Landkreis Deggendorf, Bayern, 94469, Deutschland",
+				"lat": 48.8371101,
+				"lon": 12.962494,
+				"place_rank": 30,
+				"postcode": "94469",
+				"state_code": "DE-BY"
+			}
+		},
+		"Amtsgerichtstr. 6 - 8, 94209 Regen": {
+			"fetched_at": "2026-10-27T18:54:34.331Z",
+			"result": {
+				"display_name": "VHS Arberland, 6-8, Amtsgerichtstraße, Spitalhof, Regen, Landkreis Regen, Bayern, 94209, Deutschland",
+				"lat": 48.9722509,
+				"lon": 13.1276532,
+				"place_rank": 30,
+				"postcode": "94209",
+				"state_code": "DE-BY"
+			}
+		},
+		"Badgasse 4, 91074 Herzogenaurach": {
+			"fetched_at": "2026-10-27T18:55:21.353Z",
+			"result": {
+				"display_name": "4, Badgasse, Herzogenaurach, Landkreis Erlangen-Höchstadt, Bayern, 91074, Deutschland",
+				"lat": 49.5681099,
+				"lon": 10.881388,
+				"place_rank": 30,
+				"postcode": "91074",
+				"state_code": "DE-BY"
+			}
+		},
+		"Bahnhofplatz 14, 82319 Starnberg": {
+			"fetched_at": "2026-10-27T18:56:00.668Z",
+			"result": {
+				"display_name": "Alte Oberschule, 14, Bahnhofplatz, Neusöcking, Percha, Starnberg, Landkreis Starnberg, Bayern, 82319, Deutschland",
+				"lat": 47.9960505,
+				"lon": 11.3407872,
+				"place_rank": 30,
+				"postcode": "82319",
+				"state_code": "DE-BY"
+			}
+		},
+		"Bahnhofsplatz 6, 90443 Nürnberg": {
+			"fetched_at": "2026-10-27T18:54:07.890Z",
+			"result": {
+				"display_name": "6, Bahnhofsplatz, Tafelhof, Altstadt und engere Innenstadt, Nürnberg, Bayern, 90443, Deutschland",
+				"lat": 49.4459264,
+				"lon": 11.0802585,
+				"place_rank": 30,
+				"postcode": "90443",
+				"state_code": "DE-BY"
+			}
+		},
+		"Bahnhofstr. 44, 93142 Maxhütte-Haidhof": {
+			"fetched_at": "2026-10-27T18:55:59.398Z",
+			"result": {
+				"display_name": "VR Bank, 44, Bahnhofstraße, Haidhof, Rappenbügl, Maxhütte-Haidhof, Landkreis Schwandorf, Bayern, 93142, Deutschland",
+				"lat": 49.1992966,
+				"lon": 12.1019666,
+				"place_rank": 30,
+				"postcode": "93142",
+				"state_code": "DE-BY"
+			}
+		},
+		"Bahnhofstr. 60, 86807 Buchloe": {
+			"fetched_at": "2026-10-27T18:54:46.494Z",
+			"result": {
+				"display_name": "Volkshochschule Buchloe, 60, Bahnhofstraße, Lindenberg, Buchloe, Landkreis Ostallgäu, Bayern, 86807, Deutschland",
+				"lat": 48.034082,
+				"lon": 10.7170887,
+				"place_rank": 30,
+				"postcode": "86807",
+				"state_code": "DE-BY"
+			}
+		},
+		"Bahnhofstraße 32, 85375 Neufahrn": {
+			"fetched_at": "2026-10-27T18:55:16.096Z",
+			"result": {
+				"display_name": "Gemeinde Neufahrn b. Freising, 32, Bahnhofstraße, Neufahrn bei Freising, Landkreis Freising, Bayern, 85375, Deutschland",
+				"lat": 48.3171041,
+				"lon": 11.6628321,
+				"place_rank": 30,
+				"postcode": "85375",
+				"state_code": "DE-BY"
+			}
+		},
+		"Bgm.-Landmann-Platz 2, 89312 Günzburg": {
+			"fetched_at": "2026-10-27T18:56:30.914Z",
+			"result": {
+				"display_name": "Bürgermeister-Landmann-Platz, Denzingen, Günzburg, Landkreis Günzburg, Bayern, 89312, Deutschland",
+				"lat": 48.4540599,
+				"lon": 10.2778954,
+				"place_rank": 26,
+				"postcode": "89312",
+				"state_code": "DE-BY"
+			}
+		},
+		"Bodmanstr. 2, 87435 Kempten (Allgäu)": {
+			"fetched_at": "2026-10-27T18:55:28.678Z",
+			"result": {
+				"display_name": "Volkshochschule Kempten, 2, Bodmanstraße, Haubenschloß, Kempten (Allgäu), Bayern, 87435, Deutschland",
+				"lat": 47.7256706,
+				"lon": 10.3112687,
+				"place_rank": 30,
+				"postcode": "87435",
+				"state_code": "DE-BY"
+			}
+		},
+		"Burgstr. 21, 82467 Garmisch-Partenkirchen": {
+			"fetched_at": "2026-10-27T18:55:13.657Z",
+			"result": {
+				"display_name": "21, Burgstraße, Sonnenbichl, Garmisch-Partenkirchen, Landkreis Garmisch-Partenkirchen, Bayern, 82467, Deutschland",
+				"lat": 47.4989577,
+				"lon": 11.0870877,
+				"place_rank": 30,
+				"postcode": "82467",
+				"state_code": "DE-BY"
+			}
+		},
+		"Crailsheimstr. 1, 91522 Ansbach": {
+			"fetched_at": "2026-10-27T18:54:56.757Z",
+			"result": {
+				"display_name": "Landratsamt Ansbach, 1, Crailsheimstraße, Meinhardswinden, Ansbach, Bayern, 91522, Deutschland",
+				"lat": 49.2962936,
+				"lon": 10.5616979,
+				"place_rank": 30,
+				"postcode": "91522",
+				"state_code": "DE-BY"
+			}
+		},
+		"Dr. Friedrich-Drechsler-Str. 14, 86609 Donauwörth": {
+			"fetched_at": "2026-10-27T18:54:11.973Z",
+			"result": {
+				"display_name": "Dr.-Friedrich-Drechsler-Straße, Riedlingen, Donauwörth, Asbach-Bäumenheim, Landkreis Donau-Ries, Bayern, 86609, Deutschland",
+				"lat": 48.7077511,
+				"lon": 10.7605458,
+				"place_rank": 26,
+				"postcode": "86609",
+				"state_code": "DE-BY"
+			}
+		},
+		"Dr.-Engert-Str. 4, 85221 Dachau": {
+			"fetched_at": "2026-10-27T18:54:50.628Z",
+			"result": {
+				"display_name": "Volkshochschule Dachau Haus der Erwachsenenbildung, 4, Dr.-Engert-Straße, Obermoosschwaige, Webling, Dachau, Landkreis Dachau, Bayern, 85221, Deutschland",
+				"lat": 48.2589402,
+				"lon": 11.438107,
+				"place_rank": 30,
+				"postcode": "85221",
+				"state_code": "DE-BY"
+			}
+		},
+		"Dr.-Martin-Luther-Platz 4, 91710 Gunzenhausen": {
+			"fetched_at": "2026-10-27T18:55:18.850Z",
+			"result": {
+				"display_name": "4, Dr.-Martin-Luther-Platz, Scheupeleinsmühle, Gunzenhausen, Landkreis Weißenburg-Gunzenhausen, Bayern, 91710, Deutschland",
+				"lat": 49.1158514,
+				"lon": 10.7553535,
+				"place_rank": 30,
+				"postcode": "91710",
+				"state_code": "DE-BY"
+			}
+		},
+		"Erdingerstraße 26, 85356 Freising": {
+			"fetched_at": "2026-10-27T18:56:42.166Z",
+			"result": {
+				"display_name": "26, Erdinger Straße, Lerchenfeld West, Lerchenfeld, Attaching, Freising, Landkreis Freising, Bayern, 85356, Deutschland",
+				"lat": 48.395888,
+				"lon": 11.7543628,
+				"place_rank": 30,
+				"postcode": "85356",
+				"state_code": "DE-BY"
+			}
+		},
+		"Fleischgasse 60, 94405 Landau": {
+			"fetched_at": "2026-10-27T18:56:11.560Z",
+			"result": {
+				"display_name": "Fleischgasse, Ahausen, Niederhöcking, Landau an der Isar, Landkreis Dingolfing-Landau, Bayern, 94405, Deutschland",
+				"lat": 48.6692725,
+				"lon": 12.6918498,
+				"place_rank": 26,
+				"postcode": "94405",
+				"state_code": "DE-BY"
+			}
+		},
+		"Franziskanerstr. 200, 86633 Neuburg": {
+			"fetched_at": "2026-10-27T18:55:44.174Z",
+			"result": {
+				"display_name": "Franziskanerstraße, Feldkirchen, Neuburg an der Donau, Landkreis Neuburg-Schrobenhausen, Bayern, 86633, Deutschland",
+				"lat": 48.7335144,
+				"lon": 11.1780764,
+				"place_rank": 27,
+				"postcode": "86633",
+				"state_code": "DE-BY"
+			}
+		},
+		"Frauenberg 17, 94481 Grafenau": {
+			"fetched_at": "2026-10-27T18:55:00.937Z",
+			"result": {
+				"display_name": "Volkshochschule, 17, Frauenberg, Grafenau, Landkreis Freyung-Grafenau, Bayern, 94481, Deutschland",
+				"lat": 48.8560789,
+				"lon": 13.384588,
+				"place_rank": 30,
+				"postcode": "94481",
+				"state_code": "DE-BY"
+			}
+		},
+		"Friedrichstr. 19/21, 91054 Erlangen": {
+			"fetched_at": "2026-10-27T18:55:07.028Z",
+			"result": {
+				"display_name": "Friedrichstraße, Innenstadt, Erlangen, Bayern, 91054, Deutschland",
+				"lat": 49.5956513,
+				"lon": 11.0069441,
+				"place_rank": 26,
+				"postcode": "91054",
+				"state_code": "DE-BY"
+			}
+		},
+		"Gartenstr. 1, 92318 Neumarkt i.d.OPf.": {
+			"fetched_at": "2026-10-27T18:55:22.655Z",
+			"result": {
+				"display_name": "1, Gartenstraße, Holzheim, Neumarkt in der Oberpfalz, Landkreis Neumarkt in der Oberpfalz, Bayern, 92318, Deutschland",
+				"lat": 49.2766517,
+				"lon": 11.4576698,
+				"place_rank": 30,
+				"postcode": "92318",
+				"state_code": "DE-BY"
+			}
+		},
+		"Georg-Pöschl-Straße 16, 84056 Rottenburg a.d.Laaber": {
+			"fetched_at": "2026-10-27T18:56:39.642Z",
+			"result": {
+				"display_name": "Haus der Vereine, 16, Georg-Pöschl-Straße, Oberotterbach, Rottenburg a. d. Laaber, Landkreis Landshut, Bayern, 84056, Deutschland",
+				"lat": 48.703834,
+				"lon": 12.0410199,
+				"place_rank": 30,
+				"postcode": "84056",
+				"state_code": "DE-BY"
+			}
+		},
+		"Gewerbemuseumsplatz 1, 90403 Nürnberg": {
+			"fetched_at": "2026-10-27T18:54:13.179Z",
+			"result": {
+				"display_name": "1, Gewerbemuseumsplatz, Altstadt, St. Lorenz, Altstadt und engere Innenstadt, Nürnberg, Bayern, 90403, Deutschland",
+				"lat": 49.451914,
+				"lon": 11.0838741,
+				"place_rank": 30,
+				"postcode": "90403",
+				"state_code": "DE-BY"
+			}
+		},
+		"Goethestr. 53, 81379 München": {
+			"fetched_at": "2026-10-27T18:54:10.771Z",
+			"result": {
+				"display_name": "Internationales Beratungszentrum, 53, Goethestraße, Am Alten Südlichen Friedhof, Klinikviertel, Ludwigsvorstadt, Ludwigsvorstadt-Isarvorstadt, München, Bayern, 80336, Deutschland",
+				"lat": 48.1330636,
+				"lon": 11.5587817,
+				"place_rank": 30,
+				"postcode": "80336",
+				"state_code": "DE-BY"
+			}
+		},
+		"Goldbacher Str. 6, 63739 Aschaffenburg": {
+			"fetched_at": "2026-10-27T18:54:17.598Z",
+			"result": {
+				"display_name": "Euro Akademie, 6, Goldbacher Straße, Stadtmitte, Aschaffenburg, Bayern, 63739, Deutschland",
+				"lat": 49.978663,
+				"lon": 9.1516191,
+				"place_rank": 30,
+				"postcode": "63739",
+				"state_code": "DE-BY"
+			}
+		},
+		"Griesstr. 27, 85567 Grafing b. München": {
+			"fetched_at": "2026-10-27T18:55:05.766Z",
+			"result": {
+				"display_name": "27, Griesstraße, Dobelklause, Öxing, Höllmühle, Unterelkofen, Grafing bei München, Baiern (VGem Glonn), Landkreis Ebersberg, Bayern, 85567, Deutschland",
+				"lat": 48.0445063,
+				"lon": 11.9664481,
+				"place_rank": 30,
+				"postcode": "85567",
+				"state_code": "DE-BY"
+			}
+		},
+		"Haidgraben 1c, 85521 Ottobrunn": {
+			"fetched_at": "2026-10-27T18:56:40.864Z",
+			"result": {
+				"display_name": "1c, Haidgraben, Gewerbegebiet Ottobrunn Nord, Ottobrunn, Landkreis München, Bayern, 85521, Deutschland",
+				"lat": 48.0720516,
+				"lon": 11.6528688,
+				"place_rank": 30,
+				"postcode": "85521",
+				"state_code": "DE-BY"
+			}
+		},
+		"Haidplatz 8, 93047 Regensburg": {
+			"fetched_at": "2026-10-27T18:56:25.309Z",
+			"result": {
+				"display_name": "Stadtbücherei, 8, Haidplatz, Altstadt, Regensburg, Bayern, 93047, Deutschland",
+				"lat": 49.0200512,
+				"lon": 12.0932688,
+				"place_rank": 30,
+				"postcode": "93047",
+				"state_code": "DE-BY"
+			}
+		},
+		"Hallstr. 5, 85049 Ingolstadt": {
+			"fetched_at": "2026-10-27T18:55:25.009Z",
+			"result": {
+				"display_name": "5, Hallstraße, Altstadt Südost, Mitte, Ingolstadt, Bayern, 85049, Deutschland",
+				"lat": 48.7639619,
+				"lon": 11.4279505,
+				"place_rank": 30,
+				"postcode": "85049",
+				"state_code": "DE-BY"
+			}
+		},
+		"Hamburger Straße 32, 80809 München": {
+			"fetched_at": "2026-10-27T18:54:09.094Z",
+			"result": {
+				"display_name": "Anderwerk GmbH, 32, Hamburger Straße, Am Riesenfeld, Milbertshofen-Am Hart, München, Bayern, 80809, Deutschland",
+				"lat": 48.1885582,
+				"lon": 11.5650153,
+				"place_rank": 30,
+				"postcode": "80809",
+				"state_code": "DE-BY"
+			}
+		},
+		"Heinrich-Braun-Str. 6, 83308 Trostberg": {
+			"fetched_at": "2026-10-27T18:56:08.611Z",
+			"result": {
+				"display_name": "Heinrich-Braun-Grundschule, 6, Heinrich-Braun-Straße, Gasteig, Trostberg, Landkreis Traunstein, Bayern, 83308, Deutschland",
+				"lat": 48.0249861,
+				"lon": 12.5522985,
+				"place_rank": 30,
+				"postcode": "83308",
+				"state_code": "DE-BY"
+			}
+		},
+		"Herzogenstr. 8, 97070 Würzburg": {
+			"fetched_at": "2026-10-27T18:54:19.231Z",
+			"result": {
+				"display_name": "INklusiv! Gemeinsam arbeiten, 8, Herzogenstraße, Innenstadt, Würzburg Altstadt, Würzburg, Bayern, 97070, Deutschland",
+				"lat": 49.7954821,
+				"lon": 9.9326431,
+				"place_rank": 30,
+				"postcode": "97070",
+				"state_code": "DE-BY"
+			}
+		},
+		"Hindelanger Str. 37, 87527 Sonthofen": {
+			"fetched_at": "2026-10-27T18:54:30.801Z",
+			"result": {
+				"display_name": "37, Hindelanger Straße, Illersiedlung, Sonthofen, Landkreis Oberallgäu, Bayern, 87527, Deutschland",
+				"lat": 47.5125215,
+				"lon": 10.2910262,
+				"place_rank": 30,
+				"postcode": "87527",
+				"state_code": "DE-BY"
+			}
+		},
+		"Hirschenstr. 27/29, 90762 Fürth": {
+			"fetched_at": "2026-10-27T18:55:12.417Z",
+			"result": {
+				"display_name": "Hirschenstraße, Altstadt, Innenstadt, Süd, Fürth, Bayern, 90762, Deutschland",
+				"lat": 49.4747177,
+				"lon": 10.9872984,
+				"place_rank": 26,
+				"postcode": "90762",
+				"state_code": "DE-BY"
+			}
+		},
+		"Hornschuchallee 20, 91301 Forchheim": {
+			"fetched_at": "2026-10-27T18:54:58.389Z",
+			"result": {
+				"display_name": "20, Hornschuchallee, Forchheim, Landkreis Forchheim, Bayern, 91301, Deutschland",
+				"lat": 49.7200028,
+				"lon": 11.0599368,
+				"place_rank": 30,
+				"postcode": "91301",
+				"state_code": "DE-BY"
+			}
+		},
+		"Hubert-von-Herkomer-Str. 110, 86899 Landsberg am Lech": {
+			"fetched_at": "2026-10-27T18:54:54.176Z",
+			"result": {
+				"display_name": "110, Hubert-von-Herkomer-Straße, Klösterl, Landsberg am Lech, Landkreis Landsberg am Lech, Bayern, 86899, Deutschland",
+				"lat": 48.048261,
+				"lon": 10.8762751,
+				"place_rank": 30,
+				"postcode": "86899",
+				"state_code": "DE-BY"
+			}
+		},
+		"Ingolstädter Str. 3, 85276 Pfaffenhofen": {
+			"fetched_at": "2026-10-27T18:55:33.595Z",
+			"result": {
+				"display_name": "3, Ingolstädter Straße, Beamtenviertel, Weihern, Pfaffenhofen an der Ilm, Landkreis Pfaffenhofen an der Ilm, Bayern, 85276, Deutschland",
+				"lat": 48.5303655,
+				"lon": 11.5064835,
+				"place_rank": 30,
+				"postcode": "85276",
+				"state_code": "DE-BY"
+			}
+		},
+		"Innsbrucker Str. 3, 83022 Rosenheim": {
+			"fetched_at": "2026-10-27T18:55:52.175Z",
+			"result": {
+				"display_name": "Hans-Schuster-Haus (VHS), 3, Innsbrucker Straße, Kaltwies, Rosenheim, Bayern, 83022, Deutschland",
+				"lat": 47.849633,
+				"lon": 12.1355263,
+				"place_rank": 30,
+				"postcode": "83022",
+				"state_code": "DE-BY"
+			}
+		},
+		"Jahnstr. 1, 82008 Unterhaching": {
+			"fetched_at": "2026-10-27T18:56:09.859Z",
+			"result": {
+				"display_name": "Kubiz, 1, Jahnstraße, Am Klosterfeld, Unterhaching, Landkreis München, Bayern, 82008, Deutschland",
+				"lat": 48.0620039,
+				"lon": 11.6138166,
+				"place_rank": 30,
+				"postcode": "82008",
+				"state_code": "DE-BY"
+			}
+		},
+		"Jean-Paul-Str. 9, 95632 Wunsiedel": {
+			"fetched_at": "2026-10-27T18:54:59.696Z",
+			"result": {
+				"display_name": "Kreisjugendring Wunsiedel, 9, Jean-Paul-Straße, Fleißenhammer, Breitenbrunn, Wunsiedel, Landkreis Wunsiedel im Fichtelgebirge, Bayern, 95632, Deutschland",
+				"lat": 50.0378808,
+				"lon": 12.0061308,
+				"place_rank": 30,
+				"postcode": "95632",
+				"state_code": "DE-BY"
+			}
+		},
+		"Johannesstraße 11, 85049 Ingolstadt": {
+			"fetched_at": "2026-10-27T18:54:25.389Z",
+			"result": {
+				"display_name": "11, Johannesstraße, Altstadt Nordwest, Mitte, Ingolstadt, Bayern, 85049, Deutschland",
+				"lat": 48.76588,
+				"lon": 11.4214998,
+				"place_rank": 30,
+				"postcode": "85049",
+				"state_code": "DE-BY"
+			}
+		},
+		"Juliuspromenade 68, 97070 Würzburg": {
+			"fetched_at": "2026-10-27T18:56:18.906Z",
+			"result": {
+				"display_name": "68, Juliuspromenade, Innenstadt, Würzburg Altstadt, Würzburg, Bayern, 97070, Deutschland",
+				"lat": 49.7973001,
+				"lon": 9.9325775,
+				"place_rank": 30,
+				"postcode": "97070",
+				"state_code": "DE-BY"
+			}
+		},
+		"Kaiser-Ludwig-Ring 9, 92224 Amberg": {
+			"fetched_at": "2026-10-27T18:54:24.205Z",
+			"result": {
+				"display_name": "Action, 9, Kaiser-Ludwig-Ring, Amberg, Bayern, 92224, Deutschland",
+				"lat": 49.4460435,
+				"lon": 11.8641971,
+				"place_rank": 30,
+				"postcode": "92224",
+				"state_code": "DE-BY"
+			}
+		},
+		"Kammergasse 12, 85354 Freising": {
+			"fetched_at": "2026-10-27T18:55:11.189Z",
+			"result": {
+				"display_name": "VHS, 12, Kammergasse, Eichenfeldsiedlung, Freising Nord, Altenhausen, Freising, Landkreis Freising, Bayern, 85354, Deutschland",
+				"lat": 48.4030145,
+				"lon": 11.7444624,
+				"place_rank": 30,
+				"postcode": "85354",
+				"state_code": "DE-BY"
+			}
+		},
+		"Kannenstraße 16, 91522 Ansbach": {
+			"fetched_at": "2026-10-27T18:56:23.996Z",
+			"result": {
+				"display_name": "Klimaladen Ansbach, 16, Kannenstraße, Kammerforst, Ansbach, Bayern, 91522, Deutschland",
+				"lat": 49.3017902,
+				"lon": 10.5729894,
+				"place_rank": 30,
+				"postcode": "91522",
+				"state_code": "DE-BY"
+			}
+		},
+		"Kienbachstr. 3, 82211 Herrsching": {
+			"fetched_at": "2026-10-27T18:55:20.176Z",
+			"result": {
+				"display_name": "3, Kienbachstraße, Lochschwab, Mühlfeld, Herrsching am Ammersee, Landkreis Starnberg, Bayern, 82211, Deutschland",
+				"lat": 47.9977567,
+				"lon": 11.1748915,
+				"place_rank": 30,
+				"postcode": "82211",
+				"state_code": "DE-BY"
+			}
+		},
+		"Klosterhof 2, 94327 Bogen": {
+			"fetched_at": "2026-10-27T18:56:02.012Z",
+			"result": {
+				"display_name": "2, Klosterhof, Brandlberg, Oberalteich, Bogen, Landkreis Straubing-Bogen, Bayern, 94327, Deutschland",
+				"lat": 48.9174692,
+				"lon": 12.6669942,
+				"place_rank": 30,
+				"postcode": "94327",
+				"state_code": "DE-BY"
+			}
+		},
+		"Kulmbacher Str. 1, 96317 Kronach": {
+			"fetched_at": "2026-10-27T18:55:30.010Z",
+			"result": {
+				"display_name": "1, Kulmbacher Straße, Schleyreuth, Weißenbrunn, Landkreis Kronach, Bayern, 96369, Deutschland",
+				"lat": 50.1972811,
+				"lon": 11.3513059,
+				"place_rank": 30,
+				"postcode": "96369",
+				"state_code": "DE-BY"
+			}
+		},
+		"Königsplatz 29a, 91126 Schwabach": {
+			"fetched_at": "2026-10-27T18:55:55.802Z",
+			"result": {
+				"display_name": "29a, Königsplatz, Nasbach, Schwabach, Bayern, 91126, Deutschland",
+				"lat": 49.3285781,
+				"lon": 11.0201746,
+				"place_rank": 30,
+				"postcode": "91126",
+				"state_code": "DE-BY"
+			}
+		},
+		"Königstraße 37/38, 89407 Dillingen a. d. Donau": {
+			"fetched_at": "2026-10-27T18:55:02.170Z",
+			"result": {
+				"display_name": "Königstraße, Donaualtheim, Dillingen an der Donau, Landkreis Dillingen an der Donau, Bayern, 89407, Deutschland",
+				"lat": 48.5771683,
+				"lon": 10.4941485,
+				"place_rank": 26,
+				"postcode": "89407",
+				"state_code": "DE-BY"
+			}
+		},
+		"Langgasse 17, 97753 Karlstadt": {
+			"fetched_at": "2026-10-27T18:56:36.342Z",
+			"result": {
+				"display_name": "VHS Karlstadt, 17, Langgasse, Karlstadt, Landkreis Main-Spessart, Bayern, 97753, Deutschland",
+				"lat": 49.9622507,
+				"lon": 9.7666736,
+				"place_rank": 30,
+				"postcode": "97753",
+				"state_code": "DE-BY"
+			}
+		},
+		"Lederergasse 2, 93309 Kelheim": {
+			"fetched_at": "2026-10-27T18:56:17.669Z",
+			"result": {
+				"display_name": "2, Lederergasse, Hohenpfahl, Kelheim, Landkreis Kelheim, Bayern, 93309, Deutschland",
+				"lat": 48.9182997,
+				"lon": 11.8700514,
+				"place_rank": 30,
+				"postcode": "93309",
+				"state_code": "DE-BY"
+			}
+		},
+		"Lenbachstraße 22, 86529 Schrobenhausen": {
+			"fetched_at": "2026-10-27T18:55:54.546Z",
+			"result": {
+				"display_name": "22, Lenbachstraße, Mühlried, Platte, Schrobenhausen, Landkreis Neuburg-Schrobenhausen, Bayern, 86529, Deutschland",
+				"lat": 48.5620938,
+				"lon": 11.2644305,
+				"place_rank": 30,
+				"postcode": "86529",
+				"state_code": "DE-BY"
+			}
+		},
+		"Lessingstr. 8, 95100 Selb": {
+			"fetched_at": "2026-10-27T18:56:26.605Z",
+			"result": {
+				"display_name": "Volkshochschule, 8, Lessingstraße, Ludwigsmühle, Reuth, Selb, Landkreis Wunsiedel im Fichtelgebirge, Bayern, 95100, Deutschland",
+				"lat": 50.1719261,
+				"lon": 12.1300563,
+				"place_rank": 30,
+				"postcode": "95100",
+				"state_code": "DE-BY"
+			}
+		},
+		"Lethnerstr. 13, 85435 Erding": {
+			"fetched_at": "2026-10-27T18:56:43.442Z",
+			"result": {
+				"display_name": "13, Lethnerstraße, Haager Vorstadt, Erding, Siglfing, Erding, Landkreis Erding, Bayern, 85435, Deutschland",
+				"lat": 48.3021447,
+				"lon": 11.9118257,
+				"place_rank": 30,
+				"postcode": "85435",
+				"state_code": "DE-BY"
+			}
+		},
+		"Lindwurmstr. 109, 80337 München": {
+			"fetched_at": "2026-10-27T18:54:27.857Z",
+			"result": {
+				"display_name": "109, Lindwurmstraße, Am Schlachthof, Ludwigsvorstadt, Ludwigsvorstadt-Isarvorstadt, München, Bayern, 80337, Deutschland",
+				"lat": 48.1280301,
+				"lon": 11.5555496,
+				"place_rank": 30,
+				"postcode": "80337",
+				"state_code": "DE-BY"
+			}
+		},
+		"Ludwigsmühle 10, 95615 Selb": {
+			"fetched_at": "2026-10-27T18:55:09.467Z",
+			"result": {
+				"display_name": "10, Ludwigsmühle, Stopfersfurth, Selb, Landkreis Wunsiedel im Fichtelgebirge, Bayern, 95100, Deutschland",
+				"lat": 50.1663262,
+				"lon": 12.142697,
+				"place_rank": 30,
+				"postcode": "95100",
+				"state_code": "DE-BY"
+			}
+		},
+		"Ludwigstraße 16, 97816 Lohr a. Main": {
+			"fetched_at": "2026-10-27T18:55:37.172Z",
+			"result": {
+				"display_name": "Postbank, 16, Ludwigstraße, Lohr, Lohr am Main, Landkreis Main-Spessart, Bayern, 97816, Deutschland",
+				"lat": 49.9953783,
+				"lon": 9.5699607,
+				"place_rank": 30,
+				"postcode": "97816",
+				"state_code": "DE-BY"
+			}
+		},
+		"Ludwigstraße 18, 85049 Ingolstadt": {
+			"fetched_at": "2026-10-27T18:54:21.703Z",
+			"result": {
+				"display_name": "18, Ludwigstraße, Altstadt Südost, Mitte, Ingolstadt, Bayern, 85049, Deutschland",
+				"lat": 48.7641788,
+				"lon": 11.4266353,
+				"place_rank": 30,
+				"postcode": "85049",
+				"state_code": "DE-BY"
+			}
+		},
+		"Ludwigstraße 25, 96052 Bamberg": {
+			"fetched_at": "2026-10-27T18:54:42.222Z",
+			"result": {
+				"display_name": "Deutsche Post, 25, Ludwigstraße, Gärtnerstadt, Bamberg, Bayern, 96052, Deutschland",
+				"lat": 49.8991148,
+				"lon": 10.8992521,
+				"place_rank": 30,
+				"postcode": "96052",
+				"state_code": "DE-BY"
+			}
+		},
+		"Ludwigstraße 7, 95028 Hof": {
+			"fetched_at": "2026-10-27T18:56:32.261Z",
+			"result": {
+				"display_name": "Ludwigstraße, Neustadt, Hofeck, Hof, Bayern, 95028, Deutschland",
+				"lat": 50.3227973,
+				"lon": 11.9191603,
+				"place_rank": 26,
+				"postcode": "95028",
+				"state_code": "DE-BY"
+			}
+		},
+		"Luitpoldstr. 2, 63739 Aschaffenburg": {
+			"fetched_at": "2026-10-27T18:54:35.538Z",
+			"result": {
+				"display_name": "Volkshochschule, 2, Luitpoldstraße, Stadtmitte, Aschaffenburg, Bayern, 63739, Deutschland",
+				"lat": 49.9758485,
+				"lon": 9.1443664,
+				"place_rank": 30,
+				"postcode": "63739",
+				"state_code": "DE-BY"
+			}
+		},
+		"Luitpoldstr. 24, 92637 Weiden i.d.OPf.": {
+			"fetched_at": "2026-10-27T18:56:16.488Z",
+			"result": {
+				"display_name": "Volkshochschule Weiden-Neustadt, 24, Luitpoldstraße, Innenstadt, Stockerhut, Weiden in der Oberpfalz, Bayern, 92637, Deutschland",
+				"lat": 49.6777614,
+				"lon": 12.1643276,
+				"place_rank": 30,
+				"postcode": "92637",
+				"state_code": "DE-BY"
+			}
+		},
+		"Ländgasse 41, 84028 Landshut": {
+			"fetched_at": "2026-10-27T18:55:34.770Z",
+			"result": {
+				"display_name": "Volkshochschule Landshut, 41, 42, Ländgasse, Altstadt, Landshut, Bayern, 84028, Deutschland",
+				"lat": 48.5336752,
+				"lon": 12.1495428,
+				"place_rank": 30,
+				"postcode": "84028",
+				"state_code": "DE-BY"
+			}
+		},
+		"Löwenstr. 15, 96450 Coburg": {
+			"fetched_at": "2026-10-27T18:54:49.402Z",
+			"result": {
+				"display_name": "15, Löwenstraße, Neuses bei Coburg, Coburg, Bayern, 96450, Deutschland",
+				"lat": 50.2607369,
+				"lon": 10.9622078,
+				"place_rank": 30,
+				"postcode": "96450",
+				"state_code": "DE-BY"
+			}
+		},
+		"Maria-Dorothea-Str. 8, 91161 Hilpoldstein": {
+			"fetched_at": "2026-10-27T18:54:52.981Z",
+			"result": null
+		},
+		"Marienstr. 20, 83301 Traunreut": {
+			"fetched_at": "2026-10-27T18:56:06.139Z",
+			"result": {
+				"display_name": "Volkshochschule, 20, Marienstraße, Weisbrunn, St. Georgen, Traunreut, Landkreis Traunstein, Bayern, 83301, Deutschland",
+				"lat": 47.9614374,
+				"lon": 12.5883098,
+				"place_rank": 30,
+				"postcode": "83301",
+				"state_code": "DE-BY"
+			}
+		},
+		"Markt 1, 97421 Schweinfurt": {
+			"fetched_at": "2026-10-27T18:54:55.568Z",
+			"result": {
+				"display_name": "Aposto, 1, Markt, Zürch, Schweinfurt, Bayern, 97421, Deutschland",
+				"lat": 50.0447258,
+				"lon": 10.2348376,
+				"place_rank": 30,
+				"postcode": "97421",
+				"state_code": "DE-BY"
+			}
+		},
+		"Marktler Str. 16, 84489 Burghausen": {
+			"fetched_at": "2026-10-27T18:54:47.705Z",
+			"result": {
+				"display_name": "VHS Burghausen-Burgkirchen Geschäftsstelle, 16, Marktler Straße, Kümmernis, Burghausen, Landkreis Altötting, Bayern, 84489, Deutschland",
+				"lat": 48.1693364,
+				"lon": 12.8313151,
+				"place_rank": 30,
+				"postcode": "84489",
+				"state_code": "DE-BY"
+			}
+		},
+		"Marktplatz 2, 97638 Mellrichstadt": {
+			"fetched_at": "2026-10-27T18:55:49.626Z",
+			"result": {
+				"display_name": "2, Marktplatz, Mellrichstadt, Mellrichstadt (VGem), Landkreis Rhön-Grabfeld, Bayern, 97638, Deutschland",
+				"lat": 50.4286485,
+				"lon": 10.3021552,
+				"place_rank": 30,
+				"postcode": "97638",
+				"state_code": "DE-BY"
+			}
+		},
+		"Marktplatz 20, 86720 Nördlingen": {
+			"fetched_at": "2026-10-27T18:55:50.940Z",
+			"result": {
+				"display_name": "20, Marktplatz, Baldingen, Nördlingen, Landkreis Donau-Ries, Bayern, 86720, Deutschland",
+				"lat": 48.8520233,
+				"lon": 10.4882336,
+				"place_rank": 30,
+				"postcode": "86720",
+				"state_code": "DE-BY"
+			}
+		},
+		"Marktplatz 8, 94424 Arnstorf": {
+			"fetched_at": "2026-10-27T18:56:22.695Z",
+			"result": {
+				"display_name": "8, Marktplatz, Winchen, Arnstorf, Landkreis Rottal-Inn, Bayern, 94424, Deutschland",
+				"lat": 48.5608438,
+				"lon": 12.8170825,
+				"place_rank": 30,
+				"postcode": "94424",
+				"state_code": "DE-BY"
+			}
+		},
+		"Marsstr. 25, 80335 München": {
+			"fetched_at": "2026-10-27T18:54:20.421Z",
+			"result": {
+				"display_name": "25, Marsstraße, St. Benno-Viertel, Maxvorstadt, München, Bayern, 80335, Deutschland",
+				"lat": 48.1435787,
+				"lon": 11.5564402,
+				"place_rank": 30,
+				"postcode": "80335",
+				"state_code": "DE-BY"
+			}
+		},
+		"Marsstraße 42, 80335 München": {
+			"fetched_at": "2026-10-27T18:54:14.499Z",
+			"result": {
+				"display_name": "Deutsche Angestellten-Akademie, 42, Marsstraße, Marsfeld, Maxvorstadt, München, Bayern, 80335, Deutschland",
+				"lat": 48.1447973,
+				"lon": 11.5547771,
+				"place_rank": 30,
+				"postcode": "80335",
+				"state_code": "DE-BY"
+			}
+		},
+		"Maximilianstr. 60, 87719 Mindelheim": {
+			"fetched_at": "2026-10-27T18:56:35.146Z",
+			"result": {
+				"display_name": "Musikschule und Volkshochschule Mindelheim, 60, Maximilianstraße, Mindelheim, Landkreis Unterallgäu, Bayern, 87719, Deutschland",
+				"lat": 48.045938,
+				"lon": 10.4860635,
+				"place_rank": 30,
+				"postcode": "87719",
+				"state_code": "DE-BY"
+			}
+		},
+		"Mitterweg 8, 84048 Mainburg": {
+			"fetched_at": "2026-10-27T18:55:38.420Z",
+			"result": {
+				"display_name": "Mitterweg, Gschwellberg, Unterempfenbach, Mainburg, Landkreis Kelheim, Bayern, 84048, Deutschland",
+				"lat": 48.641305,
+				"lon": 11.7671395,
+				"place_rank": 26,
+				"postcode": "84048",
+				"state_code": "DE-BY"
+			}
+		},
+		"Mähringer Str. 9, 95643 Tirschenreuth": {
+			"fetched_at": "2026-10-27T18:56:28.269Z",
+			"result": {
+				"display_name": "9, Mähringer Straße, Zeidlweid, Tirschenreuth, Landkreis Tirschenreuth, Bayern, 95643, Deutschland",
+				"lat": 49.8809247,
+				"lon": 12.342591,
+				"place_rank": 30,
+				"postcode": "95643",
+				"state_code": "DE-BY"
+			}
+		},
+		"Neuöttinger Str. 32, 84503 Altötting": {
+			"fetched_at": "2026-10-27T18:54:33.166Z",
+			"result": {
+				"display_name": "32, Neuöttinger Straße, Herrenmühle, Altötting, Landkreis Altötting, Bayern, 84503, Deutschland",
+				"lat": 48.2290328,
+				"lon": 12.6795645,
+				"place_rank": 30,
+				"postcode": "84503",
+				"state_code": "DE-BY"
+			}
+		},
+		"Niederbronnerweg 5, 82256 Fürstenfeldbruck": {
+			"fetched_at": "2026-10-27T18:55:58.200Z",
+			"result": {
+				"display_name": "5, Niederbronnerweg, Weiherhaus, Fürstenfeldbruck, Landkreis Fürstenfeldbruck, Bayern, 82256, Deutschland",
+				"lat": 48.1788042,
+				"lon": 11.2577542,
+				"place_rank": 30,
+				"postcode": "82256",
+				"state_code": "DE-BY"
+			}
+		},
+		"Nikolastr. 18, 94032 Passau": {
+			"fetched_at": "2026-10-27T18:54:26.587Z",
+			"result": {
+				"display_name": "Volkshochschule Passau, 18, Nikolastraße, Altstadt, Passau, Bayern, 94032, Deutschland",
+				"lat": 48.5719366,
+				"lon": 13.4603831,
+				"place_rank": 30,
+				"postcode": "94032",
+				"state_code": "DE-BY"
+			}
+		},
+		"Obere Gartenstr. 3, 92237 Sulzbach-Rosenberg": {
+			"fetched_at": "2026-10-27T18:55:31.404Z",
+			"result": {
+				"display_name": "LCC, 3, Obere Gartenstraße, Sulzbach, Sulzbach-Rosenberg, Landkreis Amberg-Sulzbach, Bayern, 92237, Deutschland",
+				"lat": 49.5040407,
+				"lon": 11.7470763,
+				"place_rank": 30,
+				"postcode": "92237",
+				"state_code": "DE-BY"
+			}
+		},
+		"Orleanstraße 34, 81667 München": {
+			"fetched_at": "2026-10-27T18:54:29.570Z",
+			"result": null
+		},
+		"Paul-Eber-Haus, Schulhof 1, 97318 Kitzingen": {
+			"fetched_at": "2026-10-27T18:56:38.018Z",
+			"result": null
+		},
+		"Penzenhofener Str. 1, 90610 Winkelhaid": {
+			"fetched_at": "2026-10-27T18:55:56.985Z",
+			"result": {
+				"display_name": "Rathaus, 1, Penzenhofener Straße, Winkelhaid, Landkreis Nürnberger Land, Bayern, 90610, Deutschland",
+				"lat": 49.3877655,
+				"lon": 11.3029708,
+				"place_rank": 30,
+				"postcode": "90610",
+				"state_code": "DE-BY"
+			}
+		},
+		"Pfarrer-Seidl-Str. 1, 93413 Cham": {
+			"fetched_at": "2026-10-27T18:56:33.499Z",
+			"result": {
+				"display_name": "Pfarrer-Seidl-Straße, Cham-West, Wackerling, Cham, Landkreis Cham, Bayern, 93413, Deutschland",
+				"lat": 49.2263415,
+				"lon": 12.6571574,
+				"place_rank": 26,
+				"postcode": "93413",
+				"state_code": "DE-BY"
+			}
+		},
+		"Pommernstr. 4, 93073 Neutraubling": {
+			"fetched_at": "2026-10-27T18:55:08.217Z",
+			"result": {
+				"display_name": "4, Pommernstraße, KaufPark Neutraubling, Birkenfeld, Neutraubling, Landkreis Regensburg, Bayern, 93073, Deutschland",
+				"lat": 48.9811281,
+				"lon": 12.1927453,
+				"place_rank": 30,
+				"postcode": "93073",
+				"state_code": "DE-BY"
+			}
+		},
+		"Rathausplatz 1, 84307 Eggenfelden": {
+			"fetched_at": "2026-10-27T18:55:53.357Z",
+			"result": {
+				"display_name": "1, Rathausplatz, Mitterhof, Eggenfelden, Landkreis Rottal-Inn, Bayern, 84307, Deutschland",
+				"lat": 48.4015105,
+				"lon": 12.761369,
+				"place_rank": 30,
+				"postcode": "84307",
+				"state_code": "DE-BY"
+			}
+		},
+		"Rathausplatz 1, 97688 Bad Kissingen": {
+			"fetched_at": "2026-10-27T18:54:38.025Z",
+			"result": {
+				"display_name": "Rathaus Bad Kissingen, 1, Rathausplatz, Garitz, Bad Kissingen, Landkreis Bad Kissingen, Bayern, 97688, Deutschland",
+				"lat": 50.2010183,
+				"lon": 10.075862,
+				"place_rank": 30,
+				"postcode": "97688",
+				"state_code": "DE-BY"
+			}
+		},
+		"Rathausstr. 1, 82194 Gröbenzell": {
+			"fetched_at": "2026-10-27T18:55:17.412Z",
+			"result": {
+				"display_name": "1, Rathausstraße, Gröbenzell, Landkreis Fürstenfeldbruck, Bayern, 82194, Deutschland",
+				"lat": 48.193792,
+				"lon": 11.3710072,
+				"place_rank": 30,
+				"postcode": "82194",
+				"state_code": "DE-BY"
+			}
+		},
+		"Richard-Wagner-Str. 21, 95444 Bayreuth": {
+			"fetched_at": "2026-10-27T18:54:43.606Z",
+			"result": {
+				"display_name": "RW 21, 21, Richard-Wagner-Straße, Südöstliche Innenstadt, City, Bayreuth, Bayern, 95444, Deutschland",
+				"lat": 49.942887,
+				"lon": 11.5806543,
+				"place_rank": 30,
+				"postcode": "95444",
+				"state_code": "DE-BY"
+			}
+		},
+		"Ringstr. 16, 92339 Beilngries": {
+			"fetched_at": "2026-10-27T18:54:45.249Z",
+			"result": {
+				"display_name": "Altes Amtsgericht, 16, Ringstraße, Sandsiedlung, Beilngries, Landkreis Eichstätt, Bayern, 92339, Deutschland",
+				"lat": 49.0343524,
+				"lon": 11.4705943,
+				"place_rank": 30,
+				"postcode": "92339",
+				"state_code": "DE-BY"
+			}
+		},
+		"Roßbergstr. 8, 85386 Eching": {
+			"fetched_at": "2026-10-27T18:56:29.576Z",
+			"result": null
+		},
+		"Salzburger Str. 19, 83512 Wasserburg a. Inn": {
+			"fetched_at": "2026-10-27T18:56:15.305Z",
+			"result": {
+				"display_name": "19, Salzburger Straße, Altstadt, Weikertsham, Wasserburg am Inn, Landkreis Rosenheim, Bayern, 83512, Deutschland",
+				"lat": 48.0542574,
+				"lon": 12.230573,
+				"place_rank": 30,
+				"postcode": "83512",
+				"state_code": "DE-BY"
+			}
+		},
+		"Schlörstr. 1, 84453 Mühldorf a. Inn": {
+			"fetched_at": "2026-10-27T18:55:42.527Z",
+			"result": {
+				"display_name": "VHS, 1, Schlörstraße, Mößling, Mühldorf a. Inn, Landkreis Mühldorf am Inn, Bayern, 84453, Deutschland",
+				"lat": 48.25594,
+				"lon": 12.5269032,
+				"place_rank": 30,
+				"postcode": "84453",
+				"state_code": "DE-BY"
+			}
+		},
+		"Sendlinger Torplatz 6, 80336 München": {
+			"fetched_at": "2026-10-27T18:54:22.931Z",
+			"result": {
+				"display_name": "6, Sendlinger-Tor-Platz, Am Alten Südlichen Friedhof, Klinikviertel, Isarvorstadt, Ludwigsvorstadt-Isarvorstadt, München, Bayern, 80336, Deutschland",
+				"lat": 48.1327668,
+				"lon": 11.5662118,
+				"place_rank": 30,
+				"postcode": "80336",
+				"state_code": "DE-BY"
+			}
+		},
+		"Solgerstr. 16a/18, 90429 Nürnberg": {
+			"fetched_at": "2026-10-27T18:54:16.257Z",
+			"result": {
+				"display_name": "Solgerstraße, Himpfelshof, Altstadt und engere Innenstadt, Nürnberg, Bayern, 90429, Deutschland",
+				"lat": 49.4530197,
+				"lon": 11.0625468,
+				"place_rank": 26,
+				"postcode": "90429",
+				"state_code": "DE-BY"
+			}
+		},
+		"Spindeltal 5, 86609 Donauwörth": {
+			"fetched_at": "2026-10-27T18:55:04.577Z",
+			"result": {
+				"display_name": "Volkshochschule, 5, Spindeltal, Parkstadt, Berg, Donauwörth, Asbach-Bäumenheim, Landkreis Donau-Ries, Bayern, 86609, Deutschland",
+				"lat": 48.720232,
+				"lon": 10.7799558,
+				"place_rank": 30,
+				"postcode": "86609",
+				"state_code": "DE-BY"
+			}
+		},
+		"Spitalstraße 5, 91207 Lauf": {
+			"fetched_at": "2026-10-27T18:56:20.149Z",
+			"result": {
+				"display_name": "Glockengiesser / Haus St. Leonhard, 5, Spitalstraße, Rudolfshof, Lauf an der Pegnitz, Landkreis Nürnberger Land, Bayern, 91207, Deutschland",
+				"lat": 49.5109403,
+				"lon": 11.2819014,
+				"place_rank": 30,
+				"postcode": "91207",
+				"state_code": "DE-BY"
+			}
+		},
+		"Spitaltor 5, 87600 Kaufbeuren": {
+			"fetched_at": "2026-10-27T18:55:26.239Z",
+			"result": {
+				"display_name": "Spitaltor, Forettle, Kaufbeuren, Bayern, 87600, Deutschland",
+				"lat": 47.8808834,
+				"lon": 10.6239014,
+				"place_rank": 26,
+				"postcode": "87600",
+				"state_code": "DE-BY"
+			}
+		},
+		"Stadionstr. 50, 84130 Dingolfing": {
+			"fetched_at": "2026-10-27T18:55:03.414Z",
+			"result": {
+				"display_name": "50, Stadionstraße, Altstadt, Oberdingolfing, Dingolfing, Landkreis Dingolfing-Landau, Bayern, 84130, Deutschland",
+				"lat": 48.6312239,
+				"lon": 12.5093349,
+				"place_rank": 30,
+				"postcode": "84130",
+				"state_code": "DE-BY"
+			}
+		},
+		"Stadtplatz 2, 84347 Pfarrkirchen": {
+			"fetched_at": "2026-10-27T18:56:21.478Z",
+			"result": {
+				"display_name": "Stadtplatz, Reichenberg, Pfarrkirchen, Landkreis Rottal-Inn, Bayern, 84347, Deutschland",
+				"lat": 48.4322082,
+				"lon": 12.9392295,
+				"place_rank": 26,
+				"postcode": "84347",
+				"state_code": "DE-BY"
+			}
+		},
+		"Stadtplatz 2, 85368 Moosburg": {
+			"fetched_at": "2026-10-27T18:55:40.894Z",
+			"result": {
+				"display_name": "2, Stadtplatz, Altstadt, Moosburg, Landkreis Freising, Bayern, 85368, Deutschland",
+				"lat": 48.4683491,
+				"lon": 11.935767,
+				"place_rank": 30,
+				"postcode": "85368",
+				"state_code": "DE-BY"
+			}
+		},
+		"Stadtplatz 30, 84137 Vilsbiburg": {
+			"fetched_at": "2026-10-27T18:56:12.879Z",
+			"result": {
+				"display_name": "Musikschule Vilsbiburg, 30, Stadtplatz, Achldorf, Vilsbiburg, Landkreis Landshut, Bayern, 84137, Deutschland",
+				"lat": 48.4487956,
+				"lon": 12.3549816,
+				"place_rank": 30,
+				"postcode": "84137",
+				"state_code": "DE-BY"
+			}
+		},
+		"Stadtplatz 38a, 83278 Traunstein": {
+			"fetched_at": "2026-10-27T18:56:07.419Z",
+			"result": {
+				"display_name": "Landgericht, 38a, Stadtplatz, Altstadt, Empfing, Gemarkung Traunstein, Traunstein, Landkreis Traunstein, Bayern, 83278, Deutschland",
+				"lat": 47.8691847,
+				"lon": 12.6477257,
+				"place_rank": 30,
+				"postcode": "83278",
+				"state_code": "DE-BY"
+			}
+		},
+		"Steinweg 56, 94315 Straubing": {
+			"fetched_at": "2026-10-27T18:56:03.276Z",
+			"result": {
+				"display_name": "VHS Straubing - Schulung, 56, Steinweg, Straubing-Süd, Straubing, Bayern, 94315, Deutschland",
+				"lat": 48.8703871,
+				"lon": 12.5826516,
+				"place_rank": 30,
+				"postcode": "94315",
+				"state_code": "DE-BY"
+			}
+		},
+		"Steubstr. 3, 86551 Aichach": {
+			"fetched_at": "2026-10-27T18:54:31.975Z",
+			"result": {
+				"display_name": "Alte Berufsschule, 3, Steubstraße, Aichach, Landkreis Aichach-Friedberg, Bayern, 86551, Deutschland",
+				"lat": 48.4589559,
+				"lon": 11.1295855,
+				"place_rank": 30,
+				"postcode": "86551",
+				"state_code": "DE-BY"
+			}
+		},
+		"Telschowstraße 5-7, 85748 Garching b. München": {
+			"fetched_at": "2026-10-27T18:55:23.816Z",
+			"result": {
+				"display_name": "vhs Bildungszentrum Garching, 5-7, Telschowstraße, Garching bei München, Landkreis München, Bayern, 85748, Deutschland",
+				"lat": 48.2507834,
+				"lon": 11.6493717,
+				"place_rank": 30,
+				"postcode": "85748",
+				"state_code": "DE-BY"
+			}
+		},
+		"Theodor-Heuss-Str. 27, 85764 Oberschleißheim": {
+			"fetched_at": "2026-10-27T18:55:46.714Z",
+			"result": {
+				"display_name": "27, Theodor-Heuss-Straße, Lustheim, Oberschleißheim, Landkreis München, Bayern, 85764, Deutschland",
+				"lat": 48.2542288,
+				"lon": 11.5523977,
+				"place_rank": 30,
+				"postcode": "85764",
+				"state_code": "DE-BY"
+			}
+		},
+		"Therese-Giehse-Platz 6, 82110 Germering": {
+			"fetched_at": "2026-10-27T18:55:14.884Z",
+			"result": {
+				"display_name": "6, Therese-Giehse-Platz, Neugermering, Germering, Landkreis Fürstenfeldbruck, Bayern, 82110, Deutschland",
+				"lat": 48.130249,
+				"lon": 11.3667079,
+				"place_rank": 30,
+				"postcode": "82110",
+				"state_code": "DE-BY"
+			}
+		},
+		"Tränkgasse 4, 96052 Bamberg": {
+			"fetched_at": "2026-10-27T18:54:40.418Z",
+			"result": {
+				"display_name": "VHS im Alten E-Werk, 4, Tränkgasse, Wunderburg, Gärtnerstadt, Bamberg, Bayern, 96052, Deutschland",
+				"lat": 49.8962732,
+				"lon": 10.8933078,
+				"place_rank": 30,
+				"postcode": "96052",
+				"state_code": "DE-BY"
+			}
+		},
+		"Uferweg 7, 88131 Lindau": {
+			"fetched_at": "2026-10-27T18:55:35.957Z",
+			"result": {
+				"display_name": "7, Uferweg, Insel, Lindau (Bodensee), Landkreis Lindau, Bayern, 88131, Deutschland",
+				"lat": 47.5460762,
+				"lon": 9.6765546,
+				"place_rank": 30,
+				"postcode": "88131",
+				"state_code": "DE-BY"
+			}
+		},
+		"Ulmer Str. 19, 87700 Memmingen": {
+			"fetched_at": "2026-10-27T18:55:39.675Z",
+			"result": {
+				"display_name": "Grimmelhaus, 19, Ulmer Straße, Künstlerviertel, Gewerbegebiet Schlachthofstraße, Amendingen, Memmingen, Bayern, 87700, Deutschland",
+				"lat": 47.9883667,
+				"lon": 10.1797824,
+				"place_rank": 30,
+				"postcode": "87700",
+				"state_code": "DE-BY"
+			}
+		},
+		"Wallenburger Str. 16a, 83714 Miesbach": {
+			"fetched_at": "2026-10-27T18:55:45.351Z",
+			"result": {
+				"display_name": "16a, Wallenburger Straße, Straß, Au, Miesbach, Landkreis Miesbach, Bayern, 83714, Deutschland",
+				"lat": 47.7918357,
+				"lon": 11.8324246,
+				"place_rank": 30,
+				"postcode": "83714",
+				"state_code": "DE-BY"
+			}
+		},
+		"Willy-Brandt-Platz 3a, 86153 Augsburg": {
+			"fetched_at": "2026-10-27T18:54:36.765Z",
+			"result": {
+				"display_name": "Volkshochschule Augsburg, 3a, Willy-Brandt-Platz, Am Schäfflerbach, Innenstadt, Augsburg, Bayern, 86153, Deutschland",
+				"lat": 48.3651716,
+				"lon": 10.9053326,
+				"place_rank": 30,
+				"postcode": "86153",
+				"state_code": "DE-BY"
+			}
+		}
+	}
+}
