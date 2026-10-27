@@ -64,7 +64,7 @@ const pointSchema = z.tuple([z.number().min(-180).max(180), z.number().min(-90).
 const ringSchema = z
 	.array(pointSchema)
 	.min(4)
-	.refine((ring) => ring[0]![0] === ring.at(-1)![0] && ring[0]![1] === ring.at(-1)![1], 'ring is not closed');
+	.refine((ring) => ring.length > 0 && ring[0]![0] === ring.at(-1)![0] && ring[0]![1] === ring.at(-1)![1], 'ring is not closed');
 
 const isSortedUnique = (values: readonly string[]): boolean => values.every((v, i) => i === 0 || values[i - 1]! < v);
 

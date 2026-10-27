@@ -105,6 +105,7 @@ describe('placeRowSchema / placesSchema', () => {
 		expect(placesSchema.safeParse(file({ complete: false, missing: ['bavaria'] })).success).toBe(false);
 		expect(placesSchema.safeParse(file({ complete: false, missing: ['bavaria', 'ags-091'], bavaria: [] })).success).toBe(false);
 		expect(placesSchema.safeParse(file({ complete: false, missing: ['state-09'] })).success).toBe(false);
+		expect(placesSchema.safeParse(file({ bavaria: [[]] })).success).toBe(false);
 	});
 });
 

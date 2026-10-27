@@ -2,7 +2,7 @@
 title: 'Story 1.5: Build the place table'
 type: 'feature'
 created: '2026-10-27'
-status: 'in-review'
+status: 'done'
 review_loop_iteration: 0
 baseline_commit: '928c81817113f7accf02c8177d0c38d7feb6e85c'
 followup_review_recommended: false
@@ -14,6 +14,13 @@ deferred:
     evidence: 'Operator stopped the live Overpass run on 2026-10-27 (server busy, 2 of 38 prefix queries in ~25 min); places.json is complete: false.'
     location: 'data/places/places-note.md'
     severity: 'medium'
+  - summary: >-
+      Story 1.11 must remove the runIf guard on the committed-data boundary test, not keep it.
+    evidence: |-
+      tests/places.test.ts skips the Munich-inside / Berlin-outside check while bavaria is missing, so the boundary AC is unverified on shipped data (review pass 2026-10-27).
+    location: >-
+      tests/places.test.ts
+    severity: low
 ---
 
 <intent-contract>
@@ -105,6 +112,51 @@ deferred:
 
 ## Review Triage Log
 
+### 2026-10-27 — Review pass
+- verdicts: 41 findings — high 0, medium 0, low 23, false 12, maybe-false 6
+- findings:
+  - `[false]` `[reject]` Committed file is partial, not all of Germany with a boundary (IA) — the operator explicitly asked to "continue with only available data" and add a follow-up; completion is Story 1.11, recorded in `deferred`.
+  - `[false]` `[reject]` The schema was widened with `complete`/`missing` and an allowed empty boundary (IA) — a complete file still requires every state's query and the boundary; the refines stop a partial file from passing as complete.
+  - `[low]` `[reject]` The committed file came from a `--cached-only` run over cache files partly seeded from the planning probe (IA) — the provenance is recorded in the Spec Change Log, the commit message and Story 1.11, and 1.11 refetches through the tool.
+  - `[false]` `[reject]` Name matching and postcode lookup are not exercised at the UI surface (IA) — search is Stories 1.8–1.10; this story's ACs end at the table and the normaliser.
+  - `[false]` `[reject]` The epic note adds an ordering rule (1.11 before 1.8/1.10) nobody asked for (IA) — it describes a real dependency (1.8's Bavaria-only error and 1.10 read the boundary); not a defect.
+  - `[false]` `[reject]` `sprint-status.yaml` has no 1.11 entry (IA) — the project has no sprint-status file; `find` found only skill templates.
+  - `[low]` `[patch]` A note from a failed run survives a later unchanged rebuild (BH) — the unchanged shortcut now keeps the note only when it holds this file's `Size:` line; test added.
+  - `[low]` `[patch]` "Outside the boundary (0) None." is printed when no boundary was checked (BH) — the note now says "not checked (boundary missing)"; test updated.
+  - `[low]` `[patch]` Self-checks say "yes" after 0 requests (BH) — they now print "n/a (no requests)".
+  - `[low]` `[reject]` Seeded cache files have no recorded or reproducible source (BH) — recorded in the Spec Change Log, commit and Story 1.11; if the local cache is lost, 1.11 refetches Bavaria live.
+  - `[low]` `[reject]` No shared helper to read a partial file (BH) — would add public surface for a state that Story 1.11 removes before any consumer (1.8/1.10) exists.
+  - `[low]` `[reject]` Client timeout equals the server's 900 s budget (BH) — the 900 000 ms value is fixed in the intent contract; changing it means editing this spec.
+  - `[maybe-false]` `[reject]` Busy-server signals in a 200 remark or `Retry-After` are not retried; a "runtime remark" without "error" might be cached (BH) — retry triggers are fixed in the intent contract; Overpass's timeout/memory remarks contain "error", so caching a partial answer needs a remark form not seen here; would only be low.
+  - `[low]` `[reject]` Unknown CLI flags are ignored, so a typo starts a live run (BH) — needs argument validation (new branches); a mistyped run only fetches what is missing and caches it.
+  - `[low]` `[reject]` District fallback to the municipality name is not counted (BH) — 0 non-kreisfrei rows fall back in the current data (checked over every cached `ags-*` file); listing them adds note machinery.
+  - `[low]` `[reject]` `pickPoint` uses `admin_centre`/`label` only when that node is an allowed place node inside the area (BH) — 25 of 3,247 rows are affected, falling to the name match or bbox centre; fetching member-node coordinates changes the query shape and needs a full refetch. Recorded under residual risks.
+  - `[low]` `[reject]` No test lists names that collide after normalising (BH) — the `ae/oe/ue` fold is fixed in the intent contract; collisions show up as extra suggestions that carry their district, and nothing in this story matches yet.
+  - `[low]` `[reject]` Nothing enforces "1.11 before 1.8/1.10" (BH) — process guidance in `epics.md` and `deferred`; a test tripwire for code that does not exist yet adds machinery.
+  - `[false]` `[reject]` Spec status fields are inconsistent (BH) — the fix would edit this spec; Finalize rewrites them.
+  - `[low]` `[patch]` Docs disagree on what `--cached-only` needs, and the zero-prefix index error is misleading (BH) — the header comment now says "the `index` and at least one `ags-*` file"; an index with no prefixes now reports "the index lists no municipalities".
+  - `[low]` `[patch]` `PLACES_CACHE_DIR` and `PLACES_NOTE_PATH` are exported but unused (BH) — removed from `tools/paths.ts`.
+  - `[false]` `[reject]` The diff under review leaves out `places.json` (BH) — deliberate (one 450 KB line); the committed file is checked by the committed-data tests and the note's counts.
+  - `[low]` `[defer]` The committed-data boundary test is skipped, so the boundary AC is unverified on shipped data (VG, pre-verified) — deferred to Story 1.11, which must remove the `runIf` guard rather than keep it.
+  - `[low]` `[patch]` Duplicate-district tie-break in `parseIndex` is untested (VG, pre-verified) — added a test with both orders.
+  - `[low]` `[patch]` Stale note after a failed run (VG other) — same fix as the BH stale-note row.
+  - `[low]` `[patch]` An empty ring makes `placesSchema.safeParse` throw (ECH) — confirmed (TypeError on `ring[0]`); the closed-ring refine now checks length first; test added.
+  - `[low]` `[reject]` Distinct names collapse after the `ae/oe/ue` fold (ECH) — same as the BH collision row.
+  - `[low]` `[patch]` An empty or invalid `postal_code:DE` hides a valid `postal_code` (ECH) — `areaPostcode` now takes the first valid 5-digit value; test added.
+  - `[maybe-false]` `[reject]` Multi-value postcode tags are dropped (ECH) — not seen on `boundary=postal_code` relations in the cached data (2,588 distinct postcodes linked); would only be low.
+  - `[false]` `[reject]` Null entries in `elements` crash the parse (ECH) — Overpass never emits them, and a crash on a hand-corrupted cache file is a loud failure.
+  - `[false]` `[reject]` Every boundary ring collapses, giving an unclear error (ECH) — the run then fails loudly on the schema; at 0.002° tolerance the DE-BY rings cannot collapse to under 4 points.
+  - `[maybe-false]` `[reject]` Boundary ways with an empty role would break stitching (ECH) — the DE-BY relation is not cached yet; Story 1.11 meets it, and it would fail loudly; would only be low.
+  - `[low]` `[reject]` Missing district relations fall back silently (ECH) — same as the BH district-fallback row.
+  - `[maybe-false]` `[reject]` `network-error` is not retried (ECH) — the retry set is fixed in the intent contract; a reset is rare, and the rerun resumes from cache; would only be low.
+  - `[maybe-false]` `[reject]` An empty index response is cached and reused (ECH) — an empty 200 with an OSM timestamp and no error remark is not a known Overpass answer; the misleading message part is patched with the BH docs row; would only be low.
+  - `[low]` `[patch]` Stale note after a failed run (ECH) — same fix as the BH stale-note row.
+  - `[low]` `[reject]` Unknown CLI flags (ECH) — same as the BH CLI row.
+  - `[false]` `[reject]` A failed index still sends the `bavaria` query (ECH) — the spec says the remaining queries still run, so that query is cached for the next run.
+  - `[false]` `[reject]` Committed file does not cover 16 states or carry a boundary (ECH claim) — same as the first IA row: operator decision, Story 1.11.
+  - `[false]` `[reject]` The committed-data tests pass without meeting the ACs (ECH claim) — they are conditional on `complete`/`missing` by the operator-approved partial build; the gap is the VG defer row.
+  - `[maybe-false]` `[reject]` The live-run acceptance is not shown for a complete build (ECH claim) — the live run was stopped by the operator; Story 1.11 runs it; would only be low here.
+
 ## Design Notes
 
 Postcode ↔ municipality is resolved server-side because the geometry is too big to handle locally: Bavaria's municipality outlines alone are 131 MB from Overpass. A probe of the per-municipality query for all of Bavaria (2,217 municipalities) took 14.5 minutes and returned 12.8 MB: München got 70 postcodes, 2,058 of Bavaria's 2,069 postcode areas were linked, and the only municipalities with none were 75 unincorporated forests and lakes. A whole-state query is too close to the server timeout, hence the 3-digit prefix split. A postcode is linked to every municipality that has a named place inside that postcode area. This avoids false links from shared border ways, which an area-overlap query would produce.
@@ -131,8 +183,30 @@ The response is a header block (municipalities with tags, members and centre), t
 
 ## Auto Run Result
 
-- **Status:** in-review. The implementation is done, but the step-04 review pass has not run (stopped at the operator's request).
-- **Summary:** `tools/build-places.ts` (`npm run build:places`) builds `data/public/places.json` from OpenStreetMap via Overpass through `pipeline/fetch`, using a second explicit robots exemption for `overpass-api.de/api/interpreter` (AD-5 amended). `shared/places.ts` holds the schema, state codes, `normalizePlaceName` and `isInBoundary`. The committed file is a **partial build** (`complete: false`): 3,247 rows (BY 2,142, SH 1,104, HH 1), 2,588 distinct postcodes, 70,740 bytes gzipped, with no Bavaria boundary yet. 75 uninhabited Bavarian areas (forests, lakes) were dropped.
-- **Verification:** `npm run typecheck`, `npm run build` and `npm run check:directory` exit 0. `npm test` runs 380 passed and 1 skipped (the boundary test, until `bavaria` is fetched). The 1 failure is `tests/directory.test.ts`, which expects 120 centres: it comes from the operator's uncommitted hand edits to `data/directory/centres.json` (119 entries), not from this story. A second `--cached-only` run leaves `places.json` byte-identical. There is no direct `fetch(` outside `pipeline/fetch`.
-- **Residual risks:** the place table is not complete until Story 1.11. The Bavarian rows come from a probe, not the prefix queries. Postcodes are linked only through named place nodes, so a postcode area with no place node is missing (Bavaria: 2,058 of 2,069 linked).
-
+- **Summary:** `tools/build-places.ts` (`npm run build:places`) builds `data/public/places.json` from OpenStreetMap via Overpass through `pipeline/fetch`, using a second explicit robots exemption for `overpass-api.de/api/interpreter` (AD-5 amended). `shared/places.ts` holds the schema, state codes, `normalizePlaceName` and `isInBoundary`. At the operator's request the committed file is a **partial build** (`complete: false`, built with `--cached-only`): 3,247 rows (BY 2,142, SH 1,104, HH 1), 2,588 distinct postcodes, 70,740 bytes gzipped, no Bavaria boundary yet. Story 1.11 completes it.
+- **Files changed:**
+  - `tools/build-places.ts`: the tool, with queries, parsing, ring stitching/simplifying, build, note, retry, cache and `--cached-only`.
+  - `shared/places.ts`: the places schema (with `complete`/`missing`), state codes, normaliser and point-in-polygon.
+  - `pipeline/config.ts`: Overpass URL, 10 s delay, 900 s timeout and the exemption entry.
+  - `pipeline/fetch/index.ts`: the `robotsExempt` doc comment now names both users.
+  - `tools/paths.ts`, `package.json`, `.gitignore`: places paths, the `build:places` script, and the ignored cache.
+  - `ARCHITECTURE-SPINE.md`: AD-5 lists two exemptions; Deferred records the dataset choice.
+  - `epics.md`: Story 1.11 "Complete the place table".
+  - `tests/build-places.test.ts`, `tests/places.test.ts`: tests for the tool and the schema, plus committed-data tests.
+  - `data/public/places.json`, `data/places/places-note.md`: the partial table and its note.
+- **Review:** 41 findings (low 23, false 12, maybe-false 6; no high or medium).
+  - **Patched (8 entries, all low):** stale note after a failed run; boundary check marked "not checked" when missing; self-checks "n/a" with no requests; `--cached-only` docs and the zero-prefix error; unused path exports removed; duplicate-district test; empty-ring schema crash; `postal_code:DE` fallback.
+  - **Deferred:** the skipped committed-data boundary test, which Story 1.11 must unskip.
+  - **Rejected:** every other finding, each with its reason in the Review Triage Log.
+- **Follow-up review recommended:** false. Patched entries by verdict: high 0, medium 0, low 8.
+- **Verification:**
+  - `npm run typecheck`, `npm run build` and `npm run check:directory` (119 centres OK) exit 0.
+  - `npm test`: 382 passed, 1 skipped (the boundary test, until `bavaria` is fetched), 1 failed. The failure is `tests/directory.test.ts` expecting 120 centres; it comes from the operator's uncommitted hand edits to `data/directory/centres.json` (119 entries), not from this story.
+  - A rebuild after the patches leaves `places.json` byte-identical.
+  - No direct `fetch(` outside `pipeline/fetch`.
+- **Residual risks:**
+  - The table is incomplete until Story 1.11: 13 states and the boundary are missing.
+  - The Bavarian rows come from the planning probe split by prefix, not from the prefix queries.
+  - Postcodes are linked only through named place nodes (Bavaria: 2,058 of 2,069 postcode areas).
+  - 25 rows whose `admin_centre`/`label` node is not an allowed place node use the name match or bbox centre, and 164 rows use the bbox centre.
+  - The `ae/oe/ue` fold can merge distinct names (Neuenkirchen/Neunkirchen); search must show the district.

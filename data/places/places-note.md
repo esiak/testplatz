@@ -9,8 +9,8 @@ Dataset: OpenStreetMap via the Overpass API (`overpass-api.de/api/interpreter`).
 - Retries: 0
 - Cache hits: 10
 - Failed queries: 0
-- Every request sent User-Agent `bgtsearch-bot/0.1.0 (+https://esiak.github.io/testplatz/about/)`: yes
-- Every request went to https://overpass-api.de/api/interpreter: yes
+- Every request sent User-Agent `bgtsearch-bot/0.1.0 (+https://esiak.github.io/testplatz/about/)`: n/a (no requests)
+- Every request went to https://overpass-api.de/api/interpreter: n/a (no requests)
 - Smallest gap between two requests: n/a (fewer than two requests)
 
 ## PARTIAL BUILD: 30 queries not cached and left out (`--cached-only`)
@@ -149,6 +149,4 @@ None.
 
 None.
 
-## Bavarian rows outside the boundary (0)
-
-None.
+## Bavarian rows outside the boundary: not checked (boundary missing)

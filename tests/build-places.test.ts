@@ -252,6 +252,13 @@ describe('parseIndex', () => {
 		expect(index.districts.get('09273')).toBe('Landkreis Kelheim');
 		expect(index.districts.has('09162')).toBe(false);
 	});
+
+	it('keeps the lower relation id when two districts share an AGS, whatever the order', () => {
+		const later = district(1999, '09273', 'Kelheim (old)');
+		const earlier = district(1001, '09273', 'Landkreis Kelheim');
+		expect(parseIndex(parsed(response([MUC, later, earlier]))).districts.get('09273')).toBe('Landkreis Kelheim');
+		expect(parseIndex(parsed(response([MUC, earlier, later]))).districts.get('09273')).toBe('Landkreis Kelheim');
+	});
 });
 
 describe('parsePrefixResponse', () => {
@@ -269,6 +276,8 @@ describe('parsePrefixResponse', () => {
 	it('reads postal_code:DE before postal_code and only 5 digits', () => {
 		expect(areaPostcode({ 'postal_code:DE': '80333', postal_code: '1' })).toBe('80333');
 		expect(areaPostcode({ postal_code: '6691' })).toBeNull();
+		expect(areaPostcode({ 'postal_code:DE': '', postal_code: '87491' })).toBe('87491');
+		expect(areaPostcode({ 'postal_code:DE': 'x', postal_code: '87491' })).toBe('87491');
 		expect(areaPostcode({ postal_code: '80331;80333' })).toBeNull();
 		expect(areaPostcode(undefined)).toBeNull();
 	});
@@ -490,7 +499,21 @@ describe('runBuildPlaces', () => {
 		expect(note).toContain('## PARTIAL BUILD: 2 queries not cached and left out');
 		expect(note).toContain('- Complete: NO (2 queries missing)');
 		expect(note).toContain('- Bavaria boundary: MISSING');
-		expect(note).toContain('## Bavarian rows outside the boundary (0)');
+		expect(note).toContain('## Bavarian rows outside the boundary: not checked (boundary missing)');
+		expect(note).toMatch(/User-Agent `[^`]+`: n\/a \(no requests\)/);
+	});
+
+	it('rewrites a note left by a failed run when the rebuilt file is unchanged', async () => {
+		const d = dirs();
+		await run(d, fakeOverpass().fetchImpl);
+		const before = readFileSync(join(d.publicDir, 'places.json'), 'utf8');
+		rmSync(join(d.dir, 'cache', 'bavaria.json'));
+		expect(await run(d, fakeOverpass({ bavaria: 400 }).fetchImpl)).toBe(1);
+		expect(readNote(d)).not.toContain('## Output');
+		writeFileSync(join(d.dir, 'cache', 'bavaria.json'), BAVARIA);
+		expect(await run(d, fakeOverpass().fetchImpl)).toBe(0);
+		expect(readFileSync(join(d.publicDir, 'places.json'), 'utf8')).toBe(before);
+		expect(readNote(d)).toContain('## Output');
 	});
 
 	it('--cached-only with everything cached gives the same complete file as a normal run', async () => {
@@ -658,7 +681,7 @@ describe('placesNote', () => {
 	});
 
 	it('flags failed self-checks and a run with fewer than two requests', () => {
-		const note = placesNote({ ...base, allWithUserAgent: false, allToInterpreter: false, build: null });
+		const note = placesNote({ ...base, requests: 1, allWithUserAgent: false, allToInterpreter: false, build: null });
 		expect(note).toMatch(/User-Agent `[^`]+`: NO/);
 		expect(note).toMatch(/interpreter: NO/);
 		expect(note).toContain('n/a (fewer than two requests)');

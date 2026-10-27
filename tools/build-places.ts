@@ -9,7 +9,7 @@
  * boundary). Each successful raw response is cached in data/places/cache/, so a rerun sends no
  * requests and writes a byte-identical file; `--refresh` ignores the cache. `--cached-only` sends
  * nothing and builds a partial file (`complete: false`, `missing` lists the queries left out) from
- * whatever is cached; it needs at least the `index`. The operator reviews
+ * whatever is cached; it needs the `index` and at least one `ags-*` file. The operator reviews
  * data/places/places-note.md and commits.
  */
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -224,8 +224,8 @@ const memberNode = (el: OverpassElement, role: string): number | null =>
 
 /** The 5-digit postcode of a postal-code area (`postal_code:DE`, else `postal_code`), or null. */
 export function areaPostcode(tags: Record<string, string> | undefined): string | null {
-	const value = (tags?.['postal_code:DE'] ?? tags?.['postal_code'] ?? '').trim();
-	return /^\d{5}$/.test(value) ? value : null;
+	const values = [tags?.['postal_code:DE'], tags?.['postal_code']].map((v) => (v ?? '').trim());
+	return values.find((v) => /^\d{5}$/.test(v)) ?? null;
 }
 
 /**
@@ -539,8 +539,8 @@ export function placesNote(input: PlacesNoteInput): string {
 		`- Retries: ${input.retries}`,
 		`- Cache hits: ${input.cacheHits}`,
 		`- Failed queries: ${input.failures.length}`,
-		`- Every request sent User-Agent \`${USER_AGENT}\`: ${input.allWithUserAgent ? 'yes' : 'NO'}`,
-		`- Every request went to ${OVERPASS_INTERPRETER_URL}: ${input.allToInterpreter ? 'yes' : 'NO'}`,
+		`- Every request sent User-Agent \`${USER_AGENT}\`: ${input.requests === 0 ? 'n/a (no requests)' : input.allWithUserAgent ? 'yes' : 'NO'}`,
+		`- Every request went to ${OVERPASS_INTERPRETER_URL}: ${input.requests === 0 ? 'n/a (no requests)' : input.allToInterpreter ? 'yes' : 'NO'}`,
 		`- Smallest gap between two requests: ${input.minGapMs === null ? 'n/a (fewer than two requests)' : `${input.minGapMs} ms`}`,
 		'',
 	];
@@ -603,9 +603,13 @@ export function placesNote(input: PlacesNoteInput): string {
 			'',
 			...list(result.duplicates.map((d) => `${d.key}: kept r${d.keptId}, dropped ${d.droppedIds.map((id) => `r${id}`).join(', ')}`)),
 			'',
-			`## Bavarian rows outside the boundary (${result.outsideBoundary.length})`,
-			'',
-			...list(result.outsideBoundary.map((m) => `${m.key} ${m.name}`)),
+			...(file.bavaria.length === 0
+				? ['## Bavarian rows outside the boundary: not checked (boundary missing)']
+				: [
+						`## Bavarian rows outside the boundary (${result.outsideBoundary.length})`,
+						'',
+						...list(result.outsideBoundary.map((m) => `${m.key} ${m.name}`)),
+					]),
 			'',
 		);
 	}
@@ -778,7 +782,9 @@ export async function runBuildPlaces(options: BuildPlacesOptions = {}): Promise<
 				? `${failures.length} queries failed`
 				: index === null
 					? 'the index query is not cached'
-					: 'no municipality query is cached';
+					: index.prefixes.length === 0
+						? 'the index lists no municipalities'
+						: 'no municipality query is cached';
 		error(`${why}; places.json not written (see ${notePath})`);
 		return 1;
 	}
@@ -806,7 +812,14 @@ export async function runBuildPlaces(options: BuildPlacesOptions = {}): Promise<
 	const rawBytes = Buffer.byteLength(text);
 	const gzipBytes = gzipSync(text).length;
 	const rowsLine = `${result.file.places.length} rows, ${rawBytes} bytes, ${gzipBytes} bytes gzipped`;
-	const unchanged = requests === 0 && existsSync(placesPath) && readFileSync(placesPath, 'utf8') === text && existsSync(notePath);
+	// Keep the note only when it describes this same file (it then records the run that fetched
+	// the data); a note left by a failed run has no Output section and is rewritten.
+	const unchanged =
+		requests === 0 &&
+		existsSync(placesPath) &&
+		readFileSync(placesPath, 'utf8') === text &&
+		existsSync(notePath) &&
+		readFileSync(notePath, 'utf8').includes(`- Size: ${rawBytes} bytes raw, ${gzipBytes} bytes gzipped`);
 	if (unchanged) {
 		log(summary);
 		log(`${rowsLine}; nothing changed, files left as they are`);
