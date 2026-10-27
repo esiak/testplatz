@@ -1,21 +1,22 @@
 /**
- * Validates data/directory/centres.json against the directory schema and its sort order (CI step).
+ * Validates data/directory/centres.json against the directory schema and its canonical form (CI step).
  *
  *   node tools/check-directory.ts [path]
  *
  * Prints `<n> centres OK`, or one line per issue (entry index, field, centre_id) and exits 1.
  */
 import { readFileSync } from 'node:fs';
-import type { z } from 'zod';
-import { directorySchema, sortDirectory } from '../shared/directory.ts';
-import { CENTRES_PATH } from './seed-directory.ts';
+import { directorySchema, serializeDirectory, sortDirectory } from '../shared/directory.ts';
+import { CENTRES_PATH } from './paths.ts';
+
+type Issue = NonNullable<ReturnType<typeof directorySchema.safeParse>['error']>['issues'][number];
 
 export interface CheckResult {
 	ok: boolean;
 	lines: string[];
 }
 
-function describeIssue(issue: z.core.$ZodIssue, data: unknown): string {
+function describeIssue(issue: Issue, data: unknown): string {
 	const [index, ...rest] = issue.path;
 	if (typeof index !== 'number') return `${issue.path.join('.') || 'file'}: ${issue.message}`;
 	const entry = Array.isArray(data) ? (data[index] as { centre_id?: unknown } | undefined) : undefined;
@@ -41,12 +42,24 @@ export function checkDirectoryText(text: string): CheckResult {
 	if (misplaced >= 0) {
 		return { ok: false, lines: [`entry ${misplaced} (${ids[misplaced]}) centre_id: entries must be sorted by centre_id`] };
 	}
+	if (text !== serializeDirectory(result.data)) {
+		return {
+			ok: false,
+			lines: ['file: not in canonical form (JSON with tab indentation and one trailing newline); rewrite it with serializeDirectory'],
+		};
+	}
 	return { ok: true, lines: [`${result.data.length} centres OK`] };
 }
 
 if (import.meta.main) {
 	const path = process.argv[2] ?? CENTRES_PATH;
-	const result = checkDirectoryText(readFileSync(path, 'utf8'));
+	let text: string | null = null;
+	try {
+		text = readFileSync(path, 'utf8');
+	} catch (caught) {
+		console.error(`cannot read ${path}: ${(caught as Error).message}`);
+	}
+	const result: CheckResult = text === null ? { ok: false, lines: [] } : checkDirectoryText(text);
 	for (const line of result.lines) (result.ok ? console.log : console.error)(line);
 	process.exitCode = result.ok ? 0 : 1;
 }

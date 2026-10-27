@@ -37,8 +37,24 @@ export interface FetchClientOptions {
 	sleep?: (ms: number) => Promise<void>;
 }
 
+/** What one client (one run) sent, counted by the client itself, never from URL paths. */
+export interface FetchStats {
+	/** robots.txt requests sent (redirect hops included). */
+	robotsRequests: number;
+	/** `get` calls, keyed by the host of the URL passed to `get`. One `get` = one page. */
+	pageGets: Record<string, number>;
+	/** Every HTTP request sent (robots.txt, pages and redirect hops), keyed by the requested host. */
+	rawRequests: Record<string, number>;
+	/** Redirect hops followed by `get` (not counted as pages). */
+	redirectHops: number;
+	/** Per origin whose robots.txt could not be used (5xx, timeout, network error, bad redirects): why. */
+	robotsUnavailable: Record<string, string>;
+}
+
 export interface FetchClient {
 	get(url: string): Promise<FetchResult>;
+	/** A snapshot of this client's request counts. */
+	stats(): FetchStats;
 }
 
 export const MAX_REDIRECTS = 5;
@@ -54,6 +70,12 @@ type RawResult =
 
 const isRedirect = (status: number): boolean => [301, 302, 303, 307, 308].includes(status);
 
+interface RobotsOutcome {
+	rules: RobotsRules;
+	/** Why robots.txt was unusable (so the whole origin is disallowed), or null. */
+	unavailable: string | null;
+}
+
 export function createFetchClient(options: FetchClientOptions = {}): FetchClient {
 	const userAgent = options.userAgent ?? USER_AGENT;
 	const delayMs = options.delayMs ?? FETCH_DELAY_MS;
@@ -63,8 +85,21 @@ export function createFetchClient(options: FetchClientOptions = {}): FetchClient
 
 	/** Per host: the tail of its request chain and whether it has been contacted yet. */
 	const queues = new Map<string, { tail: Promise<unknown>; used: boolean }>();
-	/** Per robots.txt URL: the parsed rules, fetched once. */
-	const robots = new Map<string, Promise<RobotsRules>>();
+	/** Per robots.txt URL: the raw response, requested once. */
+	const robotsRaw = new Map<string, Promise<RawResult>>();
+	/** Per origin: its resolved robots rules. */
+	const robotsByOrigin = new Map<string, Promise<RobotsOutcome>>();
+
+	const counts = {
+		robotsRequests: 0,
+		pageGets: {} as Record<string, number>,
+		rawRequests: {} as Record<string, number>,
+		redirectHops: 0,
+		robotsUnavailable: {} as Record<string, string>,
+	};
+	const bump = (record: Record<string, number>, key: string): void => {
+		record[key] = (record[key] ?? 0) + 1;
+	};
 
 	/** Runs one request to `host` after every earlier one has finished, `delayMs` apart. */
 	function enqueue<T>(host: string, task: () => Promise<T>): Promise<T> {
@@ -83,11 +118,18 @@ export function createFetchClient(options: FetchClientOptions = {}): FetchClient
 		return run;
 	}
 
-	/** One HTTP request, no redirect following; the timeout covers headers and body. */
-	function request(url: URL): Promise<RawResult> {
-		return enqueue(url.host, async () => {
-			const controller = new AbortController();
-			const timer = setTimeout(() => controller.abort(), timeoutMs);
+	/** One HTTP request, no redirect following. The timeout covers headers and body. Never rejects. */
+	async function attempt(url: URL): Promise<RawResult> {
+		bump(counts.rawRequests, url.host);
+		const controller = new AbortController();
+		let timer: ReturnType<typeof setTimeout> | undefined;
+		const timedOut = new Promise<RawResult>((resolve) => {
+			timer = setTimeout(() => {
+				controller.abort();
+				resolve({ kind: 'error', reason: 'timeout' });
+			}, timeoutMs);
+		});
+		const work = (async (): Promise<RawResult> => {
 			try {
 				const response = await fetchImpl(url.href, {
 					redirect: 'manual',
@@ -96,58 +138,90 @@ export function createFetchClient(options: FetchClientOptions = {}): FetchClient
 				});
 				const bytes = new Uint8Array(await response.arrayBuffer());
 				return {
-					kind: 'response' as const,
+					kind: 'response',
 					status: response.status,
 					location: response.headers.get('location'),
 					contentType: response.headers.get('content-type'),
 					bytes,
 				};
 			} catch {
-				return { kind: 'error' as const, reason: controller.signal.aborted ? 'timeout' : 'network-error' };
-			} finally {
-				clearTimeout(timer);
+				return { kind: 'error', reason: controller.signal.aborted ? 'timeout' : 'network-error' };
 			}
-		});
+		})();
+		try {
+			return await Promise.race([work, timedOut]);
+		} finally {
+			clearTimeout(timer);
+		}
+	}
+
+	const request = (url: URL): Promise<RawResult> => enqueue(url.host, () => attempt(url));
+
+	/** The raw robots.txt response at one URL, requested at most once per client. */
+	function robotsAt(target: URL): Promise<RawResult> {
+		let raw = robotsRaw.get(target.href);
+		if (!raw) {
+			counts.robotsRequests++;
+			raw = request(target);
+			robotsRaw.set(target.href, raw);
+		}
+		return raw;
 	}
 
 	/**
-	 * The rules served at one robots.txt URL: 2xx → parsed, 4xx → allow all, anything else →
-	 * disallow all. Redirects are followed (max 5); every robots.txt URL is requested at most
-	 * once per client, so origins that redirect to the same place share one fetch.
+	 * The rules for one origin: 2xx → parsed, 4xx → allow all; a 5xx, timeout, network error,
+	 * redirect loop or more than 5 redirects → disallow all. Redirects are followed here without
+	 * waiting on other origins' resolution, so cycles can never deadlock.
 	 */
-	function robotsAt(target: URL, hops: number): Promise<RobotsRules> {
-		let rules = robots.get(target.href);
-		if (!rules) {
-			rules = (async () => {
-				const raw = await request(target);
-				if (raw.kind === 'error') return DISALLOW_ALL;
-				if (isRedirect(raw.status) && raw.location !== null) {
-					if (hops >= MAX_REDIRECTS || !URL.canParse(raw.location, target)) return DISALLOW_ALL;
-					const next = new URL(raw.location, target);
-					next.hash = '';
-					return robotsAt(next, hops + 1);
-				}
-				if (raw.status >= 200 && raw.status < 300) return parseRobots(decodeBody(raw.bytes, raw.contentType));
-				if (raw.status >= 400 && raw.status < 500) return ALLOW_ALL;
-				return DISALLOW_ALL;
-			})();
-			robots.set(target.href, rules);
+	async function resolveRobots(origin: string): Promise<RobotsOutcome> {
+		const unavailable = (reason: string): RobotsOutcome => {
+			counts.robotsUnavailable[origin] = reason;
+			return { rules: DISALLOW_ALL, unavailable: reason };
+		};
+		let target = new URL('/robots.txt', origin);
+		const visited = new Set<string>();
+		for (let hops = 0; ; hops++) {
+			if (visited.has(target.href)) return unavailable('redirect loop');
+			visited.add(target.href);
+			const raw = await robotsAt(target);
+			if (raw.kind === 'error') return unavailable(raw.reason);
+			if (isRedirect(raw.status) && raw.location !== null) {
+				if (hops >= MAX_REDIRECTS) return unavailable('too many redirects');
+				if (!URL.canParse(raw.location, target)) return unavailable('bad redirect');
+				const next = new URL(raw.location, target);
+				if (next.protocol !== 'http:' && next.protocol !== 'https:') return unavailable('bad redirect');
+				next.hash = '';
+				target = next;
+				continue;
+			}
+			if (raw.status >= 200 && raw.status < 300) {
+				return { rules: parseRobots(decodeBody(raw.bytes, raw.contentType)), unavailable: null };
+			}
+			if (raw.status >= 400 && raw.status < 500) return { rules: ALLOW_ALL, unavailable: null };
+			return unavailable(`HTTP ${raw.status}`);
 		}
-		return rules;
 	}
 
-	const robotsFor = (origin: string): Promise<RobotsRules> => robotsAt(new URL('/robots.txt', origin), 0);
+	function robotsFor(origin: string): Promise<RobotsOutcome> {
+		let outcome = robotsByOrigin.get(origin);
+		if (!outcome) {
+			outcome = resolveRobots(origin);
+			robotsByOrigin.set(origin, outcome);
+		}
+		return outcome;
+	}
 
 	async function get(url: string): Promise<FetchResult> {
 		if (!URL.canParse(url)) return { ok: false, reason: 'network-error', url, status: null };
 		let current = new URL(url);
 		current.hash = '';
+		bump(counts.pageGets, current.host);
 
 		for (let redirects = 0; ; redirects++) {
 			if (current.protocol !== 'http:' && current.protocol !== 'https:') {
 				return { ok: false, reason: 'network-error', url: current.href, status: null };
 			}
-			const rules = await robotsFor(current.origin);
+			const { rules } = await robotsFor(current.origin);
 			if (!rules.isAllowed(current.pathname + current.search)) {
 				return { ok: false, reason: 'robots-disallowed', url: current.href, status: null };
 			}
@@ -162,6 +236,7 @@ export function createFetchClient(options: FetchClientOptions = {}): FetchClient
 				if (!URL.canParse(raw.location, current)) {
 					return { ok: false, reason: 'network-error', url: current.href, status: raw.status };
 				}
+				counts.redirectHops++;
 				current = new URL(raw.location, current);
 				current.hash = '';
 				continue;
@@ -179,5 +254,13 @@ export function createFetchClient(options: FetchClientOptions = {}): FetchClient
 		}
 	}
 
-	return { get };
+	const stats = (): FetchStats => ({
+		robotsRequests: counts.robotsRequests,
+		pageGets: { ...counts.pageGets },
+		rawRequests: { ...counts.rawRequests },
+		redirectHops: counts.redirectHops,
+		robotsUnavailable: { ...counts.robotsUnavailable },
+	});
+
+	return { get, stats };
 }

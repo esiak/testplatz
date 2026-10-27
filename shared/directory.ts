@@ -9,13 +9,18 @@ export const SOURCES = ['rtpartner'] as const;
 
 export const CENTRE_ID_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
-const isHttpUrl = (value: string): boolean => {
+/** A plausible public hostname: only `[a-z0-9.-]`, at least one dot, a final label of 2+ letters. */
+export const isPlausibleHostname = (hostname: string): boolean =>
+	/^[a-z0-9.-]+$/.test(hostname) && hostname.includes('.') && /\.[a-z]{2,}$/.test(hostname);
+
+/** An http(s) URL whose hostname is plausible (rejects typos such as `www.vhs-kisshab,de`). */
+export const isHttpUrl = (value: string): boolean => {
 	if (!URL.canParse(value)) return false;
-	const { protocol } = new URL(value);
-	return protocol === 'http:' || protocol === 'https:';
+	const { protocol, hostname } = new URL(value);
+	return (protocol === 'http:' || protocol === 'https:') && isPlausibleHostname(hostname);
 };
 
-const httpUrl = z.string().refine(isHttpUrl, { message: 'must be an http(s) URL' });
+const httpUrl = z.string().refine(isHttpUrl, { message: 'must be an http(s) URL with a plausible hostname' });
 
 export const addressSchema = z.strictObject({
 	street: z.string().min(1),

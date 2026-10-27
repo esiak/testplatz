@@ -195,7 +195,7 @@
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": "2026-10-27T07:09:40.207Z"
+		"verified_at": "2026-10-27T07:25:45.068Z"
 	},
 	{
 		"centre_id": "inlingua-sprachschule-u-c-bernau-gmbh",
@@ -267,7 +267,7 @@
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": "2026-10-27T07:09:40.207Z"
+		"verified_at": "2026-10-27T07:25:45.068Z"
 	},
 	{
 		"centre_id": "mas-sprachschule-muenchen",
@@ -298,7 +298,7 @@
 		"lat": null,
 		"lon": null,
 		"website": "https://www.mvhs.de/",
-		"test_page_url": "https://www.mvhs.de/programm/info/sprachen/sprachpruefungen-und-zertifikate-einbuergerungstest",
+		"test_page_url": null,
 		"reader": "itemkg",
 		"reader_config": null,
 		"opted_out": false,
@@ -339,7 +339,7 @@
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": "2026-10-27T07:09:40.207Z"
+		"verified_at": "2026-10-27T07:25:45.068Z"
 	},
 	{
 		"centre_id": "vhs-alt-neuoetting-und-toeging-e-v",
@@ -388,7 +388,7 @@
 		"lat": null,
 		"lon": null,
 		"website": "https://www.vhs-aschaffenburg.de/",
-		"test_page_url": "https://www.vhs-aschaffenburg.de/kurse/deutsch-integration-grundbildung/einbuergerungstest",
+		"test_page_url": null,
 		"reader": "kuferweb",
 		"reader_config": null,
 		"opted_out": false,
@@ -397,7 +397,7 @@
 	},
 	{
 		"centre_id": "vhs-augsburg-e-v",
-		"name": "Volkshochschule Augsburg",
+		"name": "VHS Augsburg e.V.",
 		"address": {
 			"street": "Willy-Brandt-Platz 3a",
 			"postcode": "86153",
@@ -423,7 +423,7 @@
 		},
 		"lat": null,
 		"lon": null,
-		"website": "https://www.vhs-kisshab,de/",
+		"website": null,
 		"test_page_url": null,
 		"reader": "none",
 		"reader_config": null,
@@ -447,7 +447,7 @@
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": "2026-10-27T07:09:40.207Z"
+		"verified_at": "2026-10-27T07:25:45.068Z"
 	},
 	{
 		"centre_id": "vhs-bamberg",
@@ -483,7 +483,7 @@
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": "2026-10-27T07:09:40.207Z"
+		"verified_at": "2026-10-27T07:25:45.068Z"
 	},
 	{
 		"centre_id": "vhs-bayreuth",
@@ -505,9 +505,9 @@
 	},
 	{
 		"centre_id": "vhs-beilngries-e-v",
-		"name": "Spielzeugmuseum 1. OG}",
+		"name": "VHS Beilngries e.V.",
 		"address": {
-			"street": "Hauptstr. 47",
+			"street": "Ringstr. 16",
 			"postcode": "92339",
 			"city": "Beilngries"
 		},
@@ -519,7 +519,7 @@
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": "2026-10-27T07:09:40.207Z"
+		"verified_at": "2026-10-27T07:25:45.068Z"
 	},
 	{
 		"centre_id": "vhs-buchloe-e-v",
@@ -604,7 +604,7 @@
 		"lat": null,
 		"lon": null,
 		"website": "https://www.vhs-deggendorf.de/",
-		"test_page_url": "https://www.vhs-deggendorf.de/der-einbuergerungstest",
+		"test_page_url": null,
 		"reader": "none",
 		"reader_config": null,
 		"opted_out": false,
@@ -676,7 +676,7 @@
 		"lat": null,
 		"lon": null,
 		"website": "https://www.vhs-lkr-ansbach.de/",
-		"test_page_url": "https://vhs-lkr-ansbach.de/Artikel/cmx66d95c61bf49b.html",
+		"test_page_url": null,
 		"reader": "none",
 		"reader_config": null,
 		"opted_out": false,
@@ -735,7 +735,7 @@
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": "2026-10-27T07:09:40.207Z"
+		"verified_at": "2026-10-27T07:25:45.068Z"
 	},
 	{
 		"centre_id": "vhs-dillingen-e-v",
@@ -771,7 +771,7 @@
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": "2026-10-27T07:09:40.207Z"
+		"verified_at": "2026-10-27T07:25:45.068Z"
 	},
 	{
 		"centre_id": "vhs-donauwoerth",
@@ -789,7 +789,7 @@
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": "2026-10-27T07:09:40.207Z"
+		"verified_at": "2026-10-27T07:25:45.068Z"
 	},
 	{
 		"centre_id": "vhs-ebersberger-land-grafing-bei-muenchen",
@@ -807,7 +807,7 @@
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": "2026-10-27T07:09:40.207Z"
+		"verified_at": "2026-10-27T07:25:45.068Z"
 	},
 	{
 		"centre_id": "vhs-erlangen",
@@ -843,7 +843,7 @@
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": "2026-10-27T07:09:40.207Z"
+		"verified_at": "2026-10-27T07:25:45.068Z"
 	},
 	{
 		"centre_id": "vhs-fichtelgebirge",
@@ -897,7 +897,7 @@
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": "2026-10-27T07:09:40.207Z"
+		"verified_at": "2026-10-27T07:25:45.068Z"
 	},
 	{
 		"centre_id": "vhs-garmisch-partenkirchen-e-v",
@@ -910,7 +910,7 @@
 		"lat": null,
 		"lon": null,
 		"website": "https://www.vhs-gap.de/",
-		"test_page_url": "https://www.vhs-gap.de/infocenter/einbuergerungstest",
+		"test_page_url": null,
 		"reader": "none",
 		"reader_config": null,
 		"opted_out": false,
@@ -937,11 +937,11 @@
 	},
 	{
 		"centre_id": "vhs-geschaeftsstelle-neufarn-hallbergmoos",
-		"name": "Mittelschule",
+		"name": "VHS Geschäftsstelle Neufarn-Hallbergmoos",
 		"address": {
-			"street": "Galgenbachweg  30",
+			"street": "Bahnhofstraße 32",
 			"postcode": "85375",
-			"city": "Neufahrn bei Freising"
+			"city": "Neufahrn"
 		},
 		"lat": null,
 		"lon": null,
@@ -951,7 +951,7 @@
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": "2026-10-27T07:09:40.207Z"
+		"verified_at": "2026-10-27T07:25:45.068Z"
 	},
 	{
 		"centre_id": "vhs-groebenzell-e-v",
@@ -987,7 +987,7 @@
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": "2026-10-27T07:09:40.207Z"
+		"verified_at": "2026-10-27T07:25:45.068Z"
 	},
 	{
 		"centre_id": "vhs-herrsching",
@@ -1144,7 +1144,7 @@
 		"lat": null,
 		"lon": null,
 		"website": "https://www.vhs-kronach.de/",
-		"test_page_url": "https://www.vhs-kronach.de/fachbereich/programmbereich/sprachen/einbuergerungstest",
+		"test_page_url": null,
 		"reader": "none",
 		"reader_config": null,
 		"opted_out": false,
@@ -1203,7 +1203,7 @@
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": "2026-10-27T07:09:40.207Z"
+		"verified_at": "2026-10-27T07:25:45.068Z"
 	},
 	{
 		"centre_id": "vhs-lindau",
@@ -1225,9 +1225,9 @@
 	},
 	{
 		"centre_id": "vhs-lohr-gemuenden",
-		"name": "Stadt Lohr a.Main",
+		"name": "VHS Lohr-Gemünden",
 		"address": {
-			"street": "Schlossplatz 3",
+			"street": "Ludwigstraße 16",
 			"postcode": "97816",
 			"city": "Lohr a. Main"
 		},
@@ -1401,13 +1401,13 @@
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": "2026-10-27T07:09:40.207Z"
+		"verified_at": "2026-10-27T07:25:45.068Z"
 	},
 	{
 		"centre_id": "vhs-rieser-noerdlingen-e-v",
-		"name": "Stadtmuseum",
+		"name": "VHS Rieser Nördlingen e.V.",
 		"address": {
-			"street": "Vordere Gerbergasse 1",
+			"street": "Marktplatz 20",
 			"postcode": "86720",
 			"city": "Nördlingen"
 		},
@@ -1599,7 +1599,7 @@
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": "2026-10-27T07:09:40.207Z"
+		"verified_at": "2026-10-27T07:25:45.068Z"
 	},
 	{
 		"centre_id": "vhs-taufkirchen",
@@ -1612,7 +1612,7 @@
 		"lat": null,
 		"lon": null,
 		"website": "https://www.vhs-taufkirchen.de/",
-		"test_page_url": "https://www.vhs-taufkirchen.de/kurse/integration-einbuergerung/einbuergerungstest",
+		"test_page_url": null,
 		"reader": "kuferweb",
 		"reader_config": null,
 		"opted_out": false,
@@ -1729,21 +1729,21 @@
 	},
 	{
 		"centre_id": "vhs-waldkraiburg-e-v",
-		"name": "vhs Kurszentrum",
+		"name": "VHS Waldkraiburg e.V.",
 		"address": {
-			"street": "Graslitzer Str. 17",
+			"street": "Am Kalander 1",
 			"postcode": "84478",
 			"city": "Waldkraiburg"
 		},
 		"lat": null,
 		"lon": null,
 		"website": "https://www.vhs-waldkraiburg.de/",
-		"test_page_url": "https://vhs-waldkraiburg.de/Veranstaltung/cmx69ccdf2327d8b.html",
+		"test_page_url": null,
 		"reader": "none",
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": "2026-10-27T07:09:40.207Z"
+		"verified_at": null
 	},
 	{
 		"centre_id": "vhs-wasserburg-inn-e-v",
@@ -1953,7 +1953,7 @@
 		},
 		"lat": null,
 		"lon": null,
-		"website": "https://www.vhs-eching-de/",
+		"website": null,
 		"test_page_url": null,
 		"reader": "none",
 		"reader_config": null,
@@ -2071,11 +2071,11 @@
 	},
 	{
 		"centre_id": "volkshochschule-rottenburg-an-der-laaber-e-v",
-		"name": "vhs Rottenburg, Raum 209",
+		"name": "Volkshochschule Rottenburg an der Laaber e.V.",
 		"address": {
-			"street": "Georg-Pöschl-Str. 16, 2. Stock",
+			"street": "Georg-Pöschl-Straße 16",
 			"postcode": "84056",
-			"city": "Rottenburg"
+			"city": "Rottenburg a.d.Laaber"
 		},
 		"lat": null,
 		"lon": null,
@@ -2085,7 +2085,7 @@
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": "2026-10-27T07:09:40.207Z"
+		"verified_at": "2026-10-27T07:25:45.068Z"
 	},
 	{
 		"centre_id": "volkshochschule-straubing-bogen-ggmbh",
@@ -2157,6 +2157,6 @@
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": "2026-10-27T07:09:40.207Z"
+		"verified_at": "2026-10-27T07:25:45.068Z"
 	}
 ]

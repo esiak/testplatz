@@ -231,6 +231,82 @@ describe('createFetchClient', () => {
 		expect(net.calls.filter((c) => c.url !== 'https://a.de/robots.txt')).toHaveLength(6);
 	});
 
+	it('resolves a robots.txt redirect cycle to robots-disallowed without hanging', async () => {
+		const net = fakeNetwork({
+			'https://a.de/robots.txt': redirect('https://b.de/robots.txt'),
+			'https://b.de/robots.txt': redirect('https://a.de/robots.txt'),
+			'https://a.de/x': html('x'),
+			'https://b.de/x': html('x'),
+		});
+		const client = createFetchClient({ fetchImpl: net.fetchImpl, delayMs: 0 });
+		const [a, b] = await Promise.all([client.get('https://a.de/x'), client.get('https://b.de/x')]);
+		expect(a).toMatchObject({ ok: false, reason: 'robots-disallowed', url: 'https://a.de/x' });
+		expect(b).toMatchObject({ ok: false, reason: 'robots-disallowed', url: 'https://b.de/x' });
+		expect(net.calls.map((c) => c.url).sort()).toEqual(['https://a.de/robots.txt', 'https://b.de/robots.txt']);
+		expect(client.stats().robotsUnavailable).toEqual({ 'https://a.de': 'redirect loop', 'https://b.de': 'redirect loop' });
+	}, 2000);
+
+	it('resolves a robots.txt self-redirect to robots-disallowed', async () => {
+		const net = fakeNetwork({ 'https://a.de/robots.txt': redirect('/robots.txt'), 'https://a.de/x': html('x') });
+		const client = createFetchClient({ fetchImpl: net.fetchImpl, delayMs: 0 });
+		expect(await client.get('https://a.de/x')).toMatchObject({ ok: false, reason: 'robots-disallowed' });
+		expect(net.calls).toHaveLength(1);
+	}, 2000);
+
+	it('resolves a robots.txt chain of more than 5 redirects to robots-disallowed', async () => {
+		const routes: Record<string, Route> = { 'https://a.de/x': html('x') };
+		routes['https://a.de/robots.txt'] = redirect('https://h1.de/robots.txt');
+		for (let i = 1; i <= 8; i++) routes[`https://h${i}.de/robots.txt`] = redirect(`https://h${i + 1}.de/robots.txt`);
+		const net = fakeNetwork(routes, 0);
+		const client = createFetchClient({ fetchImpl: net.fetchImpl, delayMs: 0 });
+		expect(await client.get('https://a.de/x')).toMatchObject({ ok: false, reason: 'robots-disallowed' });
+		expect(net.calls).toHaveLength(6);
+		expect(client.stats().robotsUnavailable['https://a.de']).toBe('too many redirects');
+	}, 2000);
+
+	it('times out a response whose body stalls', async () => {
+		const net = fakeNetwork({
+			'https://a.de/robots.txt': status(404),
+			'https://a.de/stall': () =>
+				new Response(
+					new ReadableStream<Uint8Array>({
+						start(controller) {
+							controller.enqueue(new TextEncoder().encode('<p>partial'));
+						},
+					}),
+					{ status: 200, headers: { 'content-type': 'text/html' } },
+				),
+		});
+		const client = createFetchClient({ fetchImpl: net.fetchImpl, delayMs: 0, timeoutMs: 50 });
+		expect(await client.get('https://a.de/stall')).toEqual({
+			ok: false,
+			reason: 'timeout',
+			url: 'https://a.de/stall',
+			status: null,
+		});
+	}, 2000);
+
+	it('counts robots, page gets, raw requests and redirect hops itself', async () => {
+		const net = fakeNetwork({
+			'https://a.de/robots.txt': status(404),
+			'https://a.de/': redirect('/home'),
+			'https://a.de/home': html('home'),
+			'https://a.de/t': html('t'),
+			'https://b.de/robots.txt': status(503),
+		});
+		const client = createFetchClient({ fetchImpl: net.fetchImpl, delayMs: 0 });
+		await client.get('https://a.de/');
+		await client.get('https://a.de/t');
+		await client.get('https://b.de/x');
+		expect(client.stats()).toEqual({
+			robotsRequests: 2,
+			pageGets: { 'a.de': 2, 'b.de': 1 },
+			rawRequests: { 'a.de': 4, 'b.de': 1 },
+			redirectHops: 1,
+			robotsUnavailable: { 'https://b.de': 'HTTP 503' },
+		});
+	});
+
 	it('decodes a Latin-1 page from the Content-Type charset', async () => {
 		const net = fakeNetwork({
 			'https://a.de/robots.txt': status(404),

@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { centreSchema, directorySchema, serializeDirectory, slugify, type Centre } from '../shared/directory.ts';
+import { centreSchema, directorySchema, isPlausibleHostname, serializeDirectory, slugify, type Centre } from '../shared/directory.ts';
 import { checkDirectoryText } from '../tools/check-directory.ts';
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
@@ -45,6 +45,9 @@ describe('centreSchema', () => {
 		['lat without lon', { lat: 48.1 }, 'lon'],
 		['a bad postcode', { address: { street: 'A 1', postcode: '9076', city: 'Fürth' } }, 'address.postcode'],
 		['a non-http website', { website: 'ftp://x.de/' }, 'website'],
+		['a website with a comma in the host', { website: 'http://www.vhs-kisshab,de/' }, 'website'],
+		['a website host without a dot', { website: 'https://www.vhs-eching-de/' }, 'website'],
+		['a test page on a numeric TLD', { test_page_url: 'https://10.0.0.1/' }, 'test_page_url'],
 		['a non-UTC verified_at', { verified_at: '2026-10-27T08:00:00+02:00' }, 'verified_at'],
 		['an id that is not a slug', { centre_id: 'VHS_Fürth' }, 'centre_id'],
 		['a non-strict reader_config', { reader: 'kuferweb', reader_config: { list_url: 'https://x.de/', extra: 1 } }, 'reader_config'],
@@ -113,9 +116,31 @@ describe('check-directory', () => {
 		expect(result.lines.join('\n')).toContain(expected);
 	});
 
+	it('rejects a file that is not the canonical serialisation', () => {
+		const entries = [centre({ centre_id: 'a' }), centre({ centre_id: 'b' })];
+		expect(checkDirectoryText(JSON.stringify(entries, null, 2) + '\n').ok).toBe(false);
+		expect(checkDirectoryText(serializeDirectory(entries).trimEnd()).ok).toBe(false);
+		expect(checkDirectoryText(serializeDirectory(entries)).ok).toBe(true);
+	});
+
+	it('imports only shared/ and node: modules (no cheerio, no fetch client)', () => {
+		const source = readFileSync(join(repoRoot, 'tools/check-directory.ts'), 'utf8');
+		const specifiers = [...source.matchAll(/from\s+'([^']+)'/g)].map((m) => m[1]);
+		expect(specifiers.every((s) => s!.startsWith('node:') || s!.startsWith('../shared/') || s === './paths.ts')).toBe(true);
+	});
+
 	it('rejects an unsorted file', () => {
 		const result = checkDirectoryText(JSON.stringify([centre({ centre_id: 'b' }), centre({ centre_id: 'a' })]));
 		expect(result.ok).toBe(false);
+	});
+
+	it('accepts plausible hostnames only', () => {
+		expect(isPlausibleHostname('www.vhs-fuerth.de')).toBe(true);
+		expect(isPlausibleHostname('xn--vhs-frth-q9a.de')).toBe(true);
+		expect(isPlausibleHostname('www.vhs-kisshab,de')).toBe(false);
+		expect(isPlausibleHostname('www.vhs-eching-de')).toBe(false);
+		expect(isPlausibleHostname('localhost')).toBe(false);
+		expect(isPlausibleHostname('example.d3')).toBe(false);
 	});
 
 	it('exits non-zero from the CLI on an invalid file', () => {
