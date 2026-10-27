@@ -24,7 +24,7 @@ Stored as `website: null`; not corrected automatically.
 - Verified: 19
 - Unverified: 101
 - Reader kuferweb: 16, itemkg: 20, none: 84
-- Website hosts contacted: 113
+- Website hosts checked: 113
 - HTTP requests: 148 robots.txt, 139 page gets, 35 redirect hops; 308 in total
 - Most page gets to one host: 2 (www.inlingua-ingolstadt.de)
 - Most requests of any kind to one host (robots.txt and hops included): 4 (kolping-akademie-ingolstadt.de)

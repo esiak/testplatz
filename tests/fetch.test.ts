@@ -331,6 +331,11 @@ describe('decodeBody', () => {
 		).toContain('ü');
 	});
 
+	it('prefers the Content-Type charset over a disagreeing meta charset', () => {
+		const bytes = new TextEncoder().encode('<meta charset="iso-8859-1"><p>Fürth');
+		expect(decodeBody(bytes, 'text/html; charset=utf-8')).toContain('Fürth');
+	});
+
 	it('falls back to UTF-8 for an unknown label or no charset', () => {
 		const utf8 = new TextEncoder().encode('Fürth');
 		expect(decodeBody(utf8, 'text/html; charset=x-made-up')).toBe('Fürth');

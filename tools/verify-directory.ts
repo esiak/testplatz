@@ -43,7 +43,7 @@ export interface SitePages {
 export interface AssessContext {
 	/** Run start time, written as `verified_at`. */
 	now: string;
-	/** The website host is shared by centres with different postcodes: no name or address corrections. */
+	/** The website host is shared by more than one centre: no name or address corrections. */
 	sharedHost: boolean;
 	/** Why robots.txt was unusable when the homepage was robots-disallowed because of it, else null. */
 	robotsUnavailable: string | null;
@@ -93,9 +93,9 @@ export function pageText(html: string): string {
  */
 export function confirmsTestPage(html: string): boolean {
 	const $ = load(html);
+	$('script, style, noscript, template, nav, header, footer, [role=navigation]').remove();
 	if (TEST_PATTERN.test($('title').text())) return true;
 	if ($('h1, h2, h3').toArray().some((h) => TEST_PATTERN.test($(h).text()))) return true;
-	$('script, style, noscript, template, nav, header, footer, [role=navigation]').remove();
 	return TEST_PATTERN.test(collapse($('body').length > 0 ? $('body').text() : $.root().text()));
 }
 
@@ -347,7 +347,7 @@ export interface ReviewNoteInput {
 	directory: readonly Centre[];
 	/** Entries checked this run. */
 	results: readonly Assessment[];
-	hostsContacted: number;
+	hostsChecked: number;
 	stats: FetchStats;
 	allWithUserAgent: boolean;
 }
@@ -376,7 +376,7 @@ export function reviewNote(input: ReviewNoteInput): string {
 		`- Verified: ${verified}`,
 		`- Unverified: ${directory.length - verified}`,
 		`- Reader kuferweb: ${readerCount('kuferweb')}, itemkg: ${readerCount('itemkg')}, none: ${readerCount('none')}`,
-		`- Website hosts contacted: ${input.hostsContacted}`,
+		`- Website hosts checked: ${input.hostsChecked}`,
 		`- HTTP requests: ${stats.robotsRequests} robots.txt, ${sum(stats.pageGets)} page gets, ${stats.redirectHops} redirect hops; ${sum(stats.rawRequests)} in total`,
 		`- Most page gets to one host: ${maxPages}${maxPageHost ? ` (${maxPageHost})` : ''}`,
 		`- Most requests of any kind to one host (robots.txt and hops included): ${maxRaw}${maxRawHost ? ` (${maxRawHost})` : ''}`,
@@ -461,12 +461,12 @@ export async function runVerify(options: VerifyOptions = {}): Promise<number> {
 
 	const selected = centres.filter((c) => !c.opted_out && (all || c.verified_at === null));
 
-	/** Postcodes per website host across the whole directory, to spot shared hosts. */
-	const postcodesByHost = new Map<string, Set<string>>();
+	/** Centres per website host across the whole directory, to spot shared hosts. */
+	const centresByHost = new Map<string, number>();
 	for (const centre of centres) {
 		const host = siteHost(centre.website);
 		if (host === null) continue;
-		postcodesByHost.set(host, (postcodesByHost.get(host) ?? new Set()).add(centre.address.postcode));
+		centresByHost.set(host, (centresByHost.get(host) ?? 0) + 1);
 	}
 
 	const groups = new Map<string, Centre[]>();
@@ -492,7 +492,7 @@ export async function runVerify(options: VerifyOptions = {}): Promise<number> {
 				: null;
 		return assessSite(centre, pages, {
 			now: runAt,
-			sharedHost: host !== null && (postcodesByHost.get(host)?.size ?? 0) > 1,
+			sharedHost: host !== null && (centresByHost.get(host) ?? 0) > 1,
 			robotsUnavailable: failedOrigin !== null ? (stats.robotsUnavailable[failedOrigin] ?? null) : null,
 		});
 	});
@@ -509,7 +509,7 @@ export async function runVerify(options: VerifyOptions = {}): Promise<number> {
 		mode: all ? 'all' : 'default',
 		directory: next.data,
 		results,
-		hostsContacted: groups.size,
+		hostsChecked: groups.size,
 		stats,
 		allWithUserAgent,
 	});

@@ -251,6 +251,10 @@ describe('verify: page helpers', () => {
 		expect(confirmsTestPage('<html><body><main><p>Termine zum Einbürgerungstest</p></main></body></html>')).toBe(true);
 		expect(confirmsTestPage(fixture('site-nav-only.html'))).toBe(false);
 	});
+
+	it('does not confirm a page whose only Einbürgerungstest heading is inside a nav', () => {
+		expect(confirmsTestPage('<html><body><nav><h2>Einbürgerungstest</h2></nav><main><h1>Kurse</h1></main></body></html>')).toBe(false);
+	});
 });
 
 describe('verify: assessSite', () => {
@@ -317,6 +321,29 @@ describe('verify: assessSite', () => {
 		expect(result.entry.address.street).toBe('Galgenbachweg 30');
 		expect(result.entry.name).toBe('vhs Rottenburg');
 		expect(result.notes).toEqual(['JSON-LD `address.street` "Galgenbachweg 30, 2. Stock" rejected: street contains a comma']);
+	});
+
+	it('stores the final URL when the test link redirected', () => {
+		const final = 'https://kurse.vhs-fuerth.de/einbuergerungstest-termine';
+		const result = assessSite(entry(), { home, testLink: TEST, testPage: ok(final, fixture('site-test-page.html')) }, ctx());
+		expect(result.reason).toBeNull();
+		expect(result.entry.test_page_url).toBe(final);
+		expect(result.changes).toContainEqual({ field: 'test_page_url', from: null, to: final });
+	});
+
+	it('applies a JSON-LD city correction on a verified entry and only proposes it otherwise', () => {
+		const otherCity = entry({ address: { street: 'Hirschenstraße 27/29', postcode: '90762', city: 'Fuerth' } });
+		const applied = assessSite(otherCity, confirmed, ctx());
+		expect(applied.reason).toBeNull();
+		expect(applied.entry.address.city).toBe('Fürth');
+		expect(applied.changes).toContainEqual({ field: 'address.city', from: 'Fuerth', to: 'Fürth' });
+
+		const navOnly: SitePages = { home, testLink: TEST, testPage: ok(TEST, fixture('site-nav-only.html')) };
+		const proposed = assessSite(otherCity, navOnly, ctx());
+		expect(proposed.reason).toBe('test page not reachable');
+		expect(proposed.entry.address.city).toBe('Fuerth');
+		expect(proposed.changes.map((c) => c.field)).not.toContain('address.city');
+		expect(proposed.notes).toContain('proposed `address.city`: Fuerth → Fürth (not applied: entry unverified)');
 	});
 
 	it('never applies a different JSON-LD postcode, but notes it', () => {
@@ -538,6 +565,23 @@ describe('verify: runVerify', () => {
 		expect(await runVerify({ dir, all: true, fetchImpl: net.fetchImpl, delayMs: 0, ...quiet })).toBe(0);
 		expect(net.calls.some((c) => c.url.includes('vhs-fuerth.de'))).toBe(true);
 		expect(net.calls.some((c) => c.url.includes('optout.example'))).toBe(false);
+	});
+
+	it('makes no JSON-LD corrections when two centres share a host, even with the same postcode', async () => {
+		const dir = tmp();
+		const centres = buildEntries([
+			{ name: 'VHS Fürth', street: 'Hirschenstr. 27/29', postcode: '90762', city: 'Fürth', website: 'https://www.vhs-fuerth.de/' },
+			{ name: 'VHS Fürth Zweigstelle', street: 'Markt 1', postcode: '90762', city: 'Fürth', website: 'https://www.vhs-fuerth.de/' },
+		]);
+		writeFileSync(join(dir, 'centres.json'), serializeDirectory(centres));
+		const net = fakeNet(routes);
+		expect(await runVerify({ dir, fetchImpl: net.fetchImpl, delayMs: 0, ...quiet })).toBe(0);
+		const out = directorySchema.parse(JSON.parse(readFileSync(join(dir, 'centres.json'), 'utf8')));
+		expect(out.every((c) => c.verified_at !== null)).toBe(true);
+		expect(out.map((c) => [c.name, c.address.street])).toEqual([
+			['VHS Fürth', 'Hirschenstr. 27/29'],
+			['VHS Fürth Zweigstelle', 'Markt 1'],
+		]);
 	});
 
 	it('exits 1 with a message when centres.json is missing or invalid', async () => {
