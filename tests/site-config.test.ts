@@ -3,6 +3,7 @@ import { posix, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { ABOUT_URL, SITE_URL, USER_AGENT } from '../pipeline/config.ts';
+import { PUBLIC_DIR } from '../pipeline/stages/paths.ts';
 import pkg from '../package.json' with { type: 'json' };
 import viteConfig from '../vite.config.ts';
 
@@ -18,6 +19,10 @@ describe('site config', () => {
 
 	it('serves the site under the same path as the Vite base', () => {
 		expect(viteConfig.base).toBe(new URL(SITE_URL).pathname);
+	});
+
+	it('serves the directory the pipeline publishes to as the Vite public dir', () => {
+		expect(viteConfig.publicDir).toBe(PUBLIC_DIR);
 	});
 
 	it('builds the About page at the path named in the bot User-Agent', () => {

@@ -7,6 +7,8 @@ const fromRoot = (path: string): string => fileURLToPath(new URL(path, import.me
 export default defineConfig({
 	root: fromRoot('./web'),
 	base: '/testplatz/',
+	// The published data files (snapshot.json, places.json) are served from the site root.
+	publicDir: fromRoot('./data/public'),
 	plugins: [preact()],
 	build: {
 		outDir: fromRoot('./dist'),

@@ -48,34 +48,69 @@ describe('ci.yml', () => {
 
 describe('pipeline.yml', () => {
 	const pipeline = read('pipeline.yml');
+	const publish = job(pipeline, 'publish');
 	const build = job(pipeline, 'build');
 	const deploy = job(pipeline, 'deploy');
 
-	it('deploys from main or dispatch in one non-cancelling concurrency group', () => {
+	it('runs from main or dispatch in one non-cancelling concurrency group, and only for main', () => {
 		expect(pipeline).toMatch(/^  push:\n    branches: \[main\]\n/m);
 		expect(pipeline).toContain('workflow_dispatch:');
 		expect(pipeline).toMatch(/concurrency:\n\s+group: pipeline\n\s+cancel-in-progress: false/);
-		expect(build).toContain('ref: ${{ github.sha }}');
+		expect(publish).toMatch(/^    if: github\.ref == 'refs\/heads\/main'$/m);
 		expect(deploy).toMatch(/uses: actions\/deploy-pages@v\d+/);
 	});
 
-	it('runs type-check and tests before the build in the build job', () => {
-		const steps = ['run: npm ci', 'run: npm run typecheck', 'run: npm test', 'run: npm run build'].map((s) =>
-			build.indexOf(s),
-		);
+	it('chains publish → build → deploy', () => {
+		expect(build).toMatch(/^    needs: publish$/m);
+		expect(deploy).toMatch(/^    needs: build$/m);
+	});
+
+	it('tests, runs the pipeline, then commits, in that order in the publish job', () => {
+		const steps = [
+			'run: npm ci',
+			'run: npm run typecheck',
+			'run: npm test',
+			'run: npm run pipeline',
+			'.github/scripts/commit-public.sh',
+		].map((s) => publish.indexOf(s));
 		expect(steps.every((i) => i >= 0)).toBe(true);
 		expect([...steps].sort((a, b) => a - b)).toEqual(steps);
+		expect(publish).toContain('sha: ${{ steps.commit.outputs.sha }}');
+		expect(publish).toMatch(/- id: commit\n/);
 	});
 
-	it('fails the build unless both pages were built', () => {
-		expect(build).toContain('dist/index.html');
-		expect(build).toContain('dist/about/index.html');
+	it('type-checks and tests a moved upstream before re-publishing it on a retry, without installing', () => {
+		const commitStep = publish.slice(publish.indexOf('- id: commit'));
+		const match = commitStep.match(/^\s+PUBLISH_CMD: (.*)$/m);
+		expect(match?.[1]).toBe('npm run typecheck && npm test && npm run pipeline');
+		expect(match?.[1]).not.toContain('npm ci');
 	});
 
-	it('grants Pages and OIDC permissions to the deploy job only', () => {
+	it('builds and deploys exactly the SHA the publish job pushed', () => {
+		expect(build).toContain('ref: ${{ needs.publish.outputs.sha }}');
+		expect(build).not.toContain('github.sha');
+		expect(build.indexOf('run: npm ci')).toBeLessThan(build.indexOf('run: npm run build'));
+	});
+
+	it('never leaves a credential on disk after checkout', () => {
+		const checkouts = pipeline.match(/uses: actions\/checkout@v\d+\n\s+with:\n(?:\s{10}.*\n)*/g) ?? [];
+		expect(checkouts).toHaveLength(2);
+		for (const checkout of checkouts) expect(checkout).toContain('persist-credentials: false');
+	});
+
+	it('fails the build unless both pages and both data files were built', () => {
+		for (const file of ['dist/index.html', 'dist/about/index.html', 'dist/snapshot.json', 'dist/places.json']) {
+			expect(build).toContain(file);
+		}
+	});
+
+	it('grants contents: write to publish only, and Pages and OIDC to deploy only', () => {
 		const workflowLevel = pipeline.match(/^permissions:\n((?:  .*\n)*)/m)?.[1] ?? '';
 		expect(workflowLevel.trim()).toBe('contents: read');
-		expect(build).not.toMatch(/pages: write|id-token: write/);
+		expect(publish).toMatch(/^    permissions:\n      contents: write\n    \S/m);
+		expect(build).not.toMatch(/permissions:|contents: write|pages: write|id-token: write/);
+		expect(deploy).not.toContain('contents: write');
+		expect(publish).not.toMatch(/pages: write|id-token: write/);
 		expect(deploy).toMatch(/permissions:\n\s+pages: write\n\s+id-token: write/);
 	});
 });

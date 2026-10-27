@@ -1,0 +1,1037 @@
+diff --git a/.github/scripts/commit-public.sh b/.github/scripts/commit-public.sh
+new file mode 100755
+index 0000000..a7e03e3
+--- /dev/null
++++ b/.github/scripts/commit-public.sh
+@@ -0,0 +1,58 @@
++#!/usr/bin/env bash
++# Commits data/public/ once (only if it changed) and pushes it to the branch, then prints the
++# pushed SHA as `sha=<sha>` to $GITHUB_OUTPUT. On a rejected push it fetches, resets to the
++# upstream branch, re-runs the publish command, commits if changed and retries: 3 attempts in all.
++#
++# Env:
++#   PUBLISH_CMD      command that regenerates data/public/ (default: npm run pipeline)
++#   GIT_AUTH_HEADER  optional `AUTHORIZATION: …` header, passed to git fetch/push only
++#   REMOTE           remote name or URL (default: origin)
++#   BRANCH           branch to push to (default: main)
++#   GITHUB_OUTPUT    optional file the `sha=` line is appended to
++set -euo pipefail
++
++PUBLISH_CMD="${PUBLISH_CMD:-npm run pipeline}"
++REMOTE="${REMOTE:-origin}"
++BRANCH="${BRANCH:-main}"
++ATTEMPTS=3
++BOT_NAME='github-actions[bot]'
++BOT_EMAIL='41898282+github-actions[bot]@users.noreply.github.com'
++
++# Keep the credential out of the environment of everything else this script runs (the publish
++# command, git commit/reset); it reaches git only as a command-line config on fetch/push.
++auth_header="${GIT_AUTH_HEADER:-}"
++unset GIT_AUTH_HEADER
++
++# Every git call runs with hooks disabled, so no hook sees the credential or alters the commit.
++local_git() { git -c core.hooksPath=/dev/null "$@"; }
++remote_git() {
++	if [ -n "$auth_header" ]; then
++		git -c core.hooksPath=/dev/null -c "http.extraheader=$auth_header" "$@"
++	else
++		git -c core.hooksPath=/dev/null "$@"
++	fi
++}
++
++for attempt in $(seq 1 "$ATTEMPTS"); do
++	local_git add -- data/public
++	if ! local_git diff --cached --quiet -- data/public; then
++		local_git -c user.name="$BOT_NAME" -c user.email="$BOT_EMAIL" commit --quiet -m 'data: publish snapshot' -- data/public
++		echo "attempt $attempt: committed data/public/"
++	else
++		echo "attempt $attempt: data/public/ unchanged, nothing to commit"
++	fi
++	if remote_git push "$REMOTE" "HEAD:refs/heads/$BRANCH"; then
++		sha="$(local_git rev-parse HEAD)"
++		echo "pushed $sha to $BRANCH"
++		echo "sha=$sha" >> "${GITHUB_OUTPUT:-/dev/null}"
++		exit 0
++	fi
++	if [ "$attempt" -eq "$ATTEMPTS" ]; then break; fi
++	echo "attempt $attempt: push rejected; resetting to $REMOTE/$BRANCH and publishing again" >&2
++	remote_git fetch --quiet "$REMOTE" "$BRANCH"
++	local_git reset --quiet --hard FETCH_HEAD
++	sh -c "$PUBLISH_CMD"
++done
++
++echo "push to $BRANCH rejected $ATTEMPTS times; giving up" >&2
++exit 1
+diff --git a/.github/workflows/pipeline.yml b/.github/workflows/pipeline.yml
+index d04c86e..1ce4636 100644
+--- a/.github/workflows/pipeline.yml
++++ b/.github/workflows/pipeline.yml
+@@ -9,19 +9,25 @@ concurrency:
+   group: pipeline
+   cancel-in-progress: false
+ 
+-# Only the deploy job gets the Pages/OIDC token; the build job runs third-party
+-# install scripts (npm ci) and must not hold it.
++# Each job gets only what it needs: publish may push data/public/ to main, build holds no write
++# token while it runs third-party install scripts, and only deploy gets the Pages/OIDC token.
+ permissions:
+   contents: read
+ 
+ jobs:
+-  # Story 1.6 adds the "commit data/public/ once, then deploy that SHA" step before the build.
+-  build:
++  # Test, run the pipeline, then commit data/public/ once (if it changed) and push it to main.
++  publish:
++    if: github.ref == 'refs/heads/main'
+     runs-on: ubuntu-latest
++    permissions:
++      contents: write
++    outputs:
++      sha: ${{ steps.commit.outputs.sha }}
+     steps:
+       - uses: actions/checkout@v7
+         with:
+           ref: ${{ github.sha }}
++          persist-credentials: false
+       - uses: actions/setup-node@v7
+         with:
+           node-version-file: .nvmrc
+@@ -29,12 +35,41 @@ jobs:
+       - run: npm ci
+       - run: npm run typecheck
+       - run: npm test
++      - run: npm run pipeline
++      - id: commit
++        name: Commit and push data/public/
++        env:
++          GH_TOKEN: ${{ github.token }}
++          # After a rejected push the script resets onto the moved upstream; install, type-check
++          # and test that code before publishing it, as the steps above did for this commit.
++          PUBLISH_CMD: npm ci && npm run typecheck && npm test && npm run pipeline
++        run: |
++          basic="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 | tr -d '\n')"
++          echo "::add-mask::$basic"
++          unset GH_TOKEN
++          GIT_AUTH_HEADER="AUTHORIZATION: basic $basic" .github/scripts/commit-public.sh
++
++  # Build exactly the SHA the publish job pushed (pushes made with the workflow token do not
++  # trigger another workflow run, so there is no loop).
++  build:
++    needs: publish
++    runs-on: ubuntu-latest
++    steps:
++      - uses: actions/checkout@v7
++        with:
++          ref: ${{ needs.publish.outputs.sha }}
++          persist-credentials: false
++      - uses: actions/setup-node@v7
++        with:
++          node-version-file: .nvmrc
++          cache: npm
++      - run: npm ci
+       - run: npm run build
+       - name: Check build output
+         run: |
+-          for page in dist/index.html dist/about/index.html; do
+-            if [ ! -f "$page" ]; then
+-              echo "::error::missing $page"
++          for file in dist/index.html dist/about/index.html dist/snapshot.json dist/places.json; do
++            if [ ! -f "$file" ]; then
++              echo "::error::missing $file"
+               exit 1
+             fi
+           done
+diff --git a/_bmad-output/implementation-artifacts/deferred-work.md b/_bmad-output/implementation-artifacts/deferred-work.md
+index c7014c4..e69de29 100644
+--- a/_bmad-output/implementation-artifacts/deferred-work.md
++++ b/_bmad-output/implementation-artifacts/deferred-work.md
+@@ -1,3 +0,0 @@
+-- source_spec: `_bmad-output/implementation-artifacts/spec-1-1-scaffold-project-and-deploy-empty-site.md`
+-  summary: Make sure a `workflow_dispatch` run of `pipeline.yml` from a non-main branch cannot deploy to the live Pages site.
+-  evidence: Unverified, would be medium. It is settled by checking that the `github-pages` environment's deployment-branch rule allows only `main` after the first deploy. If it does not, add `if: github.ref == 'refs/heads/main'` to the deploy job.
+diff --git a/data/public/.gitkeep b/data/public/.gitkeep
+deleted file mode 100644
+index e69de29..0000000
+diff --git a/data/public/snapshot.json b/data/public/snapshot.json
+new file mode 100644
+index 0000000..6448d66
+--- /dev/null
++++ b/data/public/snapshot.json
+@@ -0,0 +1 @@
++{"schemaVersion":1,"generated_at":"2026-10-27T20:13:18Z","systems":[],"centres":[{"centre_id":"akademia-zentrum-fuer-kommunikation-und-bildung-gmbh","name":"Akademia Zentrum für Kommunikation und Bildung GmbH - Nürnberg","address":{"street":"Bahnhofsplatz 6","postcode":"90443","city":"Nürnberg"},"lat":49.445926,"lon":11.080259,"website":"https://www.linguademia.de/","test_page_url":null,"reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"anderwerk-deutschkurse","name":"Anderwerk Deutschkurse","address":{"street":"Hamburger Straße 32","postcode":"80809","city":"München"},"lat":48.188558,"lon":11.565015,"website":"https://www.anderwerk.de/","test_page_url":null,"reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"bayerisches-rotes-kreuz","name":"Bayerisches Rotes Kreuz","address":{"street":"Goethestr. 53","postcode":"81379","city":"München"},"lat":null,"lon":null,"website":"https://www.brk-muenchen.de/","test_page_url":null,"reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"berufliche-fortbildungszentren-der-bayerischen-wirtschaft","name":"Berufliche Fortbildungszentren der Bayerischen Wirtschaft gGmbH, bfz-Donauwörth-Ulm-Aalen","address":{"street":"Dr. Friedrich-Drechsler-Str. 14","postcode":"86609","city":"Donauwörth"},"lat":48.707751,"lon":10.760546,"website":"https://www.bfz.de/","test_page_url":null,"reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"bildungszentrum-stadt-nuernberg","name":"Bildungszentrum Stadt Nürnberg","address":{"street":"Gewerbemuseumsplatz 1","postcode":"90403","city":"Nürnberg"},"lat":49.451914,"lon":11.083874,"website":"https://www.stadt.nuernberg.de/","test_page_url":null,"reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"deutsche-angestellten-akademie-gmbh","name":"Deutsche Angestellten-Akademie GmbH","address":{"street":"Marsstraße 42","postcode":"80335","city":"München"},"lat":48.144797,"lon":11.554777,"website":"https://www.daa.de/","test_page_url":null,"reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"euro-bildungswerk-nuernberg-euro-schulen-nordbayern","name":"Euro-Bildungswerk Nürnberg/Euro-Schulen Nordbayern","address":{"street":"Solgerstr. 16a/18","postcode":"90429","city":"Nürnberg"},"lat":49.45302,"lon":11.062547,"website":"https://www.eso.de/","test_page_url":null,"reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"euro-schulen-aschaffenburg","name":"Euro-Schulen Aschaffenburg","address":{"street":"Goldbacher Str. 6","postcode":"63739","city":"Aschaffenburg"},"lat":49.978663,"lon":9.151619,"website":"https://www.eso.de/","test_page_url":null,"reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"euro-schulen-nordbayern","name":"Euro-Schulen Nordbayern","address":{"street":"Herzogenstr. 8","postcode":"97070","city":"Würzburg"},"lat":49.795482,"lon":9.932643,"website":"https://www.eso.de/","test_page_url":null,"reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"hilfe-von-mensch-zu-mensch","name":"Hilfe von Mensch zu Mensch","address":{"street":"Marsstr. 25","postcode":"80335","city":"München"},"lat":48.143579,"lon":11.55644,"website":"https://www.hvmzm.de/","test_page_url":null,"reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"inlingua-sprachenschule-e-k","name":"inlingua Sprachenschule e. K.","address":{"street":"Ludwigstraße 18","postcode":"85049","city":"Ingolstadt"},"lat":48.764179,"lon":11.426635,"website":"https://www.inlingua-ingolstadt.de/","test_page_url":"https://www.inlingua-ingolstadt.de/pruefungen/einbuergerungstests/","reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":"2026-10-27T07:25:45.068Z","coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"inlingua-sprachschule-u-c-bernau-gmbh","name":"Inlingua Sprachschule U.&C. Bernau GmbH","address":{"street":"Sendlinger Torplatz 6","postcode":"80336","city":"München"},"lat":48.132767,"lon":11.566212,"website":"https://www.inlingua-muenchen.de/","test_page_url":"https://www.inlingua-muenchen.de/?id=2872&kathaupt=6&suchesetzen=true","reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"ise-sprach-und-berufsbildungszentrum-gmbh","name":"ISE Sprach -und Berufsbildungszentrum GmbH","address":{"street":"Kaiser-Ludwig-Ring 9","postcode":"92224","city":"Amberg"},"lat":49.446044,"lon":11.864197,"website":"https://www.ise-berufsbildung.de/","test_page_url":null,"reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"kolping-akademie-ingolstadt-ggmbh","name":"Kolping Akademie Ingolstadt gGmbH","address":{"street":"Johannesstraße 11","postcode":"85049","city":"Ingolstadt"},"lat":48.76588,"lon":11.4215,"website":"https://www.kolping-ingolstadt.de/","test_page_url":null,"reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"kommunaler-zweckverband-der-volkshochschule-passau","name":"Kommunaler Zweckverband der Volkshochschule Passau","address":{"street":"Nikolastr. 18","postcode":"94032","city":"Passau"},"lat":48.571937,"lon":13.460383,"website":"https://www.vhs-passau.de/","test_page_url":"https://www.vhs-passau.de/fachbereich//sprachen/deutsch-als-fremdsprache/einbuergerungstest","reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":"2026-10-27T07:25:45.068Z","coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"mas-sprachschule-muenchen","name":"MAS Sprachschule München","address":{"street":"Lindwurmstr. 109","postcode":"80337","city":"München"},"lat":48.12803,"lon":11.55555,"website":"https://www.mas-sprachschule.de/","test_page_url":null,"reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"muenchner-vhs-gmbh","name":"Münchner VHS GmbH","address":{"street":"Orleanstraße 34","postcode":"81667","city":"München"},"lat":null,"lon":null,"website":"https://www.mvhs.de/","test_page_url":"https://www.mvhs.de/kurse/deutsch-integration/integrationskurse-bamf-460-CAT-KAT7712?tx_itemkgconnect_categorys%5Bfilters%5D%5Bbookable%5D=Bookable&tx_itemkgconnect_categorys%5Bpage%5D=0&tx_itemkgconnect_categorys%5Bsword%5D=&cHash=74aae851a4f7a8e24fa7847867513e34","reader":"itemkg","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"oberallgaeuer-vhs","name":"Oberallgäuer VHS","address":{"street":"Hindelanger Str. 37","postcode":"87527","city":"Sonthofen"},"lat":47.512522,"lon":10.291026,"website":"https://www.oa-vhs.de/","test_page_url":"https://oa-vhs.de/integrationskurse-bamf","reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-aichach-friedberg-e-v","name":"VHS Aichach-Friedberg e.V.","address":{"street":"Steubstr. 3","postcode":"86551","city":"Aichach"},"lat":48.458956,"lon":11.129586,"website":"https://www.vhs-aichach-friedberg.de/","test_page_url":"https://www.vhs-aichach-friedberg.de/programm/einbuergerungstest","reader":"kuferweb","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":"2026-10-27T07:25:45.068Z","coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-alt-neuoetting-und-toeging-e-v","name":"VHS Alt-/Neuötting und Töging e. V.","address":{"street":"Neuöttinger Str. 32","postcode":"84503","city":"Altötting"},"lat":48.229033,"lon":12.679565,"website":null,"test_page_url":null,"reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-arberland","name":"VHS ARBERLAND","address":{"street":"Amtsgerichtstr. 6 - 8","postcode":"94209","city":"Regen"},"lat":48.972251,"lon":13.127653,"website":"https://www.vhs-arberland.de/","test_page_url":"https://www.vhs-arberland.de/suche?tx_itemkgconnect_search%5B__referrer%5D%5B%40extension%5D=&tx_itemkgconnect_search%5B__referrer%5D%5B%40controller%5D=Standard&tx_itemkgconnect_search%5B__referrer%5D%5B%40action%5D=default&tx_itemkgconnect_search%5B__referrer%5D%5Barguments%5D=YTowOnt9bb6440284d86114ae8f06ceca05f3087a54b19a3&tx_itemkgconnect_search%5B__referrer%5D%5B%40request%5D=%7B%22%40extension%22%3Anull%2C%22%40controller%22%3A%22Standard%22%2C%22%40action%22%3A%22default%22%7D812c8c542f1ed7ef67706fe377a36c45a3a589ba&tx_itemkgconnect_search%5B__trustedProperties%5D=%7B%22sword%22%3A1%2C%22filters%22%3A%7B%22sort%22%3A%5B1%5D%2C%22reset%22%3A1%7D%7D29b6325eb7da486e1971cf282e63c337b073f2d8&tx_itemkgconnect_search%5Bsword%5D=Einbürgerungstest&tx_itemkgconnect_search%5Bfilters%5D%5Bsort%5D%5B%5D=__EMPTY__&tx_itemkgconnect_search%5Bfilters%5D%5Breset%5D=1","reader":"itemkg","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-aschaffenburg","name":"VHS Aschaffenburg","address":{"street":"Luitpoldstr. 2","postcode":"63739","city":"Aschaffenburg"},"lat":49.975849,"lon":9.144366,"website":"https://www.vhs-aschaffenburg.de/","test_page_url":"https://www.vhs-aschaffenburg.de/kurse/deutsch-integration-grundbildung/einbuergerungstest","reader":"kuferweb","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-augsburg-e-v","name":"VHS Augsburg e.V.","address":{"street":"Willy-Brandt-Platz 3a","postcode":"86153","city":"Augsburg"},"lat":48.365172,"lon":10.905333,"website":"https://www.vhs-augsburg.de/","test_page_url":"https://www.vhs-augsburg.de/kurse?catIds=482-CAT-KAT872","reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-bad-kisingen-und-hammelburg","name":"VHS Bad Kisingen und Hammelburg","address":{"street":"Rathausplatz 1","postcode":"97688","city":"Bad Kissingen"},"lat":50.201018,"lon":10.075862,"website":null,"test_page_url":null,"reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-bad-reichenhall","name":"VHS Bad Reichenhall","address":{"street":"Aegidiplatz 3","postcode":"83435","city":"Bad Reichenhall"},"lat":47.723384,"lon":12.87707,"website":"https://www.vhs-reichenhall.de/","test_page_url":"https://www.vhs-reichenhall.de/pruefungen-einbuergerungstest-und-deutsch","reader":"itemkg","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":"2026-10-27T07:25:45.068Z","coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-bamberg","name":"VHS Bamberg","address":{"street":"Tränkgasse 4","postcode":"96052","city":"Bamberg"},"lat":49.896273,"lon":10.893308,"website":"https://www.vhs-bamberg.de/","test_page_url":"https://www.vhs-bamberg.de/einbuergerungstests","reader":"itemkg","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-bamberg-land-e-v","name":"VHS Bamberg-Land e.V.","address":{"street":"Ludwigstraße 25","postcode":"96052","city":"Bamberg"},"lat":49.899115,"lon":10.899252,"website":"https://www.vhs-bamberg-land.de/","test_page_url":"https://www.vhs-bamberg-land.de/p/488-CAT-KAT4512071","reader":"itemkg","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":"2026-10-27T07:25:45.068Z","coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-bayreuth","name":"VHS Bayreuth","address":{"street":"Richard-Wagner-Str. 21","postcode":"95444","city":"Bayreuth"},"lat":49.942887,"lon":11.580654,"website":"https://www.stadt.bayreuth.de/","test_page_url":null,"reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-beilngries-e-v","name":"VHS Beilngries e.V.","address":{"street":"Ringstr. 16","postcode":"92339","city":"Beilngries"},"lat":49.034352,"lon":11.470594,"website":"https://www.vhs-beilngries.de/","test_page_url":"https://www.vhs-beilngries.de/p/sprachen/deutsch-integration/einbuergerungstest-641-C-B3021","reader":"itemkg","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":"2026-10-27T07:25:45.068Z","coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-buchloe-e-v","name":"VHS Buchloe e.V.","address":{"street":"Bahnhofstr. 60","postcode":"86807","city":"Buchloe"},"lat":48.034082,"lon":10.717089,"website":"https://www.vhs-buchloe.de/","test_page_url":"https://vhs-buchloe.de/Programmbereich/cmx69c2693eca8cf.html","reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-burghausen-burgkirchen-e-v","name":"VHS Burghausen-Burgkirchen e. V.","address":{"street":"Marktler Str. 16","postcode":"84489","city":"Burghausen"},"lat":48.169336,"lon":12.831315,"website":"https://www.vhs-burghausen.de/","test_page_url":"https://www.vhs-burghausen.de/programm/sprachen/kategorie/Einbuergerungstest/11?Fsize=ayhmjjqpftsnptxtrzck#inhalt","reader":"kuferweb","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-coburg-ggmbh","name":"VHS Coburg gGmbH","address":{"street":"Löwenstr. 15","postcode":"96450","city":"Coburg"},"lat":50.260737,"lon":10.962208,"website":"https://www.vhs-coburg.de/","test_page_url":"https://www.vhs-coburg.net/p//programmbereich/sprachen/deutsch/pruefungen/einbuergerungstest/494-CAT-KAT7323077","reader":"itemkg","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-dachau-gmbh","name":"VHS Dachau GmbH","address":{"street":"Dr.-Engert-Str. 4","postcode":"85221","city":"Dachau"},"lat":48.25894,"lon":11.438107,"website":"https://www.vhs-dachau.de/","test_page_url":"https://vhs-dachau.de/Artikel/cmx655e01456395b.html","reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-deggendorfer-land-e-v","name":"VHS Deggendorfer Land e. V.","address":{"street":"Amanstr. 11","postcode":"94469","city":"Deggendorf"},"lat":48.83711,"lon":12.962494,"website":"https://www.vhs-deggendorf.de/","test_page_url":"https://www.vhs-deggendorf.de/fachbereich//deutsch-und-integration/einbuergerungstest?upcoming=1","reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-der-gemeinden-im-landkreis-roth","name":"VHS der Gemeinden im Landkreis Roth","address":{"street":"Maria-Dorothea-Str. 8","postcode":"91161","city":"Hilpoldstein"},"lat":null,"lon":null,"website":"https://www.vhs-roth.de/","test_page_url":null,"reader":"itemkg","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-der-stadt-landsberg-lech","name":"VHS der Stadt Landsberg/Lech","address":{"street":"Hubert-von-Herkomer-Str. 110","postcode":"86899","city":"Landsberg am Lech"},"lat":48.048261,"lon":10.876275,"website":"https://www.landsberg.de/","test_page_url":null,"reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-der-stadt-schweinfurt","name":"VHS der Stadt Schweinfurt","address":{"street":"Markt 1","postcode":"97421","city":"Schweinfurt"},"lat":50.044726,"lon":10.234838,"website":"https://www.schweinfurt.de/","test_page_url":null,"reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-des-landkreises-ansbach","name":"VHS des Landkreises Ansbach","address":{"street":"Crailsheimstr. 1","postcode":"91522","city":"Ansbach"},"lat":49.296294,"lon":10.561698,"website":"https://www.vhs-lkr-ansbach.de/","test_page_url":"https://vhs-lkr-ansbach.de/Artikel/cmx66d95c61bf49b.html","reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-des-landkreises-forchheim","name":"VHS des Landkreises Forchheim","address":{"street":"Hornschuchallee 20","postcode":"91301","city":"Forchheim"},"lat":49.720003,"lon":11.059937,"website":"https://www.vhs-forchheim.de/","test_page_url":"https://www.vhs-forchheim.de/p/sprachen/integration-498-CAT-KAT39?tx_itemkgconnect_categorys%5Bpage%5D=0&tx_itemkgconnect_categorys%5Bsword%5D=&cHash=4a1d6151f01f9cac543ca2281b840352","reader":"itemkg","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-des-landkreises-wunsiedel","name":"VHS des Landkreises Wunsiedel","address":{"street":"Jean-Paul-Str. 9","postcode":"95632","city":"Wunsiedel"},"lat":50.037881,"lon":12.006131,"website":"https://www.landkreis-wunsiedel.de/","test_page_url":null,"reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-des-lk-freyung-grafenau","name":"VHS des LK Freyung-Grafenau","address":{"street":"Frauenberg 17","postcode":"94481","city":"Grafenau"},"lat":48.856079,"lon":13.384588,"website":"https://www.vhs-freyung-grafenau.de/","test_page_url":"https://www.vhs-freyung-grafenau.de/programm/sprachen/einbuergerungstest.html","reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":"2026-10-27T07:25:45.068Z","coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-dillingen-e-v","name":"VHS Dillingen e. V.","address":{"street":"Königstraße 37/38","postcode":"89407","city":"Dillingen a. d. Donau"},"lat":48.577168,"lon":10.494149,"website":"https://www.dillingen-donau.de/","test_page_url":null,"reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-dingolfing-e-v","name":"VHS Dingolfing e. V.","address":{"street":"Stadionstr. 50","postcode":"84130","city":"Dingolfing"},"lat":48.631224,"lon":12.509335,"website":"https://www.vhs-dingolfing.de/","test_page_url":"https://vhs-dingolfing.de/test","reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":"2026-10-27T07:25:45.068Z","coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-donauwoerth","name":"VHS Donauwörth","address":{"street":"Spindeltal 5","postcode":"86609","city":"Donauwörth"},"lat":48.720232,"lon":10.779956,"website":"https://www.vhs-don.de/","test_page_url":"https://www.vhs-don.de/einbuergerungstests","reader":"itemkg","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":"2026-10-27T07:25:45.068Z","coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-ebersberger-land-grafing-bei-muenchen","name":"VHS Ebersberger Land / Grafing bei München","address":{"street":"Griesstr. 27","postcode":"85567","city":"Grafing b. München"},"lat":48.044506,"lon":11.966448,"website":"https://www.vhs-ebersberger-land.de/","test_page_url":"https://www.vhs-ebersberger-land.de/p/sprachen/deutsch/einbuergerungstests-649-CAT-KAT215","reader":"itemkg","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":"2026-10-27T07:25:45.068Z","coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-erlangen","name":"VHS Erlangen","address":{"street":"Friedrichstr. 19/21","postcode":"91054","city":"Erlangen"},"lat":49.595651,"lon":11.006944,"website":"https://www.stadt.erlangen.de/","test_page_url":null,"reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-f-d-landkreis-regensburg-e-v","name":"VHS f. d. Landkreis Regensburg e. V.","address":{"street":"Pommernstr. 4","postcode":"93073","city":"Neutraubling"},"lat":48.981128,"lon":12.192745,"website":"https://www.vhs-regensburg-land.de/","test_page_url":"https://www.vhs-regensburger-land.de/p/deutsch-schule/einbuergerungstest-647-CAT-KAT256","reader":"itemkg","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":"2026-10-27T07:25:45.068Z","coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-fichtelgebirge","name":"VHS Fichtelgebirge","address":{"street":"Ludwigsmühle 10","postcode":"95615","city":"Selb"},"lat":null,"lon":null,"website":"https://www.vhs-fichtelgebirge.de/","test_page_url":"https://www.vhs-fichtelgebirge.de/p/integration/einbuergerungstest-644-CAT-KAT223?tx_itemkgconnect_categorys%5Bpage%5D=0&tx_itemkgconnect_categorys%5Bsword%5D=&cHash=e885cf8b12db5f275383bc211595c590","reader":"itemkg","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-freising-e-v","name":"VHS Freising e.V.","address":{"street":"Kammergasse 12","postcode":"85354","city":"Freising"},"lat":48.403015,"lon":11.744462,"website":"https://www.vhs-freising.org/","test_page_url":"https://www.vhs-freising.org/p/fachbereiche/sprachen/einbuergerung-633-CAT-KAT171?tx_itemkgconnect_categorys%5Bpage%5D=0&cHash=3606de7ed3bfe2d8fef6baffd289a744","reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-fuerth-ggmbh","name":"VHS Fürth gGmbH","address":{"street":"Hirschenstr. 27/29","postcode":"90762","city":"Fürth"},"lat":49.474718,"lon":10.987298,"website":"https://www.vhs-fuerth.de/","test_page_url":"https://www.vhs-fuerth.de/p/grundbildung/einbuergerungen/einbuergerungstest-33-fragen-477-CAT-KAT222","reader":"itemkg","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":"2026-10-27T07:25:45.068Z","coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-garmisch-partenkirchen-e-v","name":"VHS Garmisch-Partenkirchen e.V.","address":{"street":"Burgstr. 21","postcode":"82467","city":"Garmisch-Partenkirchen"},"lat":47.498958,"lon":11.087088,"website":"https://www.vhs-gap.de/","test_page_url":"https://www.vhs-gap.de/index.php?id=9&kathaupt=26%3B&suchesetzen=false%3B&kfs_stichwort_schlagwort=einbürgerungstest","reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-germering-e-v","name":"VHS Germering e.V.","address":{"street":"Therese-Giehse-Platz 6","postcode":"82110","city":"Germering"},"lat":48.130249,"lon":11.366708,"website":"https://www.vhs-germering.de/","test_page_url":"https://vhs-germering.de/Programmbereich/cmx67e28778abee8.html","reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-geschaeftsstelle-neufarn-hallbergmoos","name":"VHS Geschäftsstelle Neufarn-Hallbergmoos","address":{"street":"Bahnhofstraße 32","postcode":"85375","city":"Neufahrn"},"lat":48.317104,"lon":11.662832,"website":"https://www.vhs-neufahrn.de/","test_page_url":"https://vhs-neufahrn-hallbergmoos.de/Veranstaltung/cmx69a6c68d5ad43.html","reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":"2026-10-27T07:25:45.068Z","coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-groebenzell-e-v","name":"VHS Gröbenzell e.V.","address":{"street":"Rathausstr. 1","postcode":"82194","city":"Gröbenzell"},"lat":48.193792,"lon":11.371007,"website":"https://www.vhs-groebenzell.de/","test_page_url":"https://www.vhs-groebenzell.de/programm/sprachen/kategorie/Einbuergerungstest/68","reader":"kuferweb","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-gunzenhausen-e-v","name":"VHS Gunzenhausen e.V.","address":{"street":"Dr.-Martin-Luther-Platz 4","postcode":"91710","city":"Gunzenhausen"},"lat":49.115851,"lon":10.755354,"website":"https://www.vhs-gunzenhausen.de/","test_page_url":"https://vhs-gunzenhausen.de/integration","reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":"2026-10-27T07:25:45.068Z","coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-herrsching","name":"VHS Herrsching","address":{"street":"Kienbachstr. 3","postcode":"82211","city":"Herrsching"},"lat":47.997757,"lon":11.174892,"website":"https://www.vhs-herrsching.de/","test_page_url":null,"reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-herzogenaurach","name":"VHS Herzogenaurach","address":{"street":"Badgasse 4","postcode":"91074","city":"Herzogenaurach"},"lat":49.56811,"lon":10.881388,"website":"https://www.herzogenaurach.de/","test_page_url":null,"reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-im-ldkr-neumarkt-opf","name":"VHS im Ldkr. Neumarkt/Opf.","address":{"street":"Gartenstr. 1","postcode":"92318","city":"Neumarkt i.d.OPf."},"lat":49.276652,"lon":11.45767,"website":"https://www.vhs-neumarkt.de/","test_page_url":null,"reader":"kuferweb","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-im-norden-des-landkreises-muenchen","name":"VHS im Norden des Landkreises München","address":{"street":"Telschowstraße 5-7","postcode":"85748","city":"Garching b. München"},"lat":48.250783,"lon":11.649372,"website":"https://www.vhs-nord.de/","test_page_url":"https://www.vhs-nord.de/programm/sprachen/kategorie/Einbuergerungstest/348#inhalt","reader":"kuferweb","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-ingolstadt","name":"VHS Ingolstadt","address":{"street":"Hallstr. 5","postcode":"85049","city":"Ingolstadt"},"lat":48.763962,"lon":11.427951,"website":"https://www.ingolstadt.de/","test_page_url":null,"reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-kaufbeuren-e-v","name":"VHS Kaufbeuren e.V.","address":{"street":"Spitaltor 5","postcode":"87600","city":"Kaufbeuren"},"lat":47.880883,"lon":10.623901,"website":"https://www.vhs-kaufbeuren.de/","test_page_url":"https://vhs-kaufbeuren.de/Programmbereich/cmx642597b681e77.html","reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-kaufering","name":"VHS Kaufering","address":{"street":"Albert-Schweizer-Str.4a","postcode":"86916","city":"Kaufering"},"lat":null,"lon":null,"website":"https://www.kaufering.de/","test_page_url":null,"reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-kempten","name":"VHS Kempten","address":{"street":"Bodmanstr. 2","postcode":"87435","city":"Kempten (Allgäu)"},"lat":47.725671,"lon":10.311269,"website":"https://www.vhs-kempten.de/","test_page_url":"https://vhs-kempten.de/Programmbereich/cmx6321cc9fe80ca.html","reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-kreis-kronach-e-v","name":"VHS Kreis Kronach e.V.","address":{"street":"Kulmbacher Str. 1","postcode":"96317","city":"Kronach"},"lat":null,"lon":null,"website":"https://www.vhs-kronach.de/","test_page_url":"https://www.vhs-kronach.de/fachbereich//programmbereich/sprachen/einbuergerungstest?","reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-landkreis-amberg-sulzbach","name":"VHS Landkreis Amberg-Sulzbach","address":{"street":"Obere Gartenstr. 3","postcode":"92237","city":"Sulzbach-Rosenberg"},"lat":49.504041,"lon":11.747076,"website":"https://www.vhs-as.de/","test_page_url":"https://www.vhs-as.de/kurssuche/kurs/Einbuergerungstest/W40432S","reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-landkreis-pfaffenhofen-a-d-ilm","name":"VHS Landkreis Pfaffenhofen a. d. Ilm","address":{"street":"Ingolstädter Str. 3","postcode":"85276","city":"Pfaffenhofen"},"lat":48.530366,"lon":11.506484,"website":"https://www.landratsamt-paf.de/","test_page_url":null,"reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-landshut-e-v","name":"VHS Landshut e.V.","address":{"street":"Ländgasse 41","postcode":"84028","city":"Landshut"},"lat":48.533675,"lon":12.149543,"website":"https://www.vhs-landshut.de/","test_page_url":"https://www.vhs-landshut.de/kurse/sprachen-integration/pruefungen-einbuergerungstest","reader":"kuferweb","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":"2026-10-27T07:25:45.068Z","coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-lindau","name":"VHS Lindau","address":{"street":"Uferweg 7","postcode":"88131","city":"Lindau"},"lat":47.546076,"lon":9.676555,"website":"https://www.lindau.de/","test_page_url":null,"reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-lohr-gemuenden","name":"VHS Lohr-Gemünden","address":{"street":"Ludwigstraße 16","postcode":"97816","city":"Lohr a. Main"},"lat":49.995378,"lon":9.569961,"website":"https://www.lohr.de/","test_page_url":null,"reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-mainburg-e-v","name":"VHS Mainburg e. V.","address":{"street":"Mitterweg 8","postcode":"84048","city":"Mainburg"},"lat":48.641305,"lon":11.76714,"website":"https://www.vhs-mainburg.de/","test_page_url":null,"reader":"kuferweb","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-memmingen","name":"VHS Memmingen","address":{"street":"Ulmer Str. 19","postcode":"87700","city":"Memmingen"},"lat":47.988367,"lon":10.179782,"website":"https://www.memmingen.de/","test_page_url":null,"reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-moosburg-e-v","name":"VHS Moosburg e.V.","address":{"street":"Stadtplatz 2","postcode":"85368","city":"Moosburg"},"lat":48.468349,"lon":11.935767,"website":"https://www.vhs-moosburg.de/","test_page_url":"https://www.vhs-moosburg.de/programm/sprachen/kategorie/Einbuergerungstest/50#inhalt","reader":"kuferweb","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-muehldorf-e-v","name":"VHS Mühldorf e. V.","address":{"street":"Schlörstr. 1","postcode":"84453","city":"Mühldorf a. Inn"},"lat":48.25594,"lon":12.526903,"website":"https://www.vhs-muehldorf.de/","test_page_url":"https://www.vhs-muehldorf.de/programm/sprachen-verstaendigung/kategorie/Einbuergerung/61#inhalt","reader":"kuferweb","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-neuburg-donau-e-v","name":"VHS Neuburg/Donau e.V.","address":{"street":"Franziskanerstr. 200","postcode":"86633","city":"Neuburg"},"lat":48.733514,"lon":11.178076,"website":null,"test_page_url":null,"reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-oberland-e-v-holzkirchen","name":"VHS Oberland e.V. /Holzkirchen","address":{"street":"Wallenburger Str. 16a","postcode":"83714","city":"Miesbach"},"lat":47.791836,"lon":11.832425,"website":"https://www.vhs-oberland.de/","test_page_url":null,"reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-oberschleissheim-e-v","name":"VHS Oberschleißheim e. V.","address":{"street":"Theodor-Heuss-Str. 27","postcode":"85764","city":"Oberschleißheim"},"lat":48.254229,"lon":11.552398,"website":"https://www.vhs.de/","test_page_url":null,"reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-puchheim-e-v","name":"VHS Puchheim e.V.","address":{"street":"Am Grünen Markt 7","postcode":"82178","city":"Puchheim"},"lat":48.170747,"lon":11.351963,"website":"https://www.vhs-puchheim.de/","test_page_url":"https://www.vhs-pucheich.de/programm/sprachen/kategorie/Einbuergerungstest/233","reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-rhoen-grabfeld-gemeinnuetzige-gmbh","name":"VHS Rhön-Grabfeld gemeinnützige GmbH","address":{"street":"Marktplatz 2","postcode":"97638","city":"Mellrichstadt"},"lat":50.428649,"lon":10.302155,"website":"https://www.die-vhs.de/","test_page_url":"https://die-vhs.de/Programmbereich/cmx6a2a986855055.html","reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":"2026-10-27T07:25:45.068Z","coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-rieser-noerdlingen-e-v","name":"VHS Rieser Nördlingen e.V.","address":{"street":"Marktplatz 20","postcode":"86720","city":"Nördlingen"},"lat":48.852023,"lon":10.488234,"website":"https://www.noerdlingen.de/","test_page_url":null,"reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-rosenheim","name":"VHS Rosenheim","address":{"street":"Innsbrucker Str. 3","postcode":"83022","city":"Rosenheim"},"lat":47.849633,"lon":12.135526,"website":"https://www.rosenheim.de/","test_page_url":null,"reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-schrobenhausen-e-v","name":"VHS Schrobenhausen e.V.","address":{"street":"Lenbachstraße 22","postcode":"86529","city":"Schrobenhausen"},"lat":48.562094,"lon":11.264431,"website":null,"test_page_url":null,"reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-schwabach","name":"VHS Schwabach","address":{"street":"Königsplatz 29a","postcode":"91126","city":"Schwabach"},"lat":49.328578,"lon":11.020175,"website":"https://www.schwabach.de/","test_page_url":null,"reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-schwarzachtal","name":"VHS Schwarzachtal","address":{"street":"Penzenhofener Str. 1","postcode":"90610","city":"Winkelhaid"},"lat":49.387766,"lon":11.302971,"website":"https://www.vhs-schwarzachtal.de/","test_page_url":"https://www.vhs-schwarzachtal.de/programm/deutsch-integration/kategorie/Einbuergerungstests/342","reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-stadt-fuerstenfeldbruck-e-v","name":"VHS Stadt Fürstenfeldbruck e.V.","address":{"street":"Niederbronnerweg 5","postcode":"82256","city":"Fürstenfeldbruck"},"lat":48.178804,"lon":11.257754,"website":"https://www.vhs-ffb.de/","test_page_url":"https://vhs-stadtlandbruck.de/Programmbereich/cmx6a157a8b20248.html","reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-staedtedreieck-e-v","name":"VHS Städtedreieck e.V.","address":{"street":"Bahnhofstr. 44","postcode":"93142","city":"Maxhütte-Haidhof"},"lat":49.199297,"lon":12.101967,"website":"https://www.vhs-staedtedreieck.de/","test_page_url":"https://vhs-schwandorf-land.de/Programmbereich/cmx673b5b519a273.html","reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-starnberger-see-e-v","name":"VHS Starnberger See e. V.","address":{"street":"Bahnhofplatz 14","postcode":"82319","city":"Starnberg"},"lat":47.996051,"lon":11.340787,"website":"https://www.vhs-starnberger-see.de/","test_page_url":"https://www.vhs-starnbergammersee.de/p/sprachen-und-integration/deutsch-als-fremdsprache/pruefungen-pruefungsvorbereitung-einbuergerung/einbuergerungstest-665-CAT-KAT96?tx_itemkgconnect_categorys%5Bfilters%5D%5Bsort%5D%5B0%5D=startDate%2Casc&tx_itemkgconnect_categorys%5Bpage%5D=0&tx_itemkgconnect_categorys%5Bsword%5D=&cHash=e569d94aa4bc8aa65614afb3e67fd1ab","reader":"itemkg","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-straubing-bogen","name":"VHS Straubing -Bogen","address":{"street":"Klosterhof 2","postcode":"94327","city":"Bogen"},"lat":48.917469,"lon":12.666994,"website":"https://www.vhs-bildungszentrum.de/","test_page_url":null,"reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-straubing-ggmbh","name":"VHS Straubing gGmbH","address":{"street":"Steinweg 56","postcode":"94315","city":"Straubing"},"lat":48.870387,"lon":12.582652,"website":"https://www.vhs-straubing.de/","test_page_url":"https://www.vhs-straubing.de/p/sprachen/einbuergerungstest-563-CAT-KAT406","reader":"itemkg","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":"2026-10-27T07:25:45.068Z","coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-taufkirchen","name":"VHS Taufkirchen","address":{"street":"Ahornring 121","postcode":"82024","city":"Taufkirchen"},"lat":48.048001,"lon":11.599125,"website":"https://www.vhs-taufkirchen.de/","test_page_url":"https://www.vhs-taufkirchen.de/kurse/integration-einbuergerung/einbuergerungstest","reader":"kuferweb","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-traunreut-e-v","name":"VHS Traunreut e. V.","address":{"street":"Marienstr. 20","postcode":"83301","city":"Traunreut"},"lat":47.961437,"lon":12.58831,"website":"https://www.vhs-traunreut.de/","test_page_url":"https://www.vhs-traunreut.de/programm/sprachen/kategorie/Einbuergerungstest/1052","reader":"kuferweb","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-traunstein-e-v","name":"VHS Traunstein e. V.","address":{"street":"Stadtplatz 38a","postcode":"83278","city":"Traunstein"},"lat":47.869185,"lon":12.647726,"website":"https://www.vhs-traunstein.de/","test_page_url":null,"reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-trostberg-e-v","name":"VHS Trostberg e.V.","address":{"street":"Heinrich-Braun-Str. 6","postcode":"83308","city":"Trostberg"},"lat":48.024986,"lon":12.552299,"website":"https://www.vhs-trostberg.de/","test_page_url":null,"reader":"kuferweb","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-unterhaching-e-v","name":"VHS Unterhaching e.V.","address":{"street":"Jahnstr. 1","postcode":"82008","city":"Unterhaching"},"lat":48.062004,"lon":11.613817,"website":"https://www.vhs-unterhaching.de/","test_page_url":"https://www.vhs-unterhaching.de/programm/sprachen/kategorie/Pruefungen+und+Einbuergerungstests/373","reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-verband-landau-e-v","name":"VHS Verband Landau e.V.","address":{"street":"Fleischgasse 60","postcode":"94405","city":"Landau"},"lat":48.669273,"lon":12.69185,"website":"https://www.vhs-landau.de/","test_page_url":"https://vhs-landau.de/Programmbereich/cmx68af342bd1d1b.html","reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-vilsbiburg","name":"VHS Vilsbiburg","address":{"street":"Stadtplatz 30","postcode":"84137","city":"Vilsbiburg"},"lat":48.448796,"lon":12.354982,"website":"https://www.vhs-vilsbiburg.de/","test_page_url":"https://www.vhs-vilsbiburg.de/kurse/sprachen/einbuergerungstest/kategorie/Einbuergerungstest/88","reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-waldkraiburg-e-v","name":"VHS Waldkraiburg e.V.","address":{"street":"Am Kalander 1","postcode":"84478","city":"Waldkraiburg"},"lat":48.206029,"lon":12.399252,"website":"https://www.vhs-waldkraiburg.de/","test_page_url":"https://vhs-waldkraiburg.de/einbuergerungstest-termin","reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-wasserburg-inn-e-v","name":"VHS Wasserburg / Inn e.V.","address":{"street":"Salzburger Str. 19","postcode":"83512","city":"Wasserburg a. Inn"},"lat":48.054257,"lon":12.230573,"website":"https://www.vhs-wasserburg.de/","test_page_url":"https://www.vhs-wasserburg.de/programm/sprachen/kategorie/Pruefungen+und+Pruefungsvorbereitung/index.php?id=9&kathaupt=26%3B&suchesetzen=false%3B&kfs_stichwort_schlagwort=einbürgerungstest","reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-weiden-neustadt-ggmbh-weiden-i-d-opf","name":"VHS Weiden-Neustadt gGmbH / Weiden i.d.Opf.","address":{"street":"Luitpoldstr. 24","postcode":"92637","city":"Weiden i.d.OPf."},"lat":49.677761,"lon":12.164328,"website":"https://www.vhs-weiden-neustadt.de.de/","test_page_url":null,"reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-weiterbildungsakademie-kehlheim-e-v","name":"vhs-Weiterbildungsakademie Kehlheim e.V.","address":{"street":"Lederergasse 2","postcode":"93309","city":"Kelheim"},"lat":48.9183,"lon":11.870051,"website":"https://www.vhs-weiterbildungsakademie.de/","test_page_url":"https://www.vhs-weiterbildungsakademie.de/suche?tx_itemkgconnect_search%5B__referrer%5D%5B%40extension%5D=&tx_itemkgconnect_search%5B__referrer%5D%5B%40controller%5D=Standard&tx_itemkgconnect_search%5B__referrer%5D%5B%40action%5D=default&tx_itemkgconnect_search%5B__referrer%5D%5Barguments%5D=YTowOnt9bb6440284d86114ae8f06ceca05f3087a54b19a3&tx_itemkgconnect_search%5B__referrer%5D%5B%40request%5D=%7B%22%40extension%22%3Anull%2C%22%40controller%22%3A%22Standard%22%2C%22%40action%22%3A%22default%22%7D812c8c542f1ed7ef67706fe377a36c45a3a589ba&tx_itemkgconnect_search%5B__trustedProperties%5D=%7B%22sword%22%3A1%2C%22filters%22%3A%7B%22sort%22%3A%5B1%5D%2C%22reset%22%3A1%7D%7D29b6325eb7da486e1971cf282e63c337b073f2d8&tx_itemkgconnect_search%5Bsword%5D=Einbürgerungstest&tx_itemkgconnect_search%5Bfilters%5D%5Bsort%5D%5B%5D=__EMPTY__&tx_itemkgconnect_search%5Bfilters%5D%5Breset%5D=1","reader":"itemkg","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-wuerzburg","name":"VHS Würzburg","address":{"street":"Juliuspromenade 68","postcode":"97070","city":"Würzburg"},"lat":49.7973,"lon":9.932578,"website":"https://www.vhs-wuerzburg.de/","test_page_url":"https://www.vhs-wuerzburg.info/p/sprachen-489-CAT-KAT5892356?tx_itemkgconnect_categorys%5Bfilters%5D%5Breset%5D=1&tx_itemkgconnect_categorys%5Bfilters%5D%5Bsort%5D%5B0%5D=__EMPTY__&tx_itemkgconnect_categorys%5Bsword%5D=einbürgerung&cHash=7c429aef482378a0bbc422fcfe4806e7","reader":"itemkg","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"vhs-zv-unteres-pegnitztal","name":"VHS-ZV Unteres Pegnitztal","address":{"street":"Spitalstraße 5","postcode":"91207","city":"Lauf"},"lat":49.51094,"lon":11.281901,"website":"https://www.vhs-lauf.de/","test_page_url":null,"reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"volksbildungswerk-pfarrkirchen","name":"Volksbildungswerk Pfarrkirchen","address":{"street":"Stadtplatz 2","postcode":"84347","city":"Pfarrkirchen"},"lat":48.432208,"lon":12.93923,"website":"https://www.pfarrkirchen.de/","test_page_url":null,"reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"volkshochschule-arnstorf","name":"Volkshochschule Arnstorf","address":{"street":"Marktplatz 8","postcode":"94424","city":"Arnstorf"},"lat":48.560844,"lon":12.817083,"website":"https://www.arnstorf.de/","test_page_url":null,"reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"volkshochschule-der-stadt-ansbach","name":"Volkshochschule der Stadt Ansbach","address":{"street":"Kannenstraße 16","postcode":"91522","city":"Ansbach"},"lat":49.30179,"lon":10.572989,"website":"https://www.ansbach.de/","test_page_url":null,"reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"volkshochschule-der-stadt-regensburg","name":"Volkshochschule der Stadt Regensburg","address":{"street":"Haidplatz 8","postcode":"93047","city":"Regensburg"},"lat":49.020051,"lon":12.093269,"website":"https://www.regensburg.de/","test_page_url":null,"reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"volkshochschule-der-stadt-selb","name":"Volkshochschule der Stadt Selb","address":{"street":"Lessingstr. 8","postcode":"95100","city":"Selb"},"lat":50.171926,"lon":12.130056,"website":"https://www.vhs-selb.de/","test_page_url":null,"reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"volkshochschule-des-landkreises-tirschenreuth","name":"Volkshochschule des Landkreises Tirschenreuth","address":{"street":"Mähringer Str. 9","postcode":"95643","city":"Tirschenreuth"},"lat":49.880925,"lon":12.342591,"website":"https://www.tirschenreuth.de/","test_page_url":null,"reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"volkshochschule-eching-e-v","name":"Volkshochschule Eching e.V.","address":{"street":"Roßbergstr. 8","postcode":"85386","city":"Eching"},"lat":null,"lon":null,"website":null,"test_page_url":null,"reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"volkshochschule-guenzburg","name":"Volkshochschule Günzburg","address":{"street":"Bgm.-Landmann-Platz 2","postcode":"89312","city":"Günzburg"},"lat":48.45406,"lon":10.277895,"website":"https://www.vhs-guenzburg.de/","test_page_url":"https://vhs-landkreis-guenzburg.de/Programmbereich/cmx6a35553379ad3.html","reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"volkshochschule-hofer-land-e-v","name":"Volkshochschule Hofer Land e.V.","address":{"street":"Ludwigstraße 7","postcode":"95028","city":"Hof"},"lat":50.322797,"lon":11.91916,"website":"https://www.vhs-landkreis-hof.de/","test_page_url":null,"reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"volkshochschule-im-landkreis-cham-e-v","name":"Volkshochschule im Landkreis Cham e.V.","address":{"street":"Pfarrer-Seidl-Str. 1","postcode":"93413","city":"Cham"},"lat":49.226342,"lon":12.657157,"website":"https://www.vhs-cham.de/","test_page_url":"https://www.vhs-cham.de/p/sprachen/einbuergerungstest-test-leben-in-deutschland-461-CAT-KAT70?tx_itemkgconnect_categorys%5Bpage%5D=0&cHash=d57e7b9c77d9ef12bdcb69d237598ae3","reader":"itemkg","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"volkshochschule-im-landkreis-unterallgaeu-e-v","name":"Volkshochschule im Landkreis Unterallgäu e.V.","address":{"street":"Maximilianstr. 60","postcode":"87719","city":"Mindelheim"},"lat":48.045938,"lon":10.486064,"website":"https://www.vhs-ua.de/","test_page_url":"https://www.vhs-ua.de/programm/sprachen-und-verstaendigung/deutsch/kategorie/Einbuergerungspruefung/26","reader":"kuferweb","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"volkshochschule-karlstadt","name":"Volkshochschule Karlstadt","address":{"street":"Langgasse 17","postcode":"97753","city":"Karlstadt"},"lat":49.962251,"lon":9.766674,"website":"https://www.vhs-karlstadt.de/","test_page_url":null,"reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"volkshochschule-kitzingen","name":"Volkshochschule Kitzingen","address":{"street":"Paul-Eber-Haus, Schulhof 1","postcode":"97318","city":"Kitzingen"},"lat":null,"lon":null,"website":"https://www.stadt-kitzingen.de/","test_page_url":null,"reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"volkshochschule-rottenburg-an-der-laaber-e-v","name":"Volkshochschule Rottenburg an der Laaber e.V.","address":{"street":"Georg-Pöschl-Straße 16","postcode":"84056","city":"Rottenburg a.d.Laaber"},"lat":48.703834,"lon":12.04102,"website":"https://www.vhs-rottenburg-laaber.de/","test_page_url":"https://www.vhs-rottenburg-laaber.de/kurssuche/kurs/Einbuergerungstest/R26+S32","reader":"kuferweb","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":"2026-10-27T07:25:45.068Z","coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"volkshochschule-straubing-bogen-ggmbh","name":"Volkshochschule Straubing-Bogen gGmbH","address":{"street":"Klosterhof 2","postcode":"94327","city":"Bogen"},"lat":48.917469,"lon":12.666994,"website":"https://www.vhs-straubing-bogen.de/","test_page_url":"https://www.vhs-straubing-bogen.de/programm/sprachen/kategorie/Deutsch+als+Fremdsprache/69#inhalt","reader":"kuferweb","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"volkshochschule-suedost-im-lkr-muenchen","name":"Volkshochschule Südost im Lkr. München","address":{"street":"Haidgraben 1c","postcode":"85521","city":"Ottobrunn"},"lat":48.072052,"lon":11.652869,"website":"https://www.vhs-suedost.de/","test_page_url":"https://www.vhs-suedost.de/fachbereich/vhs/deutsch-integration/pruefungen?","reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"wbb-gmbh","name":"wbb GmbH","address":{"street":"Erdingerstraße 26","postcode":"85356","city":"Freising"},"lat":48.395888,"lon":11.754363,"website":"https://www.wbb-kuchler.de/","test_page_url":null,"reader":"none","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":null,"coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null},{"centre_id":"zweckverband-vhs-im-landkreis-erding","name":"Zweckverband VHS im Landkreis Erding","address":{"street":"Lethnerstr. 13","postcode":"85435","city":"Erding"},"lat":48.302145,"lon":11.911826,"website":"https://www.vhs-erding.de/","test_page_url":"https://www.vhs-erding.de/p/deutsch-integration/pruefungen/einbuergerungstest-664-CAT-KAT329","reader":"itemkg","reader_config":null,"opted_out":false,"source":"rtpartner","verified_at":"2026-10-27T07:25:45.068Z","coverage":"not_checked","last_result":null,"last_checked_at":null,"last_success_at":null}],"listings":[]}
+diff --git a/package.json b/package.json
+index 12a3ed5..a09a75d 100644
+--- a/package.json
++++ b/package.json
+@@ -13,7 +13,8 @@
+ 		"verify:directory": "node tools/verify-directory.ts",
+ 		"check:directory": "node tools/check-directory.ts",
+ 		"geocode": "node tools/geocode.ts",
+-		"build:places": "node tools/build-places.ts"
++		"build:places": "node tools/build-places.ts",
++		"pipeline": "node pipeline/stages/run.ts"
+ 	},
+ 	"dependencies": {
+ 		"cheerio": "~1.2.0",
+diff --git a/pipeline/stages/.gitkeep b/pipeline/stages/.gitkeep
+deleted file mode 100644
+index e69de29..0000000
+diff --git a/pipeline/stages/paths.ts b/pipeline/stages/paths.ts
+new file mode 100644
+index 0000000..3568c3c
+--- /dev/null
++++ b/pipeline/stages/paths.ts
+@@ -0,0 +1,8 @@
++/** File locations the pipeline stages read and write. Stages read data files with `node:fs`. */
++import { join } from 'node:path';
++import { fileURLToPath } from 'node:url';
++
++export const DIRECTORY_PATH = fileURLToPath(new URL('../../data/directory/centres.json', import.meta.url));
++export const PUBLIC_DIR = fileURLToPath(new URL('../../data/public', import.meta.url));
++export const SNAPSHOT_FILE = 'snapshot.json';
++export const SNAPSHOT_PATH = join(PUBLIC_DIR, SNAPSHOT_FILE);
+diff --git a/pipeline/stages/publish.ts b/pipeline/stages/publish.ts
+new file mode 100644
+index 0000000..e76df9d
+--- /dev/null
++++ b/pipeline/stages/publish.ts
+@@ -0,0 +1,121 @@
++/**
++ * Publish stage: turns the centre directory into `data/public/snapshot.json` (AD-1, AD-9).
++ *
++ * The snapshot is validated before it is written, and written atomically (temp file + rename).
++ * When the existing file is valid and equal apart from `generated_at`, it is left untouched, so an
++ * unchanged directory produces no data commit. Publish never writes `data/directory/`.
++ */
++import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
++import { basename, dirname, join } from 'node:path';
++import { directorySchema, sortDirectory, type Centre } from '../../shared/directory.ts';
++import { SNAPSHOT_SCHEMA_VERSION, snapshotSchema, type Snapshot } from '../../shared/snapshot.ts';
++import { DIRECTORY_PATH, SNAPSHOT_PATH } from './paths.ts';
++
++/** UTC ISO 8601 with `Z`, whole seconds. */
++const isoSeconds = (date: Date): string => date.toISOString().replace(/\.\d{3}Z$/, 'Z');
++
++/**
++ * The snapshot for a directory at `runAt`. Every centre appears once, sorted by `centre_id`.
++ * No readers exist yet, so every centre is `not_checked` with null run fields.
++ */
++export function buildSnapshot(centres: readonly Centre[], runAt: Date): Snapshot {
++	return {
++		schemaVersion: SNAPSHOT_SCHEMA_VERSION,
++		generated_at: isoSeconds(runAt),
++		systems: [],
++		centres: sortDirectory(centres).map((centre) => ({
++			...centre,
++			coverage: 'not_checked',
++			last_result: null,
++			last_checked_at: null,
++			last_success_at: null,
++		})),
++		listings: [],
++	};
++}
++
++/** The file text: minified JSON with a trailing newline. */
++export const serializeSnapshot = (snapshot: Snapshot): string => `${JSON.stringify(snapshot)}\n`;
++
++/** Comparable form of a snapshot, ignoring `generated_at`. */
++const contentKey = (snapshot: Snapshot): string => JSON.stringify({ ...snapshot, generated_at: '' });
++
++/** The existing snapshot at `path` when it is readable, valid JSON and schema-valid; otherwise null. */
++function readExisting(path: string): Snapshot | null {
++	if (!existsSync(path)) return null;
++	try {
++		const result = snapshotSchema.safeParse(JSON.parse(readFileSync(path, 'utf8')));
++		return result.success ? result.data : null;
++	} catch {
++		return null;
++	}
++}
++
++/**
++ * Validates `snapshot` and writes it atomically to `path`, unless the existing file is valid and
++ * equal apart from `generated_at`. Throws (writing nothing) when the snapshot fails the schema.
++ */
++export function writeSnapshot(snapshot: Snapshot, path: string): 'written' | 'unchanged' {
++	const result = snapshotSchema.safeParse(snapshot);
++	if (!result.success) throw new Error(`snapshot fails the schema:\n${result.error.message}`);
++	const existing = readExisting(path);
++	if (existing !== null && contentKey(existing) === contentKey(result.data)) return 'unchanged';
++
++	const dir = dirname(path);
++	mkdirSync(dir, { recursive: true });
++	const temp = join(dir, `.${basename(path)}.${process.pid}.tmp`);
++	try {
++		writeFileSync(temp, serializeSnapshot(result.data));
++		renameSync(temp, path);
++	} catch (caught) {
++		rmSync(temp, { force: true });
++		throw caught;
++	}
++	return 'written';
++}
++
++export interface PublishOptions {
++	directoryPath?: string;
++	snapshotPath?: string;
++	now?: () => Date;
++	log?: (line: string) => void;
++	error?: (line: string) => void;
++}
++
++/** Reads and validates the directory, then publishes the snapshot. Returns the exit code. */
++export function runPublish(options: PublishOptions = {}): number {
++	const {
++		directoryPath = DIRECTORY_PATH,
++		snapshotPath = SNAPSHOT_PATH,
++		now = () => new Date(),
++		log = console.log,
++		error = console.error,
++	} = options;
++
++	let data: unknown;
++	try {
++		data = JSON.parse(readFileSync(directoryPath, 'utf8'));
++	} catch (caught) {
++		error(`cannot read the directory ${directoryPath}, nothing written: ${(caught as Error).message}`);
++		return 1;
++	}
++	const directory = directorySchema.safeParse(data);
++	if (!directory.success) {
++		error(`the directory ${directoryPath} fails the schema, nothing written:\n${directory.error.message}`);
++		return 1;
++	}
++
++	try {
++		const snapshot = buildSnapshot(directory.data, now());
++		const outcome = writeSnapshot(snapshot, snapshotPath);
++		log(
++			outcome === 'written'
++				? `${snapshot.centres.length} centres published to ${snapshotPath}`
++				: `${snapshot.centres.length} centres; ${snapshotPath} unchanged, left as it is`,
++		);
++		return 0;
++	} catch (caught) {
++		error(`cannot publish the snapshot, nothing written: ${(caught as Error).message}`);
++		return 1;
++	}
++}
+diff --git a/pipeline/stages/run.ts b/pipeline/stages/run.ts
+new file mode 100644
+index 0000000..4dd5a97
+--- /dev/null
++++ b/pipeline/stages/run.ts
+@@ -0,0 +1,11 @@
++/**
++ * The pipeline entry point (`npm run pipeline`). Epic 1 has no readers, so it only publishes
++ * `data/public/snapshot.json` from the directory. Exits 1 when anything fails; nothing is written then.
++ *
++ *   node pipeline/stages/run.ts
++ */
++import { runPublish } from './publish.ts';
++
++if (import.meta.main) {
++	process.exitCode = runPublish();
++}
+diff --git a/shared/directory.ts b/shared/directory.ts
+index 06489c9..32c52de 100644
+--- a/shared/directory.ts
++++ b/shared/directory.ts
+@@ -37,39 +37,45 @@ export const addressSchema = z.strictObject({
+ 
+ export const readerConfigSchema = z.strictObject({ list_url: httpUrl });
+ 
+-export const centreSchema = z
+-	.strictObject({
+-		centre_id: z.string().regex(CENTRE_ID_PATTERN, { message: 'must be a lowercase slug' }),
+-		name: z.string().min(1),
+-		address: addressSchema,
+-		lat: z.number().nullable(),
+-		lon: z.number().nullable(),
+-		website: httpUrl.nullable(),
+-		test_page_url: httpUrl.nullable(),
+-		reader: z.enum(READERS),
+-		reader_config: readerConfigSchema.nullable(),
+-		opted_out: z.boolean(),
+-		source: z.enum(SOURCES),
+-		verified_at: z.iso.datetime().nullable(),
+-	})
+-	.superRefine((centre, ctx) => {
+-		if ((centre.lat === null) !== (centre.lon === null)) {
+-			ctx.addIssue({
+-				code: 'custom',
+-				path: [centre.lat === null ? 'lat' : 'lon'],
+-				message: 'lat and lon must both be numbers or both be null',
+-			});
+-		}
+-		if (centre.lat !== null && (centre.lat < BAVARIA_BBOX.minLat || centre.lat > BAVARIA_BBOX.maxLat)) {
+-			ctx.addIssue({ code: 'custom', path: ['lat'], message: `must lie inside Bavaria (${BAVARIA_BBOX.minLat}–${BAVARIA_BBOX.maxLat})` });
+-		}
+-		if (centre.lon !== null && (centre.lon < BAVARIA_BBOX.minLon || centre.lon > BAVARIA_BBOX.maxLon)) {
+-			ctx.addIssue({ code: 'custom', path: ['lon'], message: `must lie inside Bavaria (${BAVARIA_BBOX.minLon}–${BAVARIA_BBOX.maxLon})` });
+-		}
+-		if (centre.reader === 'none' && centre.reader_config !== null) {
+-			ctx.addIssue({ code: 'custom', path: ['reader_config'], message: 'must be null when reader is "none"' });
+-		}
+-	});
++/** The directory centre fields, without the cross-field checks (extend this, then add `checkCentre`). */
++export const centreFieldsSchema = z.strictObject({
++	centre_id: z.string().regex(CENTRE_ID_PATTERN, { message: 'must be a lowercase slug' }),
++	name: z.string().min(1),
++	address: addressSchema,
++	lat: z.number().nullable(),
++	lon: z.number().nullable(),
++	website: httpUrl.nullable(),
++	test_page_url: httpUrl.nullable(),
++	reader: z.enum(READERS),
++	reader_config: readerConfigSchema.nullable(),
++	opted_out: z.boolean(),
++	source: z.enum(SOURCES),
++	verified_at: z.iso.datetime().nullable(),
++});
++
++type CentreFields = z.infer<typeof centreFieldsSchema>;
++
++/** Cross-field centre checks: coords pair, Bavaria box, `reader_config` null for reader `none`. */
++export function checkCentre(centre: CentreFields, ctx: z.RefinementCtx): void {
++	if ((centre.lat === null) !== (centre.lon === null)) {
++		ctx.addIssue({
++			code: 'custom',
++			path: [centre.lat === null ? 'lat' : 'lon'],
++			message: 'lat and lon must both be numbers or both be null',
++		});
++	}
++	if (centre.lat !== null && (centre.lat < BAVARIA_BBOX.minLat || centre.lat > BAVARIA_BBOX.maxLat)) {
++		ctx.addIssue({ code: 'custom', path: ['lat'], message: `must lie inside Bavaria (${BAVARIA_BBOX.minLat}–${BAVARIA_BBOX.maxLat})` });
++	}
++	if (centre.lon !== null && (centre.lon < BAVARIA_BBOX.minLon || centre.lon > BAVARIA_BBOX.maxLon)) {
++		ctx.addIssue({ code: 'custom', path: ['lon'], message: `must lie inside Bavaria (${BAVARIA_BBOX.minLon}–${BAVARIA_BBOX.maxLon})` });
++	}
++	if (centre.reader === 'none' && centre.reader_config !== null) {
++		ctx.addIssue({ code: 'custom', path: ['reader_config'], message: 'must be null when reader is "none"' });
++	}
++}
++
++export const centreSchema = centreFieldsSchema.superRefine(checkCentre);
+ 
+ export const directorySchema = z.array(centreSchema).superRefine((centres, ctx) => {
+ 	const seen = new Set<string>();
+diff --git a/shared/snapshot.ts b/shared/snapshot.ts
+new file mode 100644
+index 0000000..bd4b330
+--- /dev/null
++++ b/shared/snapshot.ts
+@@ -0,0 +1,63 @@
++import { z } from 'zod';
++import { centreFieldsSchema, checkCentre, READERS } from './directory.ts';
++
++/** The `schemaVersion` this contract describes. The app will embed it to detect a mismatch (Story 1.8). */
++export const SNAPSHOT_SCHEMA_VERSION = 1;
++
++/** Whether a centre is read automatically. `not_checked` = uncovered card. */
++export const COVERAGE = ['covered', 'not_checked'] as const;
++export type Coverage = (typeof COVERAGE)[number];
++
++/** Outcome of the last read of a centre; `null` when it was never read. */
++export const LAST_RESULTS = ['ok', 'failed'] as const;
++export type LastResult = (typeof LAST_RESULTS)[number];
++
++/** A UTC ISO 8601 datetime ending in `Z` (no offsets). */
++const utcDatetime = z.iso.datetime();
++
++export const snapshotCentreSchema = centreFieldsSchema
++	.extend({
++		coverage: z.enum(COVERAGE),
++		last_result: z.enum(LAST_RESULTS).nullable(),
++		last_checked_at: utcDatetime.nullable(),
++		last_success_at: utcDatetime.nullable(),
++	})
++	.superRefine((centre, ctx) => {
++		checkCentre(centre, ctx);
++		if (centre.coverage === 'covered' && centre.opted_out) {
++			ctx.addIssue({ code: 'custom', path: ['coverage'], message: 'must be "not_checked" for an opted-out centre' });
++		}
++		if (centre.coverage === 'covered' && centre.reader === 'none') {
++			ctx.addIssue({ code: 'custom', path: ['coverage'], message: 'must be "not_checked" when reader is "none"' });
++		}
++	});
++
++/** Per-reader-system run summary (AD-9). */
++export const systemSchema = z.strictObject({
++	reader: z.enum(READERS).refine((reader) => reader !== 'none', { message: 'must be a reader system, not "none"' }),
++	centres_covered: z.number().int().nonnegative(),
++	centres_ok: z.number().int().nonnegative(),
++	centres_failed: z.number().int().nonnegative(),
++	last_success_at: utcDatetime.nullable(),
++});
++
++export const snapshotSchema = z.strictObject({
++	schemaVersion: z.literal(SNAPSHOT_SCHEMA_VERSION),
++	generated_at: utcDatetime,
++	systems: z.array(systemSchema),
++	centres: z.array(snapshotCentreSchema).superRefine((centres, ctx) => {
++		const seen = new Set<string>();
++		centres.forEach((centre, index) => {
++			if (seen.has(centre.centre_id)) {
++				ctx.addIssue({ code: 'custom', path: [index, 'centre_id'], message: `duplicate centre_id "${centre.centre_id}"` });
++			}
++			seen.add(centre.centre_id);
++		});
++	}),
++	// Listings arrive in Epic 2, which bumps the schema version.
++	listings: z.array(z.unknown()).max(0, { message: `must be empty in schema version ${SNAPSHOT_SCHEMA_VERSION}` }),
++});
++
++export type SnapshotCentre = z.infer<typeof snapshotCentreSchema>;
++export type SnapshotSystem = z.infer<typeof systemSchema>;
++export type Snapshot = z.infer<typeof snapshotSchema>;
+diff --git a/tests/commit-public.test.ts b/tests/commit-public.test.ts
+new file mode 100644
+index 0000000..b5d14d8
+--- /dev/null
++++ b/tests/commit-public.test.ts
+@@ -0,0 +1,188 @@
++import { execFileSync, spawnSync } from 'node:child_process';
++import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
++import { tmpdir } from 'node:os';
++import { join } from 'node:path';
++import { fileURLToPath } from 'node:url';
++import { describe, expect, it } from 'vitest';
++
++const SCRIPT = fileURLToPath(new URL('../.github/scripts/commit-public.sh', import.meta.url));
++const BOT_EMAIL = '41898282+github-actions[bot]@users.noreply.github.com';
++
++/** Runs git in `cwd` with a test identity, isolated from the user's global config. */
++function git(cwd: string, ...args: string[]): string {
++	return execFileSync('git', ['-c', 'user.name=Test', '-c', 'user.email=test@example.com', ...args], {
++		cwd,
++		encoding: 'utf8',
++		env: { ...process.env, GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1' },
++	}).trim();
++}
++
++/** A bare "remote" with one commit on main (data/public/snapshot.json + README), and a clone of it. */
++function setup(): { root: string; remote: string; work: string } {
++	const root = mkdtempSync(join(tmpdir(), 'bgt-commit-public-'));
++	const remote = join(root, 'remote.git');
++	const seed = join(root, 'seed');
++	const work = join(root, 'work');
++	git(root, 'init', '--quiet', '--bare', '--initial-branch=main', remote);
++	git(root, 'init', '--quiet', '--initial-branch=main', seed);
++	mkdirSync(join(seed, 'data', 'public'), { recursive: true });
++	writeFileSync(join(seed, 'data', 'public', 'snapshot.json'), '{"v":1}\n');
++	writeFileSync(join(seed, 'README'), 'readme\n');
++	git(seed, 'add', '.');
++	git(seed, 'commit', '--quiet', '-m', 'seed');
++	git(seed, 'push', '--quiet', remote, 'HEAD:refs/heads/main');
++	git(root, 'clone', '--quiet', remote, work);
++	return { root, remote, work };
++}
++
++function run(work: string, publishCmd: string, extraEnv: Record<string, string> = {}) {
++	const output = join(work, '..', 'github-output');
++	writeFileSync(output, '');
++	const result = spawnSync('bash', [SCRIPT], {
++		cwd: work,
++		encoding: 'utf8',
++		env: {
++			...process.env,
++			GIT_CONFIG_GLOBAL: '/dev/null',
++			GIT_CONFIG_NOSYSTEM: '1',
++			PUBLISH_CMD: publishCmd,
++			GITHUB_OUTPUT: output,
++			...extraEnv,
++		},
++	});
++	const sha = readFileSync(output, 'utf8').match(/^sha=([0-9a-f]{40})$/m)?.[1] ?? null;
++	return { status: result.status, stdout: result.stdout, stderr: result.stderr, sha };
++}
++
++const remoteHead = (remote: string): string => git(remote, 'rev-parse', 'refs/heads/main');
++const commitCount = (remote: string): number => Number(git(remote, 'rev-list', '--count', 'refs/heads/main'));
++
++describe('commit-public.sh', () => {
++	it('makes no commit when data/public/ is unchanged, and outputs HEAD', () => {
++		const { remote, work } = setup();
++		const before = remoteHead(remote);
++		const result = run(work, 'true');
++		expect(result.status).toBe(0);
++		expect(commitCount(remote)).toBe(1);
++		expect(result.sha).toBe(before);
++		expect(remoteHead(remote)).toBe(before);
++	});
++
++	it('commits only data/public/ once with the bot identity and pushes it', () => {
++		const { remote, work } = setup();
++		writeFileSync(join(work, 'data', 'public', 'snapshot.json'), '{"v":2}\n');
++		writeFileSync(join(work, 'data', 'public', 'places.json'), '{}\n');
++		writeFileSync(join(work, 'README'), 'local edit, never committed\n');
++		const result = run(work, 'true');
++		expect(result.status).toBe(0);
++		expect(commitCount(remote)).toBe(2);
++		expect(result.sha).toBe(remoteHead(remote));
++		const files = git(remote, 'show', '--name-only', '--format=', 'main').split('\n').sort();
++		expect(files).toEqual(['data/public/places.json', 'data/public/snapshot.json']);
++		expect(git(remote, 'log', '-1', '--format=%an <%ae>|%s', 'main')).toBe(`github-actions[bot] <${BOT_EMAIL}>|data: publish snapshot`);
++		expect(git(work, 'status', '--porcelain')).toBe('M README');
++	});
++
++	it('resets to a moved upstream, publishes again and pushes on top of it', () => {
++		const { root, remote, work } = setup();
++		// Someone else pushes to main after the work clone was made.
++		const other = join(root, 'other');
++		git(root, 'clone', '--quiet', remote, other);
++		writeFileSync(join(other, 'README'), 'upstream change\n');
++		git(other, 'commit', '--quiet', '-am', 'upstream');
++		git(other, 'push', '--quiet', 'origin', 'HEAD:main');
++		const upstream = remoteHead(remote);
++
++		writeFileSync(join(work, 'data', 'public', 'snapshot.json'), '{"v":2}\n');
++		const envFile = join(root, 'publish-env');
++		const publish = `env > '${envFile}' && printf '{"v":3}\\n' > data/public/snapshot.json`;
++		const result = run(work, publish, { GIT_AUTH_HEADER: 'AUTHORIZATION: basic dGVzdA==' });
++		expect(result.status).toBe(0);
++		expect(commitCount(remote)).toBe(3);
++		expect(git(remote, 'rev-parse', 'main^')).toBe(upstream);
++		expect(result.sha).toBe(remoteHead(remote));
++		expect(git(remote, 'show', 'main:data/public/snapshot.json')).toBe('{"v":3}');
++		expect(git(remote, 'show', 'main:README')).toBe('upstream change');
++		// The publish command never sees the credential.
++		expect(readFileSync(envFile, 'utf8')).not.toMatch(/GIT_AUTH_HEADER|dGVzdA==/);
++	});
++
++	it('makes no commit after a reset when the re-published data is unchanged', () => {
++		const { root, remote, work } = setup();
++		const other = join(root, 'other');
++		git(root, 'clone', '--quiet', remote, other);
++		writeFileSync(join(other, 'README'), 'upstream change\n');
++		git(other, 'commit', '--quiet', '-am', 'upstream');
++		git(other, 'push', '--quiet', 'origin', 'HEAD:main');
++		const upstream = remoteHead(remote);
++		// The work clone is behind and has no data change: the push is rejected, then a no-op.
++		const result = run(work, 'true');
++		expect(result.status).toBe(0);
++		expect(remoteHead(remote)).toBe(upstream);
++		expect(result.sha).toBe(upstream);
++	});
++
++	it('passes the auth header to fetch and push only, with hooks disabled on every git call', () => {
++		const { root, remote, work } = setup();
++		const other = join(root, 'other');
++		git(root, 'clone', '--quiet', remote, other);
++		writeFileSync(join(other, 'README'), 'upstream change\n');
++		git(other, 'commit', '--quiet', '-am', 'upstream');
++		git(other, 'push', '--quiet', 'origin', 'HEAD:main');
++
++		// A logging `git` first on PATH records every call's arguments, one tab-separated line each.
++		const bin = join(root, 'bin');
++		const log = join(root, 'git-calls');
++		mkdirSync(bin);
++		const realGit = execFileSync('sh', ['-c', 'command -v git'], { encoding: 'utf8' }).trim();
++		writeFileSync(join(bin, 'git'), `#!/bin/sh\n(IFS='\t'; printf '%s\\n' "$*") >> '${log}'\nexec '${realGit}' "$@"\n`);
++		chmodSync(join(bin, 'git'), 0o755);
++
++		const header = 'AUTHORIZATION: basic dGVzdA==';
++		writeFileSync(join(work, 'data', 'public', 'snapshot.json'), '{"v":2}\n');
++		const result = run(work, `printf '{"v":3}\\n' > data/public/snapshot.json`, {
++			GIT_AUTH_HEADER: header,
++			PATH: `${bin}:${process.env.PATH ?? ''}`,
++		});
++		expect(result.status).toBe(0);
++
++		const calls = readFileSync(log, 'utf8').trim().split('\n').map((line) => {
++			const args = line.split('\t');
++			const config: string[] = [];
++			while (args[0] === '-c') config.push(args.splice(0, 2)[1]);
++			return { command: args[0], config };
++		});
++		const byCommand = (name: string) => calls.filter((c) => c.command === name);
++		expect(byCommand('push')).toHaveLength(2);
++		expect(byCommand('fetch')).toHaveLength(1);
++		for (const name of ['add', 'commit', 'reset']) expect(byCommand(name).length).toBeGreaterThan(0);
++		for (const call of calls) {
++			expect(call.config).toContain('core.hooksPath=/dev/null');
++			const hasHeader = call.config.includes(`http.extraheader=${header}`);
++			expect(hasHeader, `${call.command} ${hasHeader ? 'got' : 'lacks'} the header`).toBe(call.command === 'push' || call.command === 'fetch');
++			if (!hasHeader) expect(call.config.join(' ')).not.toContain('extraheader');
++		}
++	});
++
++	it('fails after 3 rejected pushes and outputs no sha', () => {
++		const { root, remote, work } = setup();
++		const attempts = join(root, 'attempts');
++		const hook = join(remote, 'hooks', 'pre-receive');
++		writeFileSync(hook, `#!/bin/sh\necho push >> '${attempts}'\necho rejected >&2\nexit 1\n`);
++		chmodSync(hook, 0o755);
++		const publishes = join(root, 'publishes');
++		writeFileSync(join(work, 'data', 'public', 'snapshot.json'), '{"v":2}\n');
++		const result = run(work, `echo run >> '${publishes}' && printf '{"v":2}\\n' > data/public/snapshot.json`);
++		expect(result.status).not.toBe(0);
++		expect(result.sha).toBeNull();
++		expect(readFileSync(attempts, 'utf8').trim().split('\n')).toHaveLength(3);
++		expect(readFileSync(publishes, 'utf8').trim().split('\n')).toHaveLength(2);
++		expect(commitCount(remote)).toBe(1);
++		expect(result.stderr).toContain('rejected 3 times');
++	});
++
++	it('is executable', () => {
++		expect(existsSync(SCRIPT)).toBe(true);
++		expect(git(fileURLToPath(new URL('..', import.meta.url)), 'ls-files', '-s', '.github/scripts/commit-public.sh')).toMatch(/^100755 /);
++	});
++});
+diff --git a/tests/site-config.test.ts b/tests/site-config.test.ts
+index 364cd9e..c44370a 100644
+--- a/tests/site-config.test.ts
++++ b/tests/site-config.test.ts
+@@ -3,6 +3,7 @@ import { posix, relative, sep } from 'node:path';
+ import { fileURLToPath } from 'node:url';
+ import { describe, expect, it } from 'vitest';
+ import { ABOUT_URL, SITE_URL, USER_AGENT } from '../pipeline/config.ts';
++import { PUBLIC_DIR } from '../pipeline/stages/paths.ts';
+ import pkg from '../package.json' with { type: 'json' };
+ import viteConfig from '../vite.config.ts';
+ 
+@@ -20,6 +21,10 @@ describe('site config', () => {
+ 		expect(viteConfig.base).toBe(new URL(SITE_URL).pathname);
+ 	});
+ 
++	it('serves the directory the pipeline publishes to as the Vite public dir', () => {
++		expect(viteConfig.publicDir).toBe(PUBLIC_DIR);
++	});
++
+ 	it('builds the About page at the path named in the bot User-Agent', () => {
+ 		const input = viteConfig.build?.rollupOptions?.input;
+ 		const entries = typeof input === 'string' ? [input] : Array.isArray(input) ? input : Object.values(input ?? {});
+diff --git a/tests/snapshot.test.ts b/tests/snapshot.test.ts
+new file mode 100644
+index 0000000..e36de9c
+--- /dev/null
++++ b/tests/snapshot.test.ts
+@@ -0,0 +1,230 @@
++import { existsSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
++import { tmpdir } from 'node:os';
++import { join } from 'node:path';
++import { describe, expect, it } from 'vitest';
++import { buildSnapshot, runPublish, serializeSnapshot, writeSnapshot } from '../pipeline/stages/publish.ts';
++import { SNAPSHOT_PATH } from '../pipeline/stages/paths.ts';
++import { type Centre } from '../shared/directory.ts';
++import { snapshotSchema, type Snapshot } from '../shared/snapshot.ts';
++
++const tmp = (): string => mkdtempSync(join(tmpdir(), 'bgt-snapshot-'));
++const RUN_1 = new Date('2026-10-27T07:00:00.000Z');
++const RUN_2 = new Date('2026-10-28T07:00:00.000Z');
++
++const centre = (id: string, extra: Partial<Centre> = {}): Centre => ({
++	centre_id: id,
++	name: `Centre ${id}`,
++	address: { street: 'Hauptstraße 1', postcode: '80331', city: 'München' },
++	lat: 48.137,
++	lon: 11.575,
++	website: 'https://example.de/',
++	test_page_url: 'https://example.de/test',
++	reader: 'none',
++	reader_config: null,
++	opted_out: false,
++	source: 'rtpartner',
++	verified_at: null,
++	...extra,
++});
++
++const DIRECTORY: Centre[] = [
++	centre('zeta'),
++	centre('alpha', { reader: 'kuferweb', reader_config: { list_url: 'https://example.de/kurse' }, opted_out: true }),
++	centre('mid', { lat: null, lon: null, verified_at: null }),
++];
++
++/** A temp directory holding `centres.json` (raw text or entries) and the snapshot path. */
++function setup(directory: Centre[] | string = DIRECTORY): { dir: string; directoryPath: string; snapshotPath: string } {
++	const dir = tmp();
++	const directoryPath = join(dir, 'centres.json');
++	writeFileSync(directoryPath, typeof directory === 'string' ? directory : JSON.stringify(directory));
++	return { dir, directoryPath, snapshotPath: join(dir, 'public', 'snapshot.json') };
++}
++
++function publish(paths: { directoryPath: string; snapshotPath: string }, runAt = RUN_1) {
++	const logs: string[] = [];
++	const errors: string[] = [];
++	const code = runPublish({
++		...paths,
++		now: () => runAt,
++		log: (line) => logs.push(line),
++		error: (line) => errors.push(line),
++	});
++	return { code, logs, errors };
++}
++
++const valid = (): Snapshot => buildSnapshot(DIRECTORY, RUN_1);
++
++describe('snapshotSchema', () => {
++	it('accepts a built snapshot', () => {
++		expect(snapshotSchema.safeParse(valid()).success).toBe(true);
++	});
++
++	it('accepts a covered centre with a reader that is not opted out, and a system entry', () => {
++		const snapshot = valid();
++		snapshot.centres[1] = { ...snapshot.centres[1]!, reader: 'itemkg', reader_config: { list_url: 'https://x.de/' }, coverage: 'covered', last_result: 'ok', last_checked_at: '2026-10-27T07:00:00Z', last_success_at: '2026-10-27T07:00:00Z' };
++		snapshot.systems = [{ reader: 'itemkg', centres_covered: 1, centres_ok: 1, centres_failed: 0, last_success_at: '2026-10-27T07:00:00Z' }];
++		expect(snapshotSchema.safeParse(snapshot).success).toBe(true);
++	});
++
++	const rejects: [string, (s: Snapshot) => unknown][] = [
++		['another schemaVersion', (s) => ({ ...s, schemaVersion: 2 })],
++		['an extra top-level key', (s) => ({ ...s, extra: true })],
++		['an extra centre key', (s) => ({ ...s, centres: [{ ...s.centres[0], extra: 1 }] })],
++		['a listing', (s) => ({ ...s, listings: [{ centre_id: 'alpha' }] })],
++		['covered + opted out', (s) => ({ ...s, centres: [{ ...s.centres[0], coverage: 'covered' }] })],
++		['covered + reader none', (s) => ({ ...s, centres: [{ ...s.centres[1], coverage: 'covered' }] })],
++		['a duplicate centre_id', (s) => ({ ...s, centres: [s.centres[0], s.centres[0]] })],
++		['a non-Z generated_at', (s) => ({ ...s, generated_at: '2026-10-27T09:00:00+02:00' })],
++		['a non-Z last_checked_at', (s) => ({ ...s, centres: [{ ...s.centres[0], last_checked_at: '2026-10-27T09:00:00+02:00' }] })],
++		['an unknown coverage code', (s) => ({ ...s, centres: [{ ...s.centres[0], coverage: 'unknown' }] })],
++		['an unknown last_result code', (s) => ({ ...s, centres: [{ ...s.centres[0], last_result: 'unknown' }] })],
++		['an omitted run field', (s) => ({ ...s, centres: [{ ...s.centres[0], last_success_at: undefined }] })],
++		['a half coordinate pair', (s) => ({ ...s, centres: [{ ...s.centres[0], lat: null }] })],
++		['coordinates outside Bavaria', (s) => ({ ...s, centres: [{ ...s.centres[0], lat: 52.5, lon: 13.4 }] })],
++		['reader_config with reader none', (s) => ({ ...s, centres: [{ ...s.centres[1], reader_config: { list_url: 'https://x.de/' } }] })],
++		['a system for reader none', (s) => ({ ...s, systems: [{ reader: 'none', centres_covered: 0, centres_ok: 0, centres_failed: 0, last_success_at: null }] })],
++	];
++
++	it.each(rejects)('rejects %s', (_name, mutate) => {
++		expect(snapshotSchema.safeParse(mutate(valid())).success).toBe(false);
++	});
++});
++
++describe('buildSnapshot', () => {
++	it('lists every centre once, sorted, not_checked with null run fields, after the directory fields', () => {
++		const snapshot = buildSnapshot(DIRECTORY, RUN_1);
++		expect(snapshot.schemaVersion).toBe(1);
++		expect(snapshot.generated_at).toBe('2026-10-27T07:00:00Z');
++		expect(snapshot.systems).toEqual([]);
++		expect(snapshot.listings).toEqual([]);
++		expect(snapshot.centres.map((c) => c.centre_id)).toEqual(['alpha', 'mid', 'zeta']);
++		for (const c of snapshot.centres) {
++			expect(c).toMatchObject({ coverage: 'not_checked', last_result: null, last_checked_at: null, last_success_at: null });
++			expect(Object.keys(c).slice(-4)).toEqual(['coverage', 'last_result', 'last_checked_at', 'last_success_at']);
++		}
++	});
++});
++
++describe('runPublish', () => {
++	it('publishes a valid minified snapshot with a trailing newline (normal run)', () => {
++		const paths = setup();
++		const { code, errors } = publish(paths);
++		expect(code).toBe(0);
++		expect(errors).toEqual([]);
++		const text = readFileSync(paths.snapshotPath, 'utf8');
++		expect(text).toBe(serializeSnapshot(buildSnapshot(DIRECTORY, RUN_1)));
++		expect(text.endsWith('}\n')).toBe(true);
++		expect(text).not.toContain('\n\t');
++		const snapshot = snapshotSchema.parse(JSON.parse(text));
++		expect(snapshot.centres).toHaveLength(3);
++	});
++
++	it('publishes an opted-out centre once as not_checked', () => {
++		const paths = setup();
++		publish(paths);
++		const snapshot = snapshotSchema.parse(JSON.parse(readFileSync(paths.snapshotPath, 'utf8')));
++		const optedOut = snapshot.centres.filter((c) => c.centre_id === 'alpha');
++		expect(optedOut).toHaveLength(1);
++		expect(optedOut[0]).toMatchObject({ opted_out: true, reader: 'kuferweb', coverage: 'not_checked' });
++	});
++
++	it('publishes an ungeocoded centre with null coordinates', () => {
++		const paths = setup();
++		publish(paths);
++		const snapshot = snapshotSchema.parse(JSON.parse(readFileSync(paths.snapshotPath, 'utf8')));
++		expect(snapshot.centres.find((c) => c.centre_id === 'mid')).toMatchObject({ lat: null, lon: null });
++	});
++
++	it('leaves the file byte-identical on an unchanged rerun', () => {
++		const paths = setup();
++		publish(paths, RUN_1);
++		const before = readFileSync(paths.snapshotPath, 'utf8');
++		const { code, logs } = publish(paths, RUN_2);
++		expect(code).toBe(0);
++		expect(readFileSync(paths.snapshotPath, 'utf8')).toBe(before);
++		expect(logs.join('\n')).toContain('unchanged');
++	});
++
++	it('rewrites the file with a new generated_at when the directory changed', () => {
++		const paths = setup();
++		publish(paths, RUN_1);
++		writeFileSync(paths.directoryPath, JSON.stringify([...DIRECTORY.slice(1), centre('zeta', { name: 'Renamed' })]));
++		expect(publish(paths, RUN_2).code).toBe(0);
++		const snapshot = snapshotSchema.parse(JSON.parse(readFileSync(paths.snapshotPath, 'utf8')));
++		expect(snapshot.generated_at).toBe('2026-10-28T07:00:00Z');
++		expect(snapshot.centres.find((c) => c.centre_id === 'zeta')?.name).toBe('Renamed');
++	});
++
++	it.each([
++		['not JSON', '{nope', 'cannot read the directory'],
++		['a schema error', JSON.stringify([centre('alpha', { lat: 52.5, lon: 13.4 })]), 'fails the schema'],
++		['a duplicate id', JSON.stringify([centre('alpha'), centre('alpha')]), 'duplicate centre_id'],
++	])('writes nothing and exits 1 for an invalid directory (%s)', (_name, text, message) => {
++		const paths = setup(text);
++		const { code, errors } = publish(paths);
++		expect(code).toBe(1);
++		expect(errors.join('\n')).toContain(message);
++		expect(existsSync(paths.snapshotPath)).toBe(false);
++	});
++
++	it('leaves an existing snapshot untouched when the directory is invalid', () => {
++		const paths = setup();
++		publish(paths);
++		const before = readFileSync(paths.snapshotPath, 'utf8');
++		writeFileSync(paths.directoryPath, '[{"centre_id":"x"}]');
++		expect(publish(paths, RUN_2).code).toBe(1);
++		expect(readFileSync(paths.snapshotPath, 'utf8')).toBe(before);
++	});
++
++	it('exits 1 when the directory file is missing', () => {
++		const dir = tmp();
++		const { code, errors } = publish({ directoryPath: join(dir, 'missing.json'), snapshotPath: join(dir, 's.json') });
++		expect(code).toBe(1);
++		expect(errors).toHaveLength(1);
++	});
++
++	it('overwrites a corrupt existing snapshot', () => {
++		const paths = setup();
++		publish(paths);
++		writeFileSync(paths.snapshotPath, '{corrupt');
++		expect(publish(paths, RUN_2).code).toBe(0);
++		const snapshot = snapshotSchema.parse(JSON.parse(readFileSync(paths.snapshotPath, 'utf8')));
++		expect(snapshot.generated_at).toBe('2026-10-28T07:00:00Z');
++	});
++});
++
++describe('writeSnapshot', () => {
++	it.each<[string, (s: Snapshot) => Snapshot]>([
++		['covered + opted out', (s) => ({ ...s, centres: s.centres.map((c) => (c.opted_out ? { ...c, coverage: 'covered' } : c)) })],
++		['a listing', (s) => ({ ...s, listings: [{ centre_id: 'alpha' }] })],
++	])('throws and writes nothing for an invalid snapshot (%s)', (_name, mutate) => {
++		const dir = tmp();
++		const path = join(dir, 'snapshot.json');
++		expect(() => writeSnapshot(mutate(valid()), path)).toThrow(/fails the schema/);
++		expect(readdirSync(dir)).toEqual([]);
++	});
++
++	it('leaves no temp file behind after an atomic write', () => {
++		const dir = tmp();
++		const path = join(dir, 'snapshot.json');
++		expect(writeSnapshot(valid(), path)).toBe('written');
++		expect(writeSnapshot(buildSnapshot(DIRECTORY, RUN_2), path)).toBe('unchanged');
++		expect(readdirSync(dir)).toEqual(['snapshot.json']);
++	});
++});
++
++describe('committed data/public/snapshot.json', () => {
++	// Validity and the Epic 1 shape only. It must not compare centre_ids with the directory:
++	// `npm test` runs before `npm run pipeline` in pipeline.yml, and the pipeline is what
++	// reconciles a changed directory with the committed snapshot.
++	it('is valid and holds only not_checked centres with null run fields', () => {
++		const snapshot = snapshotSchema.parse(JSON.parse(readFileSync(SNAPSHOT_PATH, 'utf8')));
++		expect(snapshot.centres.length).toBeGreaterThan(0);
++		for (const centre of snapshot.centres) {
++			expect(centre).toMatchObject({ coverage: 'not_checked', last_result: null, last_checked_at: null, last_success_at: null });
++		}
++		expect(snapshot.systems).toEqual([]);
++		expect(snapshot.listings).toEqual([]);
++	});
++});
+diff --git a/tests/workflows.test.ts b/tests/workflows.test.ts
+index 60f4666..a98c585 100644
+--- a/tests/workflows.test.ts
++++ b/tests/workflows.test.ts
+@@ -48,34 +48,67 @@ describe('ci.yml', () => {
+ 
+ describe('pipeline.yml', () => {
+ 	const pipeline = read('pipeline.yml');
++	const publish = job(pipeline, 'publish');
+ 	const build = job(pipeline, 'build');
+ 	const deploy = job(pipeline, 'deploy');
+ 
+-	it('deploys from main or dispatch in one non-cancelling concurrency group', () => {
++	it('runs from main or dispatch in one non-cancelling concurrency group, and only for main', () => {
+ 		expect(pipeline).toMatch(/^  push:\n    branches: \[main\]\n/m);
+ 		expect(pipeline).toContain('workflow_dispatch:');
+ 		expect(pipeline).toMatch(/concurrency:\n\s+group: pipeline\n\s+cancel-in-progress: false/);
+-		expect(build).toContain('ref: ${{ github.sha }}');
++		expect(publish).toMatch(/^    if: github\.ref == 'refs\/heads\/main'$/m);
+ 		expect(deploy).toMatch(/uses: actions\/deploy-pages@v\d+/);
+ 	});
+ 
+-	it('runs type-check and tests before the build in the build job', () => {
+-		const steps = ['run: npm ci', 'run: npm run typecheck', 'run: npm test', 'run: npm run build'].map((s) =>
+-			build.indexOf(s),
+-		);
++	it('chains publish → build → deploy', () => {
++		expect(build).toMatch(/^    needs: publish$/m);
++		expect(deploy).toMatch(/^    needs: build$/m);
++	});
++
++	it('tests, runs the pipeline, then commits, in that order in the publish job', () => {
++		const steps = [
++			'run: npm ci',
++			'run: npm run typecheck',
++			'run: npm test',
++			'run: npm run pipeline',
++			'.github/scripts/commit-public.sh',
++		].map((s) => publish.indexOf(s));
+ 		expect(steps.every((i) => i >= 0)).toBe(true);
+ 		expect([...steps].sort((a, b) => a - b)).toEqual(steps);
++		expect(publish).toContain('sha: ${{ steps.commit.outputs.sha }}');
++		expect(publish).toMatch(/- id: commit\n/);
+ 	});
+ 
+-	it('fails the build unless both pages were built', () => {
+-		expect(build).toContain('dist/index.html');
+-		expect(build).toContain('dist/about/index.html');
++	it('installs, type-checks and tests a moved upstream before re-publishing it on a retry', () => {
++		const commitStep = publish.slice(publish.indexOf('- id: commit'));
++		expect(commitStep).toMatch(/^\s+PUBLISH_CMD: npm ci && npm run typecheck && npm test && npm run pipeline$/m);
++	});
++
++	it('builds and deploys exactly the SHA the publish job pushed', () => {
++		expect(build).toContain('ref: ${{ needs.publish.outputs.sha }}');
++		expect(build).not.toContain('github.sha');
++		expect(build.indexOf('run: npm ci')).toBeLessThan(build.indexOf('run: npm run build'));
++	});
++
++	it('never leaves a credential on disk after checkout', () => {
++		const checkouts = pipeline.match(/uses: actions\/checkout@v\d+\n\s+with:\n(?:\s{10}.*\n)*/g) ?? [];
++		expect(checkouts).toHaveLength(2);
++		for (const checkout of checkouts) expect(checkout).toContain('persist-credentials: false');
++	});
++
++	it('fails the build unless both pages and both data files were built', () => {
++		for (const file of ['dist/index.html', 'dist/about/index.html', 'dist/snapshot.json', 'dist/places.json']) {
++			expect(build).toContain(file);
++		}
+ 	});
+ 
+-	it('grants Pages and OIDC permissions to the deploy job only', () => {
++	it('grants contents: write to publish only, and Pages and OIDC to deploy only', () => {
+ 		const workflowLevel = pipeline.match(/^permissions:\n((?:  .*\n)*)/m)?.[1] ?? '';
+ 		expect(workflowLevel.trim()).toBe('contents: read');
+-		expect(build).not.toMatch(/pages: write|id-token: write/);
++		expect(publish).toMatch(/^    permissions:\n      contents: write\n    \S/m);
++		expect(build).not.toMatch(/permissions:|contents: write|pages: write|id-token: write/);
++		expect(deploy).not.toContain('contents: write');
++		expect(publish).not.toMatch(/pages: write|id-token: write/);
+ 		expect(deploy).toMatch(/permissions:\n\s+pages: write\n\s+id-token: write/);
+ 	});
+ });
+diff --git a/vite.config.ts b/vite.config.ts
+index 0f9f526..43abc0e 100644
+--- a/vite.config.ts
++++ b/vite.config.ts
+@@ -7,6 +7,8 @@ const fromRoot = (path: string): string => fileURLToPath(new URL(path, import.me
+ export default defineConfig({
+ 	root: fromRoot('./web'),
+ 	base: '/testplatz/',
++	// The published data files (snapshot.json, places.json) are served from the site root.
++	publicDir: fromRoot('./data/public'),
+ 	plugins: [preact()],
+ 	build: {
+ 		outDir: fromRoot('./dist'),

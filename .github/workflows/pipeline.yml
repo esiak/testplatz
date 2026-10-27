@@ -9,19 +9,25 @@ concurrency:
   group: pipeline
   cancel-in-progress: false
 
-# Only the deploy job gets the Pages/OIDC token; the build job runs third-party
-# install scripts (npm ci) and must not hold it.
+# Each job gets only what it needs: publish may push data/public/ to main, build holds no write
+# token while it runs third-party install scripts, and only deploy gets the Pages/OIDC token.
 permissions:
   contents: read
 
 jobs:
-  # Story 1.6 adds the "commit data/public/ once, then deploy that SHA" step before the build.
-  build:
+  # Test, run the pipeline, then commit data/public/ once (if it changed) and push it to main.
+  publish:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      sha: ${{ steps.commit.outputs.sha }}
     steps:
       - uses: actions/checkout@v7
         with:
           ref: ${{ github.sha }}
+          persist-credentials: false
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
@@ -29,12 +35,46 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
+      - run: npm run pipeline
+      - id: commit
+        name: Commit and push data/public/
+        env:
+          GH_TOKEN: ${{ github.token }}
+          # After a rejected push the script resets onto the moved upstream; type-check and test
+          # that code before publishing it, as the steps above did for this commit. No `npm ci`
+          # here: the push credential sits in this step's and the script's initial environment
+          # (readable through /proc/<pid>/environ by any child), so install scripts must never run
+          # in this step. The retry reuses node_modules from the `npm ci` step above; if upstream
+          # changed dependencies, the tests fail, this run fails without deploying, and the queued
+          # run for that upstream push publishes instead.
+          PUBLISH_CMD: npm run typecheck && npm test && npm run pipeline
+        run: |
+          basic="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 | tr -d '\n')"
+          echo "::add-mask::$basic"
+          unset GH_TOKEN
+          GIT_AUTH_HEADER="AUTHORIZATION: basic $basic" .github/scripts/commit-public.sh
+
+  # Build exactly the SHA the publish job pushed (pushes made with the workflow token do not
+  # trigger another workflow run, so there is no loop).
+  build:
+    needs: publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.publish.outputs.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
       - run: npm run build
       - name: Check build output
         run: |
-          for page in dist/index.html dist/about/index.html; do
-            if [ ! -f "$page" ]; then
-              echo "::error::missing $page"
+          for file in dist/index.html dist/about/index.html dist/snapshot.json dist/places.json; do
+            if [ ! -f "$file" ]; then
+              echo "::error::missing $file"
               exit 1
             fi
           done

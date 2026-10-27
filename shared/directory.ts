@@ -37,39 +37,45 @@ export const addressSchema = z.strictObject({
 
 export const readerConfigSchema = z.strictObject({ list_url: httpUrl });
 
-export const centreSchema = z
-	.strictObject({
-		centre_id: z.string().regex(CENTRE_ID_PATTERN, { message: 'must be a lowercase slug' }),
-		name: z.string().min(1),
-		address: addressSchema,
-		lat: z.number().nullable(),
-		lon: z.number().nullable(),
-		website: httpUrl.nullable(),
-		test_page_url: httpUrl.nullable(),
-		reader: z.enum(READERS),
-		reader_config: readerConfigSchema.nullable(),
-		opted_out: z.boolean(),
-		source: z.enum(SOURCES),
-		verified_at: z.iso.datetime().nullable(),
-	})
-	.superRefine((centre, ctx) => {
-		if ((centre.lat === null) !== (centre.lon === null)) {
-			ctx.addIssue({
-				code: 'custom',
-				path: [centre.lat === null ? 'lat' : 'lon'],
-				message: 'lat and lon must both be numbers or both be null',
-			});
-		}
-		if (centre.lat !== null && (centre.lat < BAVARIA_BBOX.minLat || centre.lat > BAVARIA_BBOX.maxLat)) {
-			ctx.addIssue({ code: 'custom', path: ['lat'], message: `must lie inside Bavaria (${BAVARIA_BBOX.minLat}–${BAVARIA_BBOX.maxLat})` });
-		}
-		if (centre.lon !== null && (centre.lon < BAVARIA_BBOX.minLon || centre.lon > BAVARIA_BBOX.maxLon)) {
-			ctx.addIssue({ code: 'custom', path: ['lon'], message: `must lie inside Bavaria (${BAVARIA_BBOX.minLon}–${BAVARIA_BBOX.maxLon})` });
-		}
-		if (centre.reader === 'none' && centre.reader_config !== null) {
-			ctx.addIssue({ code: 'custom', path: ['reader_config'], message: 'must be null when reader is "none"' });
-		}
-	});
+/** The directory centre fields, without the cross-field checks (extend this, then add `checkCentre`). */
+export const centreFieldsSchema = z.strictObject({
+	centre_id: z.string().regex(CENTRE_ID_PATTERN, { message: 'must be a lowercase slug' }),
+	name: z.string().min(1),
+	address: addressSchema,
+	lat: z.number().nullable(),
+	lon: z.number().nullable(),
+	website: httpUrl.nullable(),
+	test_page_url: httpUrl.nullable(),
+	reader: z.enum(READERS),
+	reader_config: readerConfigSchema.nullable(),
+	opted_out: z.boolean(),
+	source: z.enum(SOURCES),
+	verified_at: z.iso.datetime().nullable(),
+});
+
+type CentreFields = z.infer<typeof centreFieldsSchema>;
+
+/** Cross-field centre checks: coords pair, Bavaria box, `reader_config` null for reader `none`. */
+export function checkCentre(centre: CentreFields, ctx: z.RefinementCtx): void {
+	if ((centre.lat === null) !== (centre.lon === null)) {
+		ctx.addIssue({
+			code: 'custom',
+			path: [centre.lat === null ? 'lat' : 'lon'],
+			message: 'lat and lon must both be numbers or both be null',
+		});
+	}
+	if (centre.lat !== null && (centre.lat < BAVARIA_BBOX.minLat || centre.lat > BAVARIA_BBOX.maxLat)) {
+		ctx.addIssue({ code: 'custom', path: ['lat'], message: `must lie inside Bavaria (${BAVARIA_BBOX.minLat}–${BAVARIA_BBOX.maxLat})` });
+	}
+	if (centre.lon !== null && (centre.lon < BAVARIA_BBOX.minLon || centre.lon > BAVARIA_BBOX.maxLon)) {
+		ctx.addIssue({ code: 'custom', path: ['lon'], message: `must lie inside Bavaria (${BAVARIA_BBOX.minLon}–${BAVARIA_BBOX.maxLon})` });
+	}
+	if (centre.reader === 'none' && centre.reader_config !== null) {
+		ctx.addIssue({ code: 'custom', path: ['reader_config'], message: 'must be null when reader is "none"' });
+	}
+}
+
+export const centreSchema = centreFieldsSchema.superRefine(checkCentre);
 
 export const directorySchema = z.array(centreSchema).superRefine((centres, ctx) => {
 	const seen = new Set<string>();

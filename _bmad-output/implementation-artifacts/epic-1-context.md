@@ -18,6 +18,7 @@ Ship a free, static, bilingual (DE/EN) site where someone in Bavaria enters a to
 - Story 1.8: Search a place and see every centre in range
 - Story 1.9: Place suggestions while typing
 - Story 1.10: Search from my location
+- Story 1.11: Complete the place table
 
 ## Requirements & Constraints
 
@@ -41,7 +42,7 @@ Ship a free, static, bilingual (DE/EN) site where someone in Bavaria enters a to
 - **Imports (enforced by a test):** `web` → `shared`; `tools` → `fetch` and `shared`; `readers` → `shared` only. `web` never imports `pipeline` or `tools`, and no project code imports `typescript`.
 - **`shared/`** holds the zod schemas, codes, the one place-name normaliser (folds case, umlauts and ß), haversine and the 12 h / 24 h constants.
 - **One polite HTTP path:** all outbound HTTP, from both pipeline and `tools/`, goes through `pipeline/fetch`. It sends the identified bot UA, checks robots.txt once per host per run, and fetches serially per host with a delay and a timeout. It also decodes charsets and refuses a centre host already visited 4 times in 24 h, based on the visit log in `data/state/`.
-  - The only robots exemption is Nominatim `/search`, as an explicit per-client option. That endpoint is called manually, with caching, at no more than 1 request per second, and never on a schedule. Every other host and path keeps full robots checks.
+  - Exactly two robots exemptions, each an explicit per-client option passed only by its own tool: `tools/geocode` → Nominatim `/search` (manual, cached, ≤ 1 req/s, never scheduled); `tools/build-places` → Overpass `https://overpass-api.de/api/interpreter` (manual, cached, serial, ≥ 10 s apart, never scheduled). Every other host and path keeps full robots checks. The 4-visits-in-24-h cap applies to centre hosts only; Nominatim and Overpass are bounded by their usage rules.
 - **Directory** (`data/directory/centres.json`) is human-owned, and the pipeline never writes it. Its fields: `centre_id` (a stable lowercase slug), name, address, lat/lon, website, `test_page_url`, `reader` (`kuferweb` / `itemkg` / `none`), a typed `reader_config`, `opted_out`, `source`, `verified_at`. CI validates the schema and rejects duplicate ids.
 - **Public data contracts:** both are zod schemas in `shared/`, and the producer refuses to emit an invalid file.
   - `snapshot.json` is `{schemaVersion, generated_at, systems[], centres[], listings[]}`. Each centre carries `coverage` plus `last_result`, `last_checked_at` and `last_success_at`, all `null` in this epic. A centre is `not_checked` when its reader is `none`, it is opted out, or robots disallow it.
@@ -51,10 +52,10 @@ Ship a free, static, bilingual (DE/EN) site where someone in Bavaria enters a to
 - **Codes in data, words in `web/src/i18n/{de,en}.json`:** CI fails on missing or extra keys.
 - **Conventions:** kebab-case files; ISO 8601 strings, never epoch numbers; `null` for missing values, never `"unknown"` or omitted keys. An error that would make a published file invalid fails the run, so the last good site stays live.
 - **Deploy:** `pipeline.yml` (push to `main` and dispatch, one concurrency group, no cancel-in-progress) commits `data/public/` in one commit and deploys only the pushed SHA via `actions/deploy-pages`. `ci.yml` ignores `data/state/**` and `data/public/**`. The site is served at `https://esiak.github.io/testplatz/`, and Vite `base` must match.
-- **Story 1.5 (`places.json`):** `tools/build-places` builds it offline and the file is committed.
+- **`places.json`:** `tools/build-places` builds it offline from OpenStreetMap via the Overpass API (ODbL), with a per-query cache in `data/places/cache/`, and the file is committed.
   - Rows are `{key, name, postcodes[], district, state, lat, lon}` covering all German municipalities and postcodes, plus a simplified Bavaria boundary polygon.
-  - Search matches only rows with `state = BY`, and the nearest-town lookup uses only Bavarian rows.
-  - The story picks and records the OSM-derived source dataset; ODbL attribution applies. If the file exceeds about 300 KB gzipped, flag it and consider lazy-loading or splitting.
+  - Search matches only rows with `state = BY`; a non-Bavarian match, or a device location outside the polygon, gives "Bavaria only". The nearest-town lookup uses only Bavarian rows. Every name match goes through the shared normaliser.
+  - The current file is partial (`complete: false`; Bavaria, Schleswig-Holstein, Hamburg; no boundary). Story 1.11 completes it (`complete: true`, `missing: []`). If the file exceeds about 300 KB gzipped, flag it and consider lazy-loading or splitting.
 
 ## UX & Interaction Patterns
 
@@ -85,6 +86,6 @@ Ship a free, static, bilingual (DE/EN) site where someone in Bavaria enters a to
 - 1.1 comes first.
 - 1.2 (tokens, i18n, shell) is needed by 1.7–1.10.
 - 1.3 creates `pipeline/fetch` and the directory schema, which 1.4 uses for geocoding. Together they produce the directory that 1.6 publishes.
-- 1.5 produces `places.json` and the shared normaliser, which 1.8–1.10 need.
+- 1.5 produces `tools/build-places`, a partial `places.json` and the shared normaliser, which 1.8–1.10 need. 1.11 completes the table (all states plus the Bavaria boundary) and must land before 1.8 ships the "Bavaria only" error and before 1.10.
 - 1.6's `snapshot.json` feeds 1.7 and 1.8. 1.9 and 1.10 extend 1.8's search bar.
 - Epic 2 adds readers, merge/state, the schedule, result and no-dates cards, and sorting, so schemas, fetch and the coverage-first card logic must stay extensible.
