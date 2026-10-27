@@ -108,7 +108,7 @@ Arrows are the only allowed imports. `readers` never imports `fetch` or `stages`
   - decodes the charset into strings;
   - refuses a host already visited 4 times in the last 24 h, using the visit log in `data/state/`. This also applies to manual and local reruns. Fetch only reads the log and returns this run's visits; merge persists them (AD-6).
 
-  Detail-page fetch results set each listing's `link_ok`; there are no separate link-check requests. `tools/geocode` calls only Nominatim's `/search` (manual, cached, ≤ 1 req/s, never scheduled). Nominatim's robots.txt targets crawlers, and its OSMF usage policy governs API use, so that one endpoint is the only robots exemption in `pipeline/fetch` (explicit per-client option). Every other host and path keeps full robots checks.
+  Detail-page fetch results set each listing's `link_ok`; there are no separate link-check requests. `tools/geocode` calls only Nominatim's `/search` (manual, cached, ≤ 1 req/s, never scheduled). Nominatim's robots.txt targets crawlers, and its OSMF usage policy governs API use, so that one endpoint is the only robots exemption in `pipeline/fetch` (explicit per-client option). Every other host and path keeps full robots checks. The 4-visits-in-24-h cap and the visit log apply to centre hosts; Nominatim is limited by its usage policy instead (≤ 1 req/s, cached, manual).
 
 ### AD-6 — Run outcome and the single state writer [ADOPTED]
 

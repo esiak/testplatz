@@ -2,11 +2,12 @@ import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { NOMINATIM_SEARCH_URL, USER_AGENT } from '../pipeline/config.ts';
+import { NOMINATIM_DELAY_MS, NOMINATIM_SEARCH_URL, USER_AGENT } from '../pipeline/config.ts';
 import type { FetchImpl } from '../pipeline/fetch/index.ts';
 import { serializeDirectory, type Centre } from '../shared/directory.ts';
 import {
 	assessResult,
+	geocodeNote,
 	loadCache,
 	parseNominatim,
 	queryKey,
@@ -262,6 +263,25 @@ describe('runGeocode', () => {
 		expect(read(dir, 'geocode-note.md')).toContain('## Coordinates set by hand (left alone)\n\n- vhs-fuerth');
 	});
 
+	it('treats coordinates that differ from the geocode record as hand-set, even after an address change', async () => {
+		const edited = centre({ lat: 49.2, lon: 11.2 });
+		const dir = setup([edited], { queries: {}, centres: { 'vhs-fuerth': { query: KEY, lat: 49.5, lon: 11 } } });
+		const net = fakeNominatim({});
+		expect(await run(dir, net.fetchImpl)).toBe(0);
+		expect(readCentres(dir)[0]).toEqual(edited);
+		const note = read(dir, 'geocode-note.md');
+		expect(note).toContain('- Coordinates set by hand: 1');
+		expect(note).toContain('- Unchanged (already geocoded, same address): 0');
+		expect(note).toContain(`- vhs-fuerth (${KEY}): coordinates differ from the geocode record`);
+
+		const moved = { ...edited, address: { street: 'Neue Str. 1', postcode: '90762', city: 'Fürth' } };
+		writeFileSync(join(dir, 'centres.json'), serializeDirectory([moved]));
+		const again = fakeNominatim({ 'Neue Str. 1': [hit({ place_rank: 16 })] });
+		expect(await run(dir, again.fetchImpl)).toBe(0);
+		expect(again.calls).toHaveLength(0);
+		expect(readCentres(dir)[0]).toEqual(moved);
+	});
+
 	it('sends one request for a shared address', async () => {
 		const dir = setup([centre(), centre({ centre_id: 'other' })]);
 		const net = fakeNominatim({ 'Hirschenstr. 27/29': [hit()] });
@@ -345,5 +365,30 @@ describe('runGeocode', () => {
 		expect(await run(dir2, net.fetchImpl)).toBe(1);
 		expect(net.calls).toHaveLength(0);
 		expect(existsSync(join(dir2, 'geocode-note.md'))).toBe(false);
+	});
+});
+
+describe('geocodeNote', () => {
+	it('flags failed self-checks and a run with fewer than two requests', () => {
+		const note = geocodeNote({
+			runAt: NOW.toISOString(),
+			centres: 1,
+			counts: { requests: 1, cacheHits: 0, accepted: 1, rejected: 0, unchanged: 0, handSet: 0, failed: 0 },
+			rejected: [],
+			failures: [],
+			handSet: [],
+			allWithUserAgent: false,
+			allToSearch: false,
+			minGapMs: null,
+		});
+		expect(note).toContain(`- Every request sent User-Agent \`${USER_AGENT}\`: NO`);
+		expect(note).toContain(`- Every request went to ${NOMINATIM_SEARCH_URL}: NO`);
+		expect(note).toContain('- Smallest gap between two requests: n/a (fewer than two requests)');
+	});
+});
+
+describe('NOMINATIM_DELAY_MS', () => {
+	it('keeps Nominatim at no more than 1 request per second', () => {
+		expect(NOMINATIM_DELAY_MS).toBeGreaterThanOrEqual(1000);
 	});
 });

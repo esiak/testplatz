@@ -6,6 +6,8 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { BAVARIA_BBOX, centreSchema, directorySchema, isInBavariaBox, isPlausibleHostname, serializeDirectory, slugify, type Centre } from '../shared/directory.ts';
 import { checkDirectoryText } from '../tools/check-directory.ts';
+import { loadCache, queryKey, serializeCache } from '../tools/geocode.ts';
+import { GEOCODE_CACHE_PATH } from '../tools/paths.ts';
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 
@@ -45,6 +47,8 @@ describe('centreSchema', () => {
 		['lat without lon', { lat: 48.1 }, 'lon'],
 		['a latitude north of Bavaria', { lat: 52.5, lon: 13.4 }, 'lat'],
 		['a longitude west of Bavaria', { lat: 48.8, lon: 8.4 }, 'lon'],
+		['a latitude south of Bavaria', { lat: 47.0, lon: 11 }, 'lat'],
+		['a longitude east of Bavaria', { lat: 49, lon: 14.2 }, 'lon'],
 		['a bad postcode', { address: { street: 'A 1', postcode: '9076', city: 'Fürth' } }, 'address.postcode'],
 		['a non-http website', { website: 'ftp://x.de/' }, 'website'],
 		['a website with a comma in the host', { website: 'http://www.vhs-kisshab,de/' }, 'website'],
@@ -186,5 +190,18 @@ describe('committed data/directory/centres.json', () => {
 		expect(centres).toHaveLength(120);
 		expect(centres.every((c) => c.source === 'rtpartner')).toBe(true);
 		expect(centres.every((c) => c.lat === null || isInBavariaBox(c.lat, c.lon!))).toBe(true);
+	});
+
+	it('agrees with the committed geocode cache', () => {
+		const centres = directorySchema.parse(JSON.parse(text));
+		const loaded = loadCache(GEOCODE_CACHE_PATH);
+		expect(loaded.ok).toBe(true);
+		const { cache } = loaded as Extract<typeof loaded, { ok: true }>;
+		expect(serializeCache(cache)).toBe(readFileSync(GEOCODE_CACHE_PATH, 'utf8'));
+		for (const c of centres) {
+			const record = cache.centres[c.centre_id];
+			if (c.lat === null) expect(record, c.centre_id).toBeUndefined();
+			else expect(record, c.centre_id).toEqual({ query: queryKey(c.address), lat: c.lat, lon: c.lon });
+		}
 	});
 });

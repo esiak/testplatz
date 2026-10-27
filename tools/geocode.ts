@@ -286,9 +286,13 @@ export async function runGeocode(options: GeocodeOptions = {}): Promise<number> 
 	for (const centre of centres) {
 		const query = queryKey(centre.address);
 		const record = cache.centres[centre.centre_id];
-		if (centre.lat !== null && record === undefined) {
+		if (centre.lat !== null && (record === undefined || record.lat !== centre.lat || record.lon !== centre.lon)) {
 			counts.handSet++;
-			handSet.push({ centre_id: centre.centre_id, query, reason: 'no geocode record' });
+			handSet.push({
+				centre_id: centre.centre_id,
+				query,
+				reason: record === undefined ? 'no geocode record' : 'coordinates differ from the geocode record',
+			});
 			next.push(centre);
 			continue;
 		}
@@ -362,8 +366,10 @@ export async function runGeocode(options: GeocodeOptions = {}): Promise<number> 
 		allToSearch,
 		minGapMs: gaps.length === 0 ? null : Math.floor(Math.min(...gaps)),
 	});
-	writeFileSync(centresPath, centresText);
+	// Cache first: a crash before centres.json leaves records for coordinates not yet written,
+	// which the next run re-applies, never coordinates without a record (read as hand-set).
 	writeFileSync(cachePath, cacheText);
+	writeFileSync(centresPath, centresText);
 	writeFileSync(notePath, note);
 	log(summary);
 	log(`see ${notePath}`);
