@@ -31,6 +31,19 @@ describe('ci.yml', () => {
 		expect(ci).toContain('run: npm run typecheck');
 		expect(ci).toContain('run: npm test');
 	});
+
+	it('validates the centre directory right after the type-check', () => {
+		const steps: string[] = ci.match(/^      - run: .*$/gm) ?? [];
+		const typecheck = steps.indexOf('      - run: npm run typecheck');
+		expect(typecheck).toBeGreaterThanOrEqual(0);
+		expect(steps[typecheck + 1]).toBe('      - run: npm run check:directory');
+	});
+
+	it('runs on directory changes (data/directory/** is not ignored)', () => {
+		for (const trigger of ['push', 'pull_request']) {
+			expect(pathsIgnore(ci, trigger).some((p) => 'data/directory/centres.json'.startsWith(p.replace('**', '')))).toBe(false);
+		}
+	});
 });
 
 describe('pipeline.yml', () => {

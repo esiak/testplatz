@@ -1,0 +1,102 @@
+import { z } from 'zod';
+
+/** Reader systems a centre can be read with. `none` = not read automatically. */
+export const READERS = ['kuferweb', 'itemkg', 'none'] as const;
+export type Reader = (typeof READERS)[number];
+
+/** Where a directory entry came from. */
+export const SOURCES = ['rtpartner'] as const;
+
+export const CENTRE_ID_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+
+const isHttpUrl = (value: string): boolean => {
+	if (!URL.canParse(value)) return false;
+	const { protocol } = new URL(value);
+	return protocol === 'http:' || protocol === 'https:';
+};
+
+const httpUrl = z.string().refine(isHttpUrl, { message: 'must be an http(s) URL' });
+
+export const addressSchema = z.strictObject({
+	street: z.string().min(1),
+	postcode: z.string().regex(/^\d{5}$/, { message: 'must be 5 digits' }),
+	city: z.string().min(1),
+});
+
+export const readerConfigSchema = z.strictObject({ list_url: httpUrl });
+
+export const centreSchema = z
+	.strictObject({
+		centre_id: z.string().regex(CENTRE_ID_PATTERN, { message: 'must be a lowercase slug' }),
+		name: z.string().min(1),
+		address: addressSchema,
+		lat: z.number().nullable(),
+		lon: z.number().nullable(),
+		website: httpUrl.nullable(),
+		test_page_url: httpUrl.nullable(),
+		reader: z.enum(READERS),
+		reader_config: readerConfigSchema.nullable(),
+		opted_out: z.boolean(),
+		source: z.enum(SOURCES),
+		verified_at: z.iso.datetime().nullable(),
+	})
+	.superRefine((centre, ctx) => {
+		if ((centre.lat === null) !== (centre.lon === null)) {
+			ctx.addIssue({
+				code: 'custom',
+				path: [centre.lat === null ? 'lat' : 'lon'],
+				message: 'lat and lon must both be numbers or both be null',
+			});
+		}
+		if (centre.reader === 'none' && centre.reader_config !== null) {
+			ctx.addIssue({ code: 'custom', path: ['reader_config'], message: 'must be null when reader is "none"' });
+		}
+	});
+
+export const directorySchema = z.array(centreSchema).superRefine((centres, ctx) => {
+	const seen = new Set<string>();
+	centres.forEach((centre, index) => {
+		if (seen.has(centre.centre_id)) {
+			ctx.addIssue({
+				code: 'custom',
+				path: [index, 'centre_id'],
+				message: `duplicate centre_id "${centre.centre_id}"`,
+			});
+		}
+		seen.add(centre.centre_id);
+	});
+});
+
+export type Address = z.infer<typeof addressSchema>;
+export type Centre = z.infer<typeof centreSchema>;
+export type Directory = z.infer<typeof directorySchema>;
+
+const SLUG_MAX = 60;
+
+/** Lowercase ASCII slug: ä→ae ö→oe ü→ue ß→ss, other accents stripped, the rest → `-`. */
+export function slugify(text: string): string {
+	let slug = text
+		.toLowerCase()
+		.replace(/ä/g, 'ae')
+		.replace(/ö/g, 'oe')
+		.replace(/ü/g, 'ue')
+		.replace(/ß/g, 'ss')
+		.normalize('NFD')
+		.replace(/\p{M}/gu, '')
+		.replace(/[^a-z0-9]+/g, '-')
+		.replace(/^-+|-+$/g, '');
+	if (slug.length > SLUG_MAX) {
+		const cut = slug.slice(0, SLUG_MAX + 1);
+		const lastDash = cut.lastIndexOf('-');
+		slug = (lastDash > 0 ? cut.slice(0, lastDash) : cut.slice(0, SLUG_MAX)).replace(/-+$/, '');
+	}
+	return slug;
+}
+
+/** Sorted by `centre_id`, the order the directory file is kept in. */
+export const sortDirectory = (centres: readonly Centre[]): Centre[] =>
+	[...centres].sort((a, b) => (a.centre_id < b.centre_id ? -1 : a.centre_id > b.centre_id ? 1 : 0));
+
+/** The canonical file text: sorted, tab-indented, trailing newline. */
+export const serializeDirectory = (centres: readonly Centre[]): string =>
+	`${JSON.stringify(sortDirectory(centres), null, '\t')}\n`;

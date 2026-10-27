@@ -1,0 +1,2162 @@
+[
+	{
+		"centre_id": "akademia-zentrum-fuer-kommunikation-und-bildung-gmbh",
+		"name": "Akademia Zentrum für Kommunikation und Bildung GmbH - Nürnberg",
+		"address": {
+			"street": "Bahnhofsplatz 6",
+			"postcode": "90443",
+			"city": "Nürnberg"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.linguademia.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "anderwerk-deutschkurse",
+		"name": "Anderwerk Deutschkurse",
+		"address": {
+			"street": "Hamburger Straße 32",
+			"postcode": "80809",
+			"city": "München"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.anderwerk.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "bayerisches-rotes-kreuz",
+		"name": "Bayerisches Rotes Kreuz",
+		"address": {
+			"street": "Goethestr. 53",
+			"postcode": "81379",
+			"city": "München"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.brk-muenchen.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "berufliche-fortbildungszentren-der-bayerischen-wirtschaft",
+		"name": "Berufliche Fortbildungszentren der Bayerischen Wirtschaft gGmbH, bfz-Donauwörth-Ulm-Aalen",
+		"address": {
+			"street": "Dr. Friedrich-Drechsler-Str. 14",
+			"postcode": "86609",
+			"city": "Donauwörth"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.bfz.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "bildungszentrum-stadt-nuernberg",
+		"name": "Bildungszentrum Stadt Nürnberg",
+		"address": {
+			"street": "Gewerbemuseumsplatz 1",
+			"postcode": "90403",
+			"city": "Nürnberg"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.stadt.nuernberg.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "deutsche-angestellten-akademie-gmbh",
+		"name": "Deutsche Angestellten-Akademie GmbH",
+		"address": {
+			"street": "Marsstraße 42",
+			"postcode": "80335",
+			"city": "München"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.daa.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "euro-bildungswerk-nuernberg-euro-schulen-nordbayern",
+		"name": "Euro-Bildungswerk Nürnberg/Euro-Schulen Nordbayern",
+		"address": {
+			"street": "Solgerstr. 16a/18",
+			"postcode": "90429",
+			"city": "Nürnberg"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.eso.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "euro-schulen-aschaffenburg",
+		"name": "Euro-Schulen Aschaffenburg",
+		"address": {
+			"street": "Goldbacher Str. 6",
+			"postcode": "63739",
+			"city": "Aschaffenburg"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.eso.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "euro-schulen-nordbayern",
+		"name": "Euro-Schulen Nordbayern",
+		"address": {
+			"street": "Herzogenstr. 8",
+			"postcode": "97070",
+			"city": "Würzburg"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.eso.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "hilfe-von-mensch-zu-mensch",
+		"name": "Hilfe von Mensch zu Mensch",
+		"address": {
+			"street": "Marsstr. 25",
+			"postcode": "80335",
+			"city": "München"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.hvmzm.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "inlingua-sprachenschule-e-k",
+		"name": "inlingua Sprachenschule e. K.",
+		"address": {
+			"street": "Ludwigstraße 18",
+			"postcode": "85049",
+			"city": "Ingolstadt"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.inlingua-ingolstadt.de/",
+		"test_page_url": "https://www.inlingua-ingolstadt.de/pruefungen/einbuergerungstests/",
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": "2026-10-27T07:09:40.207Z"
+	},
+	{
+		"centre_id": "inlingua-sprachschule-u-c-bernau-gmbh",
+		"name": "Inlingua Sprachschule U.&C. Bernau GmbH",
+		"address": {
+			"street": "Sendlinger Torplatz 6",
+			"postcode": "80336",
+			"city": "München"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.inlingua-muenchen.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "ise-sprach-und-berufsbildungszentrum-gmbh",
+		"name": "ISE Sprach -und Berufsbildungszentrum GmbH",
+		"address": {
+			"street": "Kaiser-Ludwig-Ring 9",
+			"postcode": "92224",
+			"city": "Amberg"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.ise-berufsbildung.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "kolping-akademie-ingolstadt-ggmbh",
+		"name": "Kolping Akademie Ingolstadt gGmbH",
+		"address": {
+			"street": "Johannesstraße 11",
+			"postcode": "85049",
+			"city": "Ingolstadt"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.kolping-ingolstadt.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "kommunaler-zweckverband-der-volkshochschule-passau",
+		"name": "Kommunaler Zweckverband der Volkshochschule Passau",
+		"address": {
+			"street": "Nikolastr. 18",
+			"postcode": "94032",
+			"city": "Passau"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-passau.de/",
+		"test_page_url": "https://www.vhs-passau.de/fachbereich//sprachen/deutsch-als-fremdsprache/einbuergerungstest",
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": "2026-10-27T07:09:40.207Z"
+	},
+	{
+		"centre_id": "mas-sprachschule-muenchen",
+		"name": "MAS Sprachschule München",
+		"address": {
+			"street": "Lindwurmstr. 109",
+			"postcode": "80337",
+			"city": "München"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.mas-sprachschule.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "muenchner-vhs-gmbh",
+		"name": "Münchner VHS GmbH",
+		"address": {
+			"street": "Orleanstraße 34",
+			"postcode": "81667",
+			"city": "München"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.mvhs.de/",
+		"test_page_url": "https://www.mvhs.de/programm/info/sprachen/sprachpruefungen-und-zertifikate-einbuergerungstest",
+		"reader": "itemkg",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "oberallgaeuer-vhs",
+		"name": "Oberallgäuer VHS",
+		"address": {
+			"street": "Hindelanger Str. 37",
+			"postcode": "87527",
+			"city": "Sonthofen"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.oa-vhs.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-aichach-friedberg-e-v",
+		"name": "VHS Aichach-Friedberg e.V.",
+		"address": {
+			"street": "Steubstr. 3",
+			"postcode": "86551",
+			"city": "Aichach"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-aichach-friedberg.de/",
+		"test_page_url": "https://www.vhs-aichach-friedberg.de/programm/einbuergerungstest",
+		"reader": "kuferweb",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": "2026-10-27T07:09:40.207Z"
+	},
+	{
+		"centre_id": "vhs-alt-neuoetting-und-toeging-e-v",
+		"name": "VHS Alt-/Neuötting und Töging e. V.",
+		"address": {
+			"street": "Neuöttinger Str. 32",
+			"postcode": "84503",
+			"city": "Altötting"
+		},
+		"lat": null,
+		"lon": null,
+		"website": null,
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-arberland",
+		"name": "VHS ARBERLAND",
+		"address": {
+			"street": "Amtsgerichtstr. 6 - 8",
+			"postcode": "94209",
+			"city": "Regen"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-arberland.de/",
+		"test_page_url": null,
+		"reader": "itemkg",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-aschaffenburg",
+		"name": "VHS Aschaffenburg",
+		"address": {
+			"street": "Luitpoldstr. 2",
+			"postcode": "63739",
+			"city": "Aschaffenburg"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-aschaffenburg.de/",
+		"test_page_url": "https://www.vhs-aschaffenburg.de/kurse/deutsch-integration-grundbildung/einbuergerungstest",
+		"reader": "kuferweb",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-augsburg-e-v",
+		"name": "Volkshochschule Augsburg",
+		"address": {
+			"street": "Willy-Brandt-Platz 3a",
+			"postcode": "86153",
+			"city": "Augsburg"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-augsburg.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-bad-kisingen-und-hammelburg",
+		"name": "VHS Bad Kisingen und Hammelburg",
+		"address": {
+			"street": "Rathausplatz 1",
+			"postcode": "97688",
+			"city": "Bad Kissingen"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-kisshab,de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-bad-reichenhall",
+		"name": "VHS Bad Reichenhall",
+		"address": {
+			"street": "Aegidiplatz 3",
+			"postcode": "83435",
+			"city": "Bad Reichenhall"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-reichenhall.de/",
+		"test_page_url": "https://www.vhs-reichenhall.de/pruefungen-einbuergerungstest-und-deutsch",
+		"reader": "itemkg",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": "2026-10-27T07:09:40.207Z"
+	},
+	{
+		"centre_id": "vhs-bamberg",
+		"name": "VHS Bamberg",
+		"address": {
+			"street": "Tränkgasse 4",
+			"postcode": "96052",
+			"city": "Bamberg"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-bamberg.de/",
+		"test_page_url": null,
+		"reader": "itemkg",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-bamberg-land-e-v",
+		"name": "VHS Bamberg-Land e.V.",
+		"address": {
+			"street": "Ludwigstraße 25",
+			"postcode": "96052",
+			"city": "Bamberg"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-bamberg-land.de/",
+		"test_page_url": "https://www.vhs-bamberg-land.de/p/488-CAT-KAT4512071",
+		"reader": "itemkg",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": "2026-10-27T07:09:40.207Z"
+	},
+	{
+		"centre_id": "vhs-bayreuth",
+		"name": "VHS Bayreuth",
+		"address": {
+			"street": "Richard-Wagner-Str. 21",
+			"postcode": "95444",
+			"city": "Bayreuth"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.stadt.bayreuth.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-beilngries-e-v",
+		"name": "Spielzeugmuseum 1. OG}",
+		"address": {
+			"street": "Hauptstr. 47",
+			"postcode": "92339",
+			"city": "Beilngries"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-beilngries.de/",
+		"test_page_url": "https://www.vhs-beilngries.de/p/sprachen/deutsch-integration/einbuergerungstest-641-C-B3021",
+		"reader": "itemkg",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": "2026-10-27T07:09:40.207Z"
+	},
+	{
+		"centre_id": "vhs-buchloe-e-v",
+		"name": "VHS Buchloe e.V.",
+		"address": {
+			"street": "Bahnhofstr. 60",
+			"postcode": "86807",
+			"city": "Buchloe"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-buchloe.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-burghausen-burgkirchen-e-v",
+		"name": "VHS Burghausen-Burgkirchen e. V.",
+		"address": {
+			"street": "Marktler Str. 16",
+			"postcode": "84489",
+			"city": "Burghausen"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-burghausen.de/",
+		"test_page_url": null,
+		"reader": "kuferweb",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-coburg-ggmbh",
+		"name": "VHS Coburg gGmbH",
+		"address": {
+			"street": "Löwenstr. 15",
+			"postcode": "96450",
+			"city": "Coburg"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-coburg.de/",
+		"test_page_url": null,
+		"reader": "itemkg",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-dachau-gmbh",
+		"name": "VHS Dachau GmbH",
+		"address": {
+			"street": "Dr.-Engert-Str. 4",
+			"postcode": "85221",
+			"city": "Dachau"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-dachau.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-deggendorfer-land-e-v",
+		"name": "VHS Deggendorfer Land e. V.",
+		"address": {
+			"street": "Amanstr. 11",
+			"postcode": "94469",
+			"city": "Deggendorf"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-deggendorf.de/",
+		"test_page_url": "https://www.vhs-deggendorf.de/der-einbuergerungstest",
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-der-gemeinden-im-landkreis-roth",
+		"name": "VHS der Gemeinden im Landkreis Roth",
+		"address": {
+			"street": "Maria-Dorothea-Str. 8",
+			"postcode": "91161",
+			"city": "Hilpoldstein"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-roth.de/",
+		"test_page_url": null,
+		"reader": "itemkg",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-der-stadt-landsberg-lech",
+		"name": "VHS der Stadt Landsberg/Lech",
+		"address": {
+			"street": "Hubert-von-Herkomer-Str. 110",
+			"postcode": "86899",
+			"city": "Landsberg am Lech"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.landsberg.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-der-stadt-schweinfurt",
+		"name": "VHS der Stadt Schweinfurt",
+		"address": {
+			"street": "Markt 1",
+			"postcode": "97421",
+			"city": "Schweinfurt"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.schweinfurt.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-des-landkreises-ansbach",
+		"name": "VHS des Landkreises Ansbach",
+		"address": {
+			"street": "Crailsheimstr. 1",
+			"postcode": "91522",
+			"city": "Ansbach"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-lkr-ansbach.de/",
+		"test_page_url": "https://vhs-lkr-ansbach.de/Artikel/cmx66d95c61bf49b.html",
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-des-landkreises-forchheim",
+		"name": "VHS des Landkreises Forchheim",
+		"address": {
+			"street": "Hornschuchallee 20",
+			"postcode": "91301",
+			"city": "Forchheim"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-forchheim.de/",
+		"test_page_url": null,
+		"reader": "itemkg",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-des-landkreises-wunsiedel",
+		"name": "VHS des Landkreises Wunsiedel",
+		"address": {
+			"street": "Jean-Paul-Str. 9",
+			"postcode": "95632",
+			"city": "Wunsiedel"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.landkreis-wunsiedel.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-des-lk-freyung-grafenau",
+		"name": "VHS des LK Freyung-Grafenau",
+		"address": {
+			"street": "Frauenberg 17",
+			"postcode": "94481",
+			"city": "Grafenau"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-freyung-grafenau.de/",
+		"test_page_url": "https://www.vhs-freyung-grafenau.de/programm/sprachen/einbuergerungstest.html",
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": "2026-10-27T07:09:40.207Z"
+	},
+	{
+		"centre_id": "vhs-dillingen-e-v",
+		"name": "VHS Dillingen e. V.",
+		"address": {
+			"street": "Königstraße 37/38",
+			"postcode": "89407",
+			"city": "Dillingen a. d. Donau"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.dillingen-donau.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-dingolfing-e-v",
+		"name": "VHS Dingolfing e. V.",
+		"address": {
+			"street": "Stadionstr. 50",
+			"postcode": "84130",
+			"city": "Dingolfing"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-dingolfing.de/",
+		"test_page_url": "https://vhs-dingolfing.de/test",
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": "2026-10-27T07:09:40.207Z"
+	},
+	{
+		"centre_id": "vhs-donauwoerth",
+		"name": "VHS Donauwörth",
+		"address": {
+			"street": "Spindeltal 5",
+			"postcode": "86609",
+			"city": "Donauwörth"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-don.de/",
+		"test_page_url": "https://www.vhs-don.de/einbuergerungstests",
+		"reader": "itemkg",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": "2026-10-27T07:09:40.207Z"
+	},
+	{
+		"centre_id": "vhs-ebersberger-land-grafing-bei-muenchen",
+		"name": "VHS Ebersberger Land / Grafing bei München",
+		"address": {
+			"street": "Griesstr. 27",
+			"postcode": "85567",
+			"city": "Grafing b. München"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-ebersberger-land.de/",
+		"test_page_url": "https://www.vhs-ebersberger-land.de/p/sprachen/deutsch/einbuergerungstests-649-CAT-KAT215",
+		"reader": "itemkg",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": "2026-10-27T07:09:40.207Z"
+	},
+	{
+		"centre_id": "vhs-erlangen",
+		"name": "VHS Erlangen",
+		"address": {
+			"street": "Friedrichstr. 19/21",
+			"postcode": "91054",
+			"city": "Erlangen"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.stadt.erlangen.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-f-d-landkreis-regensburg-e-v",
+		"name": "VHS f. d. Landkreis Regensburg e. V.",
+		"address": {
+			"street": "Pommernstr. 4",
+			"postcode": "93073",
+			"city": "Neutraubling"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-regensburg-land.de/",
+		"test_page_url": "https://www.vhs-regensburger-land.de/p/deutsch-schule/einbuergerungstest-647-CAT-KAT256",
+		"reader": "itemkg",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": "2026-10-27T07:09:40.207Z"
+	},
+	{
+		"centre_id": "vhs-fichtelgebirge",
+		"name": "VHS Fichtelgebirge",
+		"address": {
+			"street": "Ludwigsmühle 10",
+			"postcode": "95615",
+			"city": "Selb"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-fichtelgebirge.de/",
+		"test_page_url": null,
+		"reader": "itemkg",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-freising-e-v",
+		"name": "VHS Freising e.V.",
+		"address": {
+			"street": "Kammergasse 12",
+			"postcode": "85354",
+			"city": "Freising"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-freising.org/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-fuerth-ggmbh",
+		"name": "VHS Fürth gGmbH",
+		"address": {
+			"street": "Hirschenstr. 27/29",
+			"postcode": "90762",
+			"city": "Fürth"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-fuerth.de/",
+		"test_page_url": "https://www.vhs-fuerth.de/p/grundbildung/einbuergerungen/einbuergerungstest-33-fragen-477-CAT-KAT222",
+		"reader": "itemkg",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": "2026-10-27T07:09:40.207Z"
+	},
+	{
+		"centre_id": "vhs-garmisch-partenkirchen-e-v",
+		"name": "VHS Garmisch-Partenkirchen e.V.",
+		"address": {
+			"street": "Burgstr. 21",
+			"postcode": "82467",
+			"city": "Garmisch-Partenkirchen"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-gap.de/",
+		"test_page_url": "https://www.vhs-gap.de/infocenter/einbuergerungstest",
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-germering-e-v",
+		"name": "VHS Germering e.V.",
+		"address": {
+			"street": "Therese-Giehse-Platz 6",
+			"postcode": "82110",
+			"city": "Germering"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-germering.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-geschaeftsstelle-neufarn-hallbergmoos",
+		"name": "Mittelschule",
+		"address": {
+			"street": "Galgenbachweg  30",
+			"postcode": "85375",
+			"city": "Neufahrn bei Freising"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-neufahrn.de/",
+		"test_page_url": "https://vhs-neufahrn-hallbergmoos.de/Veranstaltung/cmx69a6c68d5ad43.html",
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": "2026-10-27T07:09:40.207Z"
+	},
+	{
+		"centre_id": "vhs-groebenzell-e-v",
+		"name": "VHS Gröbenzell e.V.",
+		"address": {
+			"street": "Rathausstr. 1",
+			"postcode": "82194",
+			"city": "Gröbenzell"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-groebenzell.de/",
+		"test_page_url": null,
+		"reader": "kuferweb",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-gunzenhausen-e-v",
+		"name": "VHS Gunzenhausen e.V.",
+		"address": {
+			"street": "Dr.-Martin-Luther-Platz 4",
+			"postcode": "91710",
+			"city": "Gunzenhausen"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-gunzenhausen.de/",
+		"test_page_url": "https://vhs-gunzenhausen.de/integration",
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": "2026-10-27T07:09:40.207Z"
+	},
+	{
+		"centre_id": "vhs-herrsching",
+		"name": "VHS Herrsching",
+		"address": {
+			"street": "Kienbachstr. 3",
+			"postcode": "82211",
+			"city": "Herrsching"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-herrsching.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-herzogenaurach",
+		"name": "VHS Herzogenaurach",
+		"address": {
+			"street": "Badgasse 4",
+			"postcode": "91074",
+			"city": "Herzogenaurach"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.herzogenaurach.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-im-ldkr-neumarkt-opf",
+		"name": "VHS im Ldkr. Neumarkt/Opf.",
+		"address": {
+			"street": "Gartenstr. 1",
+			"postcode": "92318",
+			"city": "Neumarkt i.d.OPf."
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-neumarkt.de/",
+		"test_page_url": null,
+		"reader": "kuferweb",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-im-norden-des-landkreises-muenchen",
+		"name": "VHS im Norden des Landkreises München",
+		"address": {
+			"street": "Telschowstraße 5-7",
+			"postcode": "85748",
+			"city": "Garching b. München"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-nord.de/",
+		"test_page_url": null,
+		"reader": "kuferweb",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-ingolstadt",
+		"name": "VHS Ingolstadt",
+		"address": {
+			"street": "Hallstr. 5",
+			"postcode": "85049",
+			"city": "Ingolstadt"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.ingolstadt.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-kaufbeuren-e-v",
+		"name": "VHS Kaufbeuren e.V.",
+		"address": {
+			"street": "Spitaltor 5",
+			"postcode": "87600",
+			"city": "Kaufbeuren"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-kaufbeuren.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-kaufering",
+		"name": "VHS Kaufering",
+		"address": {
+			"street": "Albert-Schweizer-Str.4a",
+			"postcode": "86916",
+			"city": "Kaufering"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.kaufering.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-kempten",
+		"name": "VHS Kempten",
+		"address": {
+			"street": "Bodmanstr. 2",
+			"postcode": "87435",
+			"city": "Kempten (Allgäu)"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-kempten.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-kreis-kronach-e-v",
+		"name": "VHS Kreis Kronach e.V.",
+		"address": {
+			"street": "Kulmbacher Str. 1",
+			"postcode": "96317",
+			"city": "Kronach"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-kronach.de/",
+		"test_page_url": "https://www.vhs-kronach.de/fachbereich/programmbereich/sprachen/einbuergerungstest",
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-landkreis-amberg-sulzbach",
+		"name": "VHS Landkreis Amberg-Sulzbach",
+		"address": {
+			"street": "Obere Gartenstr. 3",
+			"postcode": "92237",
+			"city": "Sulzbach-Rosenberg"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-as.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-landkreis-pfaffenhofen-a-d-ilm",
+		"name": "VHS Landkreis Pfaffenhofen a. d. Ilm",
+		"address": {
+			"street": "Ingolstädter Str. 3",
+			"postcode": "85276",
+			"city": "Pfaffenhofen"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.landratsamt-paf.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-landshut-e-v",
+		"name": "VHS Landshut e.V.",
+		"address": {
+			"street": "Ländgasse 41",
+			"postcode": "84028",
+			"city": "Landshut"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-landshut.de/",
+		"test_page_url": "https://www.vhs-landshut.de/kurse/sprachen-integration/pruefungen-einbuergerungstest",
+		"reader": "kuferweb",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": "2026-10-27T07:09:40.207Z"
+	},
+	{
+		"centre_id": "vhs-lindau",
+		"name": "VHS Lindau",
+		"address": {
+			"street": "Uferweg 7",
+			"postcode": "88131",
+			"city": "Lindau"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.lindau.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-lohr-gemuenden",
+		"name": "Stadt Lohr a.Main",
+		"address": {
+			"street": "Schlossplatz 3",
+			"postcode": "97816",
+			"city": "Lohr a. Main"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.lohr.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-mainburg-e-v",
+		"name": "VHS Mainburg e. V.",
+		"address": {
+			"street": "Mitterweg 8",
+			"postcode": "84048",
+			"city": "Mainburg"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-mainburg.de/",
+		"test_page_url": null,
+		"reader": "kuferweb",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-memmingen",
+		"name": "VHS Memmingen",
+		"address": {
+			"street": "Ulmer Str. 19",
+			"postcode": "87700",
+			"city": "Memmingen"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.memmingen.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-moosburg-e-v",
+		"name": "VHS Moosburg e.V.",
+		"address": {
+			"street": "Stadtplatz 2",
+			"postcode": "85368",
+			"city": "Moosburg"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-moosburg.de/",
+		"test_page_url": null,
+		"reader": "kuferweb",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-muehldorf-e-v",
+		"name": "VHS Mühldorf e. V.",
+		"address": {
+			"street": "Schlörstr. 1",
+			"postcode": "84453",
+			"city": "Mühldorf a. Inn"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-muehldorf.de/",
+		"test_page_url": null,
+		"reader": "kuferweb",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-neuburg-donau-e-v",
+		"name": "VHS Neuburg/Donau e.V.",
+		"address": {
+			"street": "Franziskanerstr. 200",
+			"postcode": "86633",
+			"city": "Neuburg"
+		},
+		"lat": null,
+		"lon": null,
+		"website": null,
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-oberland-e-v-holzkirchen",
+		"name": "VHS Oberland e.V. /Holzkirchen",
+		"address": {
+			"street": "Wallenburger Str. 16a",
+			"postcode": "83714",
+			"city": "Miesbach"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-oberland.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-oberschleissheim-e-v",
+		"name": "VHS Oberschleißheim e. V.",
+		"address": {
+			"street": "Theodor-Heuss-Str. 27",
+			"postcode": "85764",
+			"city": "Oberschleißheim"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-puchheim-e-v",
+		"name": "VHS Puchheim e.V.",
+		"address": {
+			"street": "Am Grünen Markt 7",
+			"postcode": "82178",
+			"city": "Puchheim"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-puchheim.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-rhoen-grabfeld-gemeinnuetzige-gmbh",
+		"name": "VHS Rhön-Grabfeld gemeinnützige GmbH",
+		"address": {
+			"street": "Marktplatz 2",
+			"postcode": "97638",
+			"city": "Mellrichstadt"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.die-vhs.de/",
+		"test_page_url": "https://die-vhs.de/Programmbereich/cmx6a2a986855055.html",
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": "2026-10-27T07:09:40.207Z"
+	},
+	{
+		"centre_id": "vhs-rieser-noerdlingen-e-v",
+		"name": "Stadtmuseum",
+		"address": {
+			"street": "Vordere Gerbergasse 1",
+			"postcode": "86720",
+			"city": "Nördlingen"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.noerdlingen.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-rosenheim",
+		"name": "VHS Rosenheim",
+		"address": {
+			"street": "Innsbrucker Str. 3",
+			"postcode": "83022",
+			"city": "Rosenheim"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.rosenheim.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-rottal-inn-west-geschaeftsstelle-eggenfelden",
+		"name": "VHS Rottal-Inn West, Geschäftsstelle Eggenfelden",
+		"address": {
+			"street": "Rathausplatz 1",
+			"postcode": "84307",
+			"city": "Eggenfelden"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-rottalinn-west.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-schrobenhausen-e-v",
+		"name": "VHS Schrobenhausen e.V.",
+		"address": {
+			"street": "Lenbachstraße 22",
+			"postcode": "86529",
+			"city": "Schrobenhausen"
+		},
+		"lat": null,
+		"lon": null,
+		"website": null,
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-schwabach",
+		"name": "VHS Schwabach",
+		"address": {
+			"street": "Königsplatz 29a",
+			"postcode": "91126",
+			"city": "Schwabach"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.schwabach.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-schwarzachtal",
+		"name": "VHS Schwarzachtal",
+		"address": {
+			"street": "Penzenhofener Str. 1",
+			"postcode": "90610",
+			"city": "Winkelhaid"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-schwarzachtal.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-stadt-fuerstenfeldbruck-e-v",
+		"name": "VHS Stadt Fürstenfeldbruck e.V.",
+		"address": {
+			"street": "Niederbronnerweg 5",
+			"postcode": "82256",
+			"city": "Fürstenfeldbruck"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-ffb.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-staedtedreieck-e-v",
+		"name": "VHS Städtedreieck e.V.",
+		"address": {
+			"street": "Bahnhofstr. 44",
+			"postcode": "93142",
+			"city": "Maxhütte-Haidhof"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-staedtedreieck.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-starnberger-see-e-v",
+		"name": "VHS Starnberger See e. V.",
+		"address": {
+			"street": "Bahnhofplatz 14",
+			"postcode": "82319",
+			"city": "Starnberg"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-starnberger-see.de/",
+		"test_page_url": null,
+		"reader": "itemkg",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-straubing-bogen",
+		"name": "VHS Straubing -Bogen",
+		"address": {
+			"street": "Klosterhof 2",
+			"postcode": "94327",
+			"city": "Bogen"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-bildungszentrum.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-straubing-ggmbh",
+		"name": "VHS Straubing gGmbH",
+		"address": {
+			"street": "Steinweg 56",
+			"postcode": "94315",
+			"city": "Straubing"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-straubing.de/",
+		"test_page_url": "https://www.vhs-straubing.de/p/sprachen/einbuergerungstest-563-CAT-KAT406",
+		"reader": "itemkg",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": "2026-10-27T07:09:40.207Z"
+	},
+	{
+		"centre_id": "vhs-taufkirchen",
+		"name": "VHS Taufkirchen",
+		"address": {
+			"street": "Ahornring 121",
+			"postcode": "82024",
+			"city": "Taufkirchen"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-taufkirchen.de/",
+		"test_page_url": "https://www.vhs-taufkirchen.de/kurse/integration-einbuergerung/einbuergerungstest",
+		"reader": "kuferweb",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-traunreut-e-v",
+		"name": "VHS Traunreut e. V.",
+		"address": {
+			"street": "Marienstr. 20",
+			"postcode": "83301",
+			"city": "Traunreut"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-traunreut.de/",
+		"test_page_url": null,
+		"reader": "kuferweb",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-traunstein-e-v",
+		"name": "VHS Traunstein e. V.",
+		"address": {
+			"street": "Stadtplatz 38a",
+			"postcode": "83278",
+			"city": "Traunstein"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-traunstein.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-trostberg-e-v",
+		"name": "VHS Trostberg e.V.",
+		"address": {
+			"street": "Heinrich-Braun-Str. 6",
+			"postcode": "83308",
+			"city": "Trostberg"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-trostberg.de/",
+		"test_page_url": null,
+		"reader": "kuferweb",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-unterhaching-e-v",
+		"name": "VHS Unterhaching e.V.",
+		"address": {
+			"street": "Jahnstr. 1",
+			"postcode": "82008",
+			"city": "Unterhaching"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-unterhaching.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-verband-landau-e-v",
+		"name": "VHS Verband Landau e.V.",
+		"address": {
+			"street": "Fleischgasse 60",
+			"postcode": "94405",
+			"city": "Landau"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-landau.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-vilsbiburg",
+		"name": "VHS Vilsbiburg",
+		"address": {
+			"street": "Stadtplatz 30",
+			"postcode": "84137",
+			"city": "Vilsbiburg"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-vilsbiburg.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-waldkraiburg-e-v",
+		"name": "vhs Kurszentrum",
+		"address": {
+			"street": "Graslitzer Str. 17",
+			"postcode": "84478",
+			"city": "Waldkraiburg"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-waldkraiburg.de/",
+		"test_page_url": "https://vhs-waldkraiburg.de/Veranstaltung/cmx69ccdf2327d8b.html",
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": "2026-10-27T07:09:40.207Z"
+	},
+	{
+		"centre_id": "vhs-wasserburg-inn-e-v",
+		"name": "VHS Wasserburg / Inn e.V.",
+		"address": {
+			"street": "Salzburger Str. 19",
+			"postcode": "83512",
+			"city": "Wasserburg a. Inn"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-wasserburg.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-weiden-neustadt-ggmbh-weiden-i-d-opf",
+		"name": "VHS Weiden-Neustadt gGmbH / Weiden i.d.Opf.",
+		"address": {
+			"street": "Luitpoldstr. 24",
+			"postcode": "92637",
+			"city": "Weiden i.d.OPf."
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-weiden-neustadt.de.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-weiterbildungsakademie-kehlheim-e-v",
+		"name": "vhs-Weiterbildungsakademie Kehlheim e.V.",
+		"address": {
+			"street": "Lederergasse 2",
+			"postcode": "93309",
+			"city": "Kelheim"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-weiterbildungsakademie.de/",
+		"test_page_url": null,
+		"reader": "itemkg",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-wuerzburg",
+		"name": "VHS Würzburg",
+		"address": {
+			"street": "Juliuspromenade 68",
+			"postcode": "97070",
+			"city": "Würzburg"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-wuerzburg.de/",
+		"test_page_url": null,
+		"reader": "itemkg",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "vhs-zv-unteres-pegnitztal",
+		"name": "VHS-ZV Unteres Pegnitztal",
+		"address": {
+			"street": "Spitalstraße 5",
+			"postcode": "91207",
+			"city": "Lauf"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-lauf.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "volksbildungswerk-pfarrkirchen",
+		"name": "Volksbildungswerk Pfarrkirchen",
+		"address": {
+			"street": "Stadtplatz 2",
+			"postcode": "84347",
+			"city": "Pfarrkirchen"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.pfarrkirchen.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "volkshochschule-arnstorf",
+		"name": "Volkshochschule Arnstorf",
+		"address": {
+			"street": "Marktplatz 8",
+			"postcode": "94424",
+			"city": "Arnstorf"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.arnstorf.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "volkshochschule-der-stadt-ansbach",
+		"name": "Volkshochschule der Stadt Ansbach",
+		"address": {
+			"street": "Kannenstraße 16",
+			"postcode": "91522",
+			"city": "Ansbach"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.ansbach.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "volkshochschule-der-stadt-regensburg",
+		"name": "Volkshochschule der Stadt Regensburg",
+		"address": {
+			"street": "Haidplatz 8",
+			"postcode": "93047",
+			"city": "Regensburg"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.regensburg.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "volkshochschule-der-stadt-selb",
+		"name": "Volkshochschule der Stadt Selb",
+		"address": {
+			"street": "Lessingstr. 8",
+			"postcode": "95100",
+			"city": "Selb"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-selb.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "volkshochschule-des-landkreises-tirschenreuth",
+		"name": "Volkshochschule des Landkreises Tirschenreuth",
+		"address": {
+			"street": "Mähringer Str. 9",
+			"postcode": "95643",
+			"city": "Tirschenreuth"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.tirschenreuth.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "volkshochschule-eching-e-v",
+		"name": "Volkshochschule Eching e.V.",
+		"address": {
+			"street": "Roßbergstr. 8",
+			"postcode": "85386",
+			"city": "Eching"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-eching-de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "volkshochschule-guenzburg",
+		"name": "Volkshochschule Günzburg",
+		"address": {
+			"street": "Bgm.-Landmann-Platz 2",
+			"postcode": "89312",
+			"city": "Günzburg"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-guenzburg.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "volkshochschule-hofer-land-e-v",
+		"name": "Volkshochschule Hofer Land e.V.",
+		"address": {
+			"street": "Ludwigstraße 7",
+			"postcode": "95028",
+			"city": "Hof"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-landkreis-hof.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "volkshochschule-im-landkreis-cham-e-v",
+		"name": "Volkshochschule im Landkreis Cham e.V.",
+		"address": {
+			"street": "Pfarrer-Seidl-Str. 1",
+			"postcode": "93413",
+			"city": "Cham"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-cham.de/",
+		"test_page_url": null,
+		"reader": "itemkg",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "volkshochschule-im-landkreis-unterallgaeu-e-v",
+		"name": "Volkshochschule im Landkreis Unterallgäu e.V.",
+		"address": {
+			"street": "Maximilianstr. 60",
+			"postcode": "87719",
+			"city": "Mindelheim"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-ua.de/",
+		"test_page_url": null,
+		"reader": "kuferweb",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "volkshochschule-karlstadt",
+		"name": "Volkshochschule Karlstadt",
+		"address": {
+			"street": "Langgasse 17",
+			"postcode": "97753",
+			"city": "Karlstadt"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-karlstadt.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "volkshochschule-kitzingen",
+		"name": "Volkshochschule Kitzingen",
+		"address": {
+			"street": "Paul-Eber-Haus, Schulhof 1",
+			"postcode": "97318",
+			"city": "Kitzingen"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.stadt-kitzingen.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "volkshochschule-rottenburg-an-der-laaber-e-v",
+		"name": "vhs Rottenburg, Raum 209",
+		"address": {
+			"street": "Georg-Pöschl-Str. 16, 2. Stock",
+			"postcode": "84056",
+			"city": "Rottenburg"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-rottenburg-laaber.de/",
+		"test_page_url": "https://www.vhs-rottenburg-laaber.de/kurssuche/kurs/Einbuergerungstest/R26+S32",
+		"reader": "kuferweb",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": "2026-10-27T07:09:40.207Z"
+	},
+	{
+		"centre_id": "volkshochschule-straubing-bogen-ggmbh",
+		"name": "Volkshochschule Straubing-Bogen gGmbH",
+		"address": {
+			"street": "Klosterhof 2",
+			"postcode": "94327",
+			"city": "Bogen"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-straubing-bogen.de/",
+		"test_page_url": null,
+		"reader": "kuferweb",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "volkshochschule-suedost-im-lkr-muenchen",
+		"name": "Volkshochschule Südost im Lkr. München",
+		"address": {
+			"street": "Haidgraben 1c",
+			"postcode": "85521",
+			"city": "Ottobrunn"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-suedost.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "wbb-gmbh",
+		"name": "wbb GmbH",
+		"address": {
+			"street": "Erdingerstraße 26",
+			"postcode": "85356",
+			"city": "Freising"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.wbb-kuchler.de/",
+		"test_page_url": null,
+		"reader": "none",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": null
+	},
+	{
+		"centre_id": "zweckverband-vhs-im-landkreis-erding",
+		"name": "Zweckverband VHS im Landkreis Erding",
+		"address": {
+			"street": "Lethnerstr. 13",
+			"postcode": "85435",
+			"city": "Erding"
+		},
+		"lat": null,
+		"lon": null,
+		"website": "https://www.vhs-erding.de/",
+		"test_page_url": "https://www.vhs-erding.de/p/deutsch-integration/pruefungen/einbuergerungstest-664-CAT-KAT329",
+		"reader": "itemkg",
+		"reader_config": null,
+		"opted_out": false,
+		"source": "rtpartner",
+		"verified_at": "2026-10-27T07:09:40.207Z"
+	}
+]
