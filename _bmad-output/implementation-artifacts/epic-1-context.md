@@ -1,10 +1,10 @@
 # Epic 1 Context: Find every test centre near me
 
-<!-- Compiled from planning artifacts. Edit freely. Regenerate with compile-epic-context if planning docs change. -->
+<!-- Generated from planning artifacts. Regenerate with compile-epic-context if planning docs change. -->
 
 ## Goal
 
-Ship a free, static, bilingual (DE/EN) website where a person in Bavaria enters a town, postcode or their device location plus a radius and sees every BAMF-approved Einbürgerungstest centre in range: distance, address, map link and a direct link to the centre's test page. No dates are collected yet. Every centre shows as an uncovered "Not checked automatically" card, and that already saves the user from opening 5–10 provider sites to find out where they can test. The epic also lays the foundations later epics build on: the repo scaffold and stack, shared schemas, the polite HTTP client, the human-owned centre directory, the place table, the snapshot publish stage and the GitHub Pages deploy pipeline.
+Ship a free, static, bilingual (DE/EN) site where someone in Bavaria enters a town, postcode or their device location plus a radius, and sees every BAMF-approved Einbürgerungstest centre in range. Each centre shows its distance, address, a map link and a direct link to its test page. No dates are collected yet, so every centre renders as an uncovered "Not checked automatically" card. That alone saves opening 5–10 provider sites. The epic also lays the foundations later epics build on: the scaffold, shared schemas, the polite HTTP client, the human-owned directory, the place table, snapshot publish and the GitHub Pages deploy.
 
 ## Stories
 
@@ -21,86 +21,70 @@ Ship a free, static, bilingual (DE/EN) website where a person in Bavaria enters 
 
 ## Requirements & Constraints
 
-- **Coverage:** every directory centre within the radius (straight-line distance from its stored coordinates) appears exactly once. In this epic all centres are `not_checked`, so each one renders as an uncovered card, ordered nearest first. Soonest/Nearest sorting arrives in Epic 2.
+- **Coverage:** every directory centre within the radius appears exactly once, measured as straight-line distance from its stored coordinates. In this epic all centres are `not_checked`, so all render as uncovered cards, nearest first.
 - **Radius:** 10 / 20 / 40 / 60 / 100 km, default 40.
-- **Bavaria only:** only Bavarian place rows are searchable. A non-Bavarian place, or a device location outside the Bavaria boundary, shows the "Bavaria only" error.
-- **Privacy:** the typed place and the device location never leave the browser. Matching and distance run client-side. At visit time the only requests are same-origin `snapshot.json` and `places.json`. There are no analytics, cookies or third-party requests at load, and Google Maps is contacted only when the user taps "Map ↗". Use `referrer` `no-referrer`; external links get `rel="noopener noreferrer"` and open in a new tab.
-- **Shareable state:** the URL fragment carries `#q=<town>&r=<km>&lang=<lang>` (sort is added later). Never use the query string and never put coordinates in it. An unknown `r` snaps to the nearest allowed value. An unknown `q` shows place-not-found with the text filled in.
-- **Honesty:** a gap must never read as "nothing available". When there are no dates, the page shows the count line "0 dates and M unchecked centres within R km" and a notice that these centres may still have dates on their own pages.
-- **Results are static while open:** no auto-refresh and no re-sort. Reloading fetches new data.
-- **Search only:** no booking, no provider accounts, no form submission to provider sites.
-- **Polite fetching** (used by directory verification and geocoding): identified UA `bgtsearch-bot/<version> (+<About URL>)`, robots.txt respected, serial requests per host with delay and timeout. Nominatim is called manually, cached, at ≤ 1 req/s.
-- **Directory:** about 116 centres seeded from rtpartner.de, each verified against the centre's own site. Entries that cannot be confirmed keep `verified_at: null` and are reported to the operator. `reader` is set from page fingerprints and defaults to `none` when unsure. Geocoding never guesses: an entry with no match, or a match outside Bavaria, is reported and left without coordinates.
-- **Cost:** €0. Use only free tiers of a public GitHub repo, with no secrets beyond the default workflow token.
-- **Private beta:** add a `noindex` meta tag and hide the Impressum/Privacy footer links.
-- **Attribution:** show "Place data © OpenStreetMap contributors (ODbL)" in the footer, and credit Nominatim on the About page.
-- **Accessibility:** WCAG AA contrast, full keyboard access, targets ≥ 44 px, and reflow at 320 px / 200% zoom with the longest German strings and text-spacing overrides.
+- **Bavaria only:** only Bavarian place rows can be searched. A non-Bavarian place, or a device location outside the Bavaria boundary, shows the "Bavaria only" error.
+- **Privacy:** the typed place and the device location never leave the browser. At visit time the page requests only same-origin `snapshot.json` and `places.json`. No analytics, cookies or third-party requests; Google Maps loads only when the user taps "Map ↗". Referrer policy is `no-referrer`, and external links get `rel="noopener noreferrer"`.
+- **Shareable state:** the URL fragment holds `#q=…&r=…&lang=…` (sort comes in Epic 2). Never the query string, never coordinates. An unknown `r` snaps to the nearest allowed value; an unknown `q` shows place-not-found with the text kept.
+- **Honesty:** a gap must never read as "nothing available".
+- **Static results:** results never refresh or re-sort while the page is open.
+- **Scope:** search only. No booking, no provider accounts, no form submission to provider sites.
+- **Cost and beta:** €0 on the free tiers of a public repo. During the private beta the page carries `noindex` and the Impressum/Privacy links are hidden.
+- **Attribution:** the footer shows "Place data © OpenStreetMap contributors (ODbL)". Nominatim is credited on the About page.
+- **Accessibility:** WCAG AA, full keyboard access, targets of at least 44 px, and reflow at 320 px / 200% zoom with the longest German strings.
+- **Directory accuracy:** never guess. Entries that cannot be verified keep `verified_at: null`, and those with no geocode match or a match outside Bavaria keep null coordinates. Both are reported to the operator.
 
 ## Technical Decisions
 
-- **Paradigm:** a scheduled pipeline publishes a static snapshot, and a static Preact app serves it. There is no runtime backend.
-- **Stack (pinned):** Node 26 (`.nvmrc`), TypeScript 6.0, Vite 8.3, Preact 11.0 via `npm create preact` (without ESLint), @preact/preset-vite 2.10, zod 4.6, cheerio 1.2 and Vitest 5.0. Use one root `package.json` with no workspaces.
-- **Layout:** `shared/`, `pipeline/{fetch,readers/<system>,stages}`, `pipeline/config.ts`, `web/` (with `src/i18n/{de,en}.json`), `tools/` (geocode, build-places), `data/{directory,state,public}` and `.github/workflows/`.
-- **Import rules (enforced by a test):** `readers` must not import `fetch` or `stages`; `web` must not import `pipeline` or `tools`; no project code may import `typescript`. `tools/` must do all HTTP through `pipeline/fetch`.
-- **`shared/`** holds the zod schemas, enum codes, the place-name normaliser (folds case, umlauts and ß, so "Gunzburg" and "Guenzburg" both match Günzburg), haversine, and the time-threshold constants.
-- **Directory (`data/directory/centres.json`)** is human-owned and the pipeline never writes it. Each entry has `centre_id` (a lowercase slug that is stable forever), name, address, lat/lon (nullable until geocoded), website, `test_page_url`, `reader` (`kuferweb` / `itemkg` / `none`), an optional typed `reader_config`, `opted_out`, `source` (`"rtpartner"`) and `verified_at`. CI validates it against the schema and fails on duplicate ids.
-- **`snapshot.json`** has the shape `{ schemaVersion: 1, generated_at, systems: [], centres[], listings: [] }`. Every centre appears once with `coverage: "not_checked"` (opted-out centres are always `not_checked`), and `last_result`, `last_checked_at` and `last_success_at` are all `null`. Publish refuses to write output that fails the schema, so a failed run fails and the last good site stays live.
-- **`places.json`** has rows `{ key, name, postcodes[], district, state, lat, lon }` for all of Germany, plus a simplified Bavaria boundary polygon. It is built offline by `tools/build-places` from an OSM-derived dataset; this story chooses the dataset and records the choice. Flag the file if it exceeds ~300 KB gzipped. The nearest-town lookup for "use my location" uses only Bavarian rows.
-- **Schema versioning:** the app embeds the `schemaVersion` it expects. On a mismatch it reloads once, then shows the load-error state.
-- **Card type is chosen from `coverage` first:** `not_checked` gives the uncovered card.
-- **Codes in data, words in translation files:** CI fails on missing or extra i18n keys, and components contain no hard-coded UI text.
-- **Conventions:** kebab-case files; ISO 8601 strings, never epoch numbers; `null` for missing values, never `"unknown"` strings or omitted keys.
-- **Workflows:**
-  - `ci.yml` runs tests, type-checks and the directory schema check. It ignores `data/state/**` and `data/public/**`.
-  - `pipeline.yml` triggers on push to `main` and on dispatch; Epic 2 adds the schedule. It uses one concurrency group with `cancel-in-progress: false`, commits `data/public/` in one commit if anything changed, and deploys with `actions/deploy-pages` only from the pushed SHA.
-- **Hosting:** repo `esiak/testplatz`, served at `https://esiak.github.io/testplatz/`. Vite `base` must match. The About URL on this host is the one named in the bot UA.
+- **Paradigm:** a batch pipeline publishes a static snapshot, which a static Preact app reads. There is no runtime backend.
+- **Stack (pinned):** Node 26 (`.nvmrc`), TypeScript 6.0, Vite 8.3, Preact 11.0, @preact/preset-vite 2.10, zod 4.6, cheerio 1.2, Vitest 5.0. One root `package.json`, no workspaces.
+- **Imports (enforced by a test):** `web` → `shared`; `tools` → `fetch` and `shared`; `readers` → `shared` only. `web` never imports `pipeline` or `tools`, and no project code imports `typescript`.
+- **`shared/`** holds the zod schemas, codes, the one place-name normaliser (folds case, umlauts and ß), haversine and the 12 h / 24 h constants.
+- **One polite HTTP path:** all outbound HTTP, from both pipeline and `tools/`, goes through `pipeline/fetch`. It sends the identified bot UA, checks robots.txt once per host per run, and fetches serially per host with a delay and a timeout. It also decodes charsets and refuses a centre host already visited 4 times in 24 h, based on the visit log in `data/state/`.
+  - The only robots exemption is Nominatim `/search`, as an explicit per-client option. That endpoint is called manually, with caching, at no more than 1 request per second, and never on a schedule. Every other host and path keeps full robots checks.
+- **Directory** (`data/directory/centres.json`) is human-owned, and the pipeline never writes it. Its fields: `centre_id` (a stable lowercase slug), name, address, lat/lon, website, `test_page_url`, `reader` (`kuferweb` / `itemkg` / `none`), a typed `reader_config`, `opted_out`, `source`, `verified_at`. CI validates the schema and rejects duplicate ids.
+- **Public data contracts:** both are zod schemas in `shared/`, and the producer refuses to emit an invalid file.
+  - `snapshot.json` is `{schemaVersion, generated_at, systems[], centres[], listings[]}`. Each centre carries `coverage` plus `last_result`, `last_checked_at` and `last_success_at`, all `null` in this epic. A centre is `not_checked` when its reader is `none`, it is opted out, or robots disallow it.
+  - `places.json` is described under Story 1.5 below.
+  - The app embeds the `schemaVersion` it expects. On a mismatch it reloads once, then shows the load error.
+- **Card choice is coverage-first:** `not_checked` → uncovered card.
+- **Codes in data, words in `web/src/i18n/{de,en}.json`:** CI fails on missing or extra keys.
+- **Conventions:** kebab-case files; ISO 8601 strings, never epoch numbers; `null` for missing values, never `"unknown"` or omitted keys. An error that would make a published file invalid fails the run, so the last good site stays live.
+- **Deploy:** `pipeline.yml` (push to `main` and dispatch, one concurrency group, no cancel-in-progress) commits `data/public/` in one commit and deploys only the pushed SHA via `actions/deploy-pages`. `ci.yml` ignores `data/state/**` and `data/public/**`. The site is served at `https://esiak.github.io/testplatz/`, and Vite `base` must match.
+- **Story 1.5 (`places.json`):** `tools/build-places` builds it offline and the file is committed.
+  - Rows are `{key, name, postcodes[], district, state, lat, lon}` covering all German municipalities and postcodes, plus a simplified Bavaria boundary polygon.
+  - Search matches only rows with `state = BY`, and the nearest-town lookup uses only Bavarian rows.
+  - The story picks and records the OSM-derived source dataset; ODbL attribution applies. If the file exceeds about 300 KB gzipped, flag it and consider lazy-loading or splitting.
 
 ## UX & Interaction Patterns
 
-- **Tokens:** every DESIGN.md colour (light and dark via `prefers-color-scheme`), typography (system font stack, rem sizes), spacing, radii and component value becomes a CSS custom property. No component uses literal colours or px font sizes. Controls use `min-height`, never a fixed height.
-- **Focus ring:** 2 px in `action` with a 2 px offset on every focusable element. When the card link has focus, the ring surrounds the whole card; "Map ↗" and "Why?" get their own ring.
-- **Layout:** a single column with 16 px gutters, centred at max 720 px.
-  - The search bar is a field, a native radius select and a primary button. It sits on one row on wide screens; on phones the field gets its own row with radius and button below. It is not sticky.
-  - Focus stays in the field after submit.
-  - On first visit the field is focused and the h1 reads "Find Einbürgerungstest dates near you in Bavaria."
+- **Tokens:** every DESIGN.md colour, type, spacing and radius value is a CSS custom property, with light and dark via `prefers-color-scheme`. Controls use `min-height`. The focus ring is 2 px `action` with a 2 px offset.
+- **Layout:** a single column with 16 px gutters, max 720 px wide.
+  - The search bar is a field, a native radius select and a primary button, not sticky. Focus stays in the field after submit.
+  - On first visit the field is focused.
 - **Uncovered card:**
-  - The whole card is one stretched link to the test page (new tab).
-  - Content: centre name in card-date style, a "Not checked" chip (unknown tint), and the address line with "Map ↗" (own 44 px target, 8 px dead zone, link name "Map: <address> (Google Maps, new tab)").
+  - The whole card is one stretched link to the test page, opening in a new tab.
+  - It shows a "Not checked" chip and the address with "Map ↗" (its own 44 px target).
   - The body line reads "Not checked automatically. See the centre's page."
-  - Key facts are a `dl` in the order Distance "24 km", Status "Not checked", Deadline "see website", Registration "see website". They show 4 across when each cell is ≥ 9em, otherwise 2×2.
-  - The destination domain is followed by ↗ and is `aria-hidden`.
-  - "Why?" is its own 44 px target linking to About `#not-checked`, named "Why is <centre> not checked?".
-  - There is no freshness line and no nested links. The results are a `<ul>` with h3 per card.
+  - Key facts form a `dl`: Distance, Status, Deadline, Registration.
+  - The destination domain is `aria-hidden`. "Why?" links to About `#not-checked`.
+  - No freshness line and no nested links.
 - **States:**
-  - Place not found: show up to three "Did you mean …?" links.
-  - Outside Bavaria: show the Bavaria-only error.
-  - Location denied: show "Error: Location not shared. Type a town or postcode instead." and focus the field.
-  - Field errors use `role=alert` plus `aria-invalid` and `aria-describedby`, keep the input, and are prefixed with an icon and "Error".
-  - No centres in radius: show "No test centres within 20 km." with a secondary "Search 40 km" button (full width on phones).
-  - Loading: show up to 3 static skeletons (no shimmer), set `aria-busy`, and announce "Loading dates…" once.
-  - Load failure: show "We couldn't load test dates. Try again." with a "Try again" button.
-- **Live region:** one `role=status` present from page load announces the count line, the loading message and suggestion counts.
-- **Suggestions:** an ARIA 1.2 combobox that opens after 2 characters and shows at most 6 rows (each ≥ 44 px). A row shows the town in body text, then postcode · district in meta. ↑/↓ move the highlight, Enter picks and searches, Escape closes. Pressing Enter without a pick searches if there is one match or an exact postcode; with several matches it shows "Several places match. Pick one."; with none it shows place-not-found.
-- **Use my location:** a 44×44 icon button inside the right end of the field, hidden when the browser has no geolocation. While locating it announces "Finding your location…". On success the field reads "Near <town>" and the fragment holds that town.
-- **Language switch:** "DE | EN" in the header. It switches instantly without a reload, keeps the search, updates `lang` in the fragment and keeps focus. The active link has `aria-current` and `lang`. The initial language follows the browser (German for any other language), and `<html lang>` follows the choice.
-- **About the data:** h1, then h2 sections:
-  - how it works;
-  - centres not checked automatically at `#not-checked`, with the reasons and a linked list of centres;
-  - sources;
-  - attribution;
-  - an opt-out link that opens a new GitHub issue from an "Opt-out request" template.
-
-  The booking-system status section comes in Epic 3. The back button from About must return to the results with the search intact.
-- **Banned patterns:** filters that drop items, separate "Open this date" buttons, nested links, infinite scroll, pop-ups or cookie walls, carousels, staleness banners, and custom pickers replacing native controls.
-- **Microcopy:** all strings come from the EXPERIENCE.md voice-and-tone Do column, with the same meaning in DE and EN and no exclamation marks.
+  - Field errors (`role=alert`, `aria-invalid`, input kept): place not found with up to 3 "Did you mean …?" links, outside Bavaria, location denied.
+  - No centres in range: a "Search <next> km" button.
+  - Loading: up to 3 static skeletons with `aria-busy`.
+  - Load failure: a "Try again" button.
+  - One `role=status` live region exists from page load.
+- **Suggestions:** an ARIA 1.2 combobox that opens after 2 characters and shows at most 6 rows. Same-name towns show postcode · district.
+- **Location:** a 44×44 button inside the field, hidden when the browser has no geolocation. On success the field fills with "Near <town>".
+- **Language switch:** "DE | EN". It switches instantly, keeps the search and updates `lang` in the fragment.
+- **Banned patterns:** filters that drop items, separate "Open" buttons, nested links, infinite scroll, pop-ups or cookie walls, carousels, staleness banners, custom pickers.
 
 ## Cross-Story Dependencies
 
-- 1.1 (scaffold, `shared/`, workflows, deploy) comes before everything else.
-- 1.2 (tokens, i18n, shell, footer) is needed by 1.7–1.10.
-- 1.3 creates `pipeline/fetch` and the directory schema. 1.4 needs both, because geocoding goes through fetch.
-- 1.3 and 1.4 produce the directory with coordinates that 1.6 publishes.
-- 1.5 produces `places.json` and the shared normaliser, which 1.8, 1.9 and 1.10 need.
-- 1.6 produces `snapshot.json`, which 1.7 (centre list) and 1.8 (results) need.
-- 1.8 builds the search bar, results, fragment state and error states. 1.9 and 1.10 extend that search bar.
-- Epic 2 later adds readers, merge/state, scheduled runs, result and no-dates cards, and the Soonest/Nearest sort. The schemas, the fetch client and the card-from-coverage logic must stay extensible for it. Epic 3 adds the booking-system status section on the About page.
+- 1.1 comes first.
+- 1.2 (tokens, i18n, shell) is needed by 1.7–1.10.
+- 1.3 creates `pipeline/fetch` and the directory schema, which 1.4 uses for geocoding. Together they produce the directory that 1.6 publishes.
+- 1.5 produces `places.json` and the shared normaliser, which 1.8–1.10 need.
+- 1.6's `snapshot.json` feeds 1.7 and 1.8. 1.9 and 1.10 extend 1.8's search bar.
+- Epic 2 adds readers, merge/state, the schedule, result and no-dates cards, and sorting, so schemas, fetch and the coverage-first card logic must stay extensible.
