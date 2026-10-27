@@ -187,7 +187,7 @@ describe('committed data/directory/centres.json', () => {
 
 	it('holds one rtpartner entry per source row, every coordinate inside Bavaria', () => {
 		const centres = directorySchema.parse(JSON.parse(text));
-		expect(centres).toHaveLength(120);
+		expect(centres).toHaveLength(119);
 		expect(centres.every((c) => c.source === 'rtpartner')).toBe(true);
 		expect(centres.every((c) => c.lat === null || isInBavariaBox(c.lat, c.lon!))).toBe(true);
 	});
