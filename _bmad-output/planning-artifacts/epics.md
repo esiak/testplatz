@@ -170,7 +170,7 @@ FR34: Epic 4 - Impressum and Privacy
 ### Epic 1: Find every test centre near me
 A user enters a Bavarian town, postcode or their location, picks a radius, and sees every BAMF test centre in range: distance, address, map link and a direct link to each centre's test page. Works in German and English, shareable by link, deployed for €0. Every centre shows as "Not checked automatically" for now, which already saves opening 5–10 sites to find out where you can test.
 **FRs covered:** FR1, FR2 (uncovered cards), FR4, FR11, FR17, FR18, FR19, FR22 (flag), FR23, FR25, FR26, FR27, FR28, FR30 (unchecked count), FR31 (search, loading, no-centres, load-fail), FR32, FR33 (static sections)
-**Notes:** Story 1 is the `npm create preact` scaffold, repo layout, shared schemas and the GitHub Pages deploy. Builds the places table, directory, snapshot publish (centres only), and the uncovered card. Covers UX-DR1–7, 10, 11, 12 (Distance), 17, 18–22, 24–27, 29.
+**Notes:** Story 1 is the `npm create preact` scaffold, repo layout, shared schemas and the GitHub Pages deploy. Builds the places table, directory, snapshot publish (centres only), and the uncovered card. Story 1.11 completes the place table that Story 1.5 shipped partially; it must land before 1.8's "Bavaria only" error and 1.10. Covers UX-DR1–7, 10, 11, 12 (Distance), 17, 18–22, 24–27, 29.
 
 ### Epic 2: See current test dates from KuferWeb and ITEM KG centres
 About 55 centres switch from "not checked" to real dates with status, deadline, registration method and a deep link, refreshed 4 times a day and honest about freshness and failures.
@@ -446,6 +446,29 @@ So that I see nearby centres in one tap.
 **When** the browser responds
 **Then** I see "Error: Location not shared. Type a town or postcode instead." and the field is focused
 **And** coordinates are never sent, stored or put in a URL
+
+### Story 1.11: Complete the place table
+
+As a user outside Bavaria, or using my location near its border,
+I want the place table to cover all of Germany and the Bavaria boundary,
+So that a non-Bavarian town shows "Bavaria only" instead of "not found", and my location is checked against the real boundary.
+
+**Context:** Story 1.5 shipped `tools/build-places` and a partial `places.json` (`complete: false`). It holds Bavaria, Schleswig-Holstein and Hamburg. The full Overpass run was stopped because the public server was too busy (about 25 minutes for 2 of 38 queries). The `ags-09*` cache files were seeded from a single whole-Bavaria probe of 2026-10-27, with the same query shape. `places-note.md` lists the 29 missing `ags-*` queries and the missing `bavaria` boundary. **Must land before Story 1.8 ships the "Bavaria only" error and before Story 1.10.**
+
+**Acceptance Criteria:**
+
+**Given** the cache in `data/places/cache/`
+**When** the operator runs `npm run build:places` (no `--cached-only`) at a quiet time, resuming from the cache if interrupted
+**Then** every missing `ags-*` query and the `bavaria` query are fetched through `pipeline/fetch` (AD-5 Overpass exemption), and `places.json` is written with `complete: true` and `missing: []`
+**And** the committed-data tests run unskipped: all 16 states present, and a boundary that contains Munich and excludes Berlin
+
+**Given** the seeded `ags-09*` files
+**When** the full run is done
+**Then** they are either kept (and recorded as such in `places-note.md`) or refreshed with `--refresh`, and the choice is recorded
+
+**Given** the full file
+**When** its size is recorded
+**Then** the note shows the gzipped size, flagged if over 300 KB (AD-9)
 
 ## Epic 2: See current test dates from KuferWeb and ITEM KG centres
 

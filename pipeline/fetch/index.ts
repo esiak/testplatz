@@ -38,7 +38,8 @@ export interface FetchClientOptions {
 	/**
 	 * URLs whose origin and pathname exactly match an entry skip the robots check (no robots.txt
 	 * is fetched for them). Every other URL, including redirect targets, keeps the full rules.
-	 * The only user is tools/geocode with Nominatim's `/search` (AD-5).
+	 * The users are tools/geocode with Nominatim's `/search` and tools/build-places with Overpass's
+	 * `/api/interpreter` (AD-5); each passes only its own entry.
 	 */
 	robotsExempt?: readonly RobotsExemption[];
 }

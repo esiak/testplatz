@@ -12,7 +12,8 @@
 		"seed:directory": "node tools/seed-directory.ts",
 		"verify:directory": "node tools/verify-directory.ts",
 		"check:directory": "node tools/check-directory.ts",
-		"geocode": "node tools/geocode.ts"
+		"geocode": "node tools/geocode.ts",
+		"build:places": "node tools/build-places.ts"
 	},
 	"dependencies": {
 		"cheerio": "~1.2.0",

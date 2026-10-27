@@ -2,3 +2,4 @@
 _bmad/
 node_modules/
 dist/
+data/places/cache/

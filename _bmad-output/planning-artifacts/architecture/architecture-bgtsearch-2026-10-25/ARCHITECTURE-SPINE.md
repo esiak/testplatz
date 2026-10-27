@@ -108,7 +108,11 @@ Arrows are the only allowed imports. `readers` never imports `fetch` or `stages`
   - decodes the charset into strings;
   - refuses a host already visited 4 times in the last 24 h, using the visit log in `data/state/`. This also applies to manual and local reruns. Fetch only reads the log and returns this run's visits; merge persists them (AD-6).
 
-  Detail-page fetch results set each listing's `link_ok`; there are no separate link-check requests. `tools/geocode` calls only Nominatim's `/search` (manual, cached, ≤ 1 req/s, never scheduled). Nominatim's robots.txt targets crawlers, and its OSMF usage policy governs API use, so that one endpoint is the only robots exemption in `pipeline/fetch` (explicit per-client option). Every other host and path keeps full robots checks. The 4-visits-in-24-h cap and the visit log apply to centre hosts; Nominatim is limited by its usage policy instead (≤ 1 req/s, cached, manual).
+  Detail-page fetch results set each listing's `link_ok`; there are no separate link-check requests. `pipeline/fetch` has exactly two robots exemptions, each an explicit per-client option passed only by its own tool:
+  - `tools/geocode` calls only Nominatim's `/search` (manual, cached, ≤ 1 req/s, never scheduled). Nominatim's robots.txt targets crawlers, and its OSMF usage policy governs API use.
+  - `tools/build-places` calls only Overpass's `https://overpass-api.de/api/interpreter` (manual, cached, serial, ≥ 10 s apart, never scheduled). Overpass's robots.txt disallows `/api/` for all bots; the exemption is an operator decision of 2026-10-27 (amendment, Story 1.5).
+
+  Every other host and path keeps full robots checks. The 4-visits-in-24-h cap and the visit log apply to centre hosts; Nominatim and Overpass are limited by their usage rules instead (manual, cached, paced).
 
 ### AD-6 — Run outcome and the single state writer [ADOPTED]
 
@@ -294,7 +298,7 @@ bgtsearch/
 
 ## Deferred
 
-- **Places dataset source** (which OSM-derived extract): picked in the `tools/build-places` story; AD-9 fixes its shape and ODbL attribution applies. Revisit if `places.json` exceeds ~300 KB gzipped (then lazy-load or split).
+- **Places dataset source:** resolved in Story 1.5 as OpenStreetMap via the Overpass API (ODbL), queried by `tools/build-places` (AD-5 exemption). AD-9 fixes the shape. Revisit if `places.json` exceeds ~300 KB gzipped (then lazy-load or split).
 - **Dead-man check provider:** pick a free one at setup; AD-12/monitoring fixes that it exists.
 - **Snapshot splitting:** one file until it passes ~1 MB.
 - **Custom domain, Impressum operator, privacy policy text:** before public launch. The policy must name GitHub Pages as host.

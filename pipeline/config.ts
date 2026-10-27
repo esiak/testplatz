@@ -22,7 +22,23 @@ export const NOMINATIM_SEARCH_URL = 'https://nominatim.openstreetmap.org/search'
 export const NOMINATIM_DELAY_MS = 1100;
 
 /**
- * The one robots exemption in pipeline/fetch (AD-5): Nominatim's `/search`, governed by the
- * OSMF usage policy rather than its crawler robots.txt. Passed only by tools/geocode.
+ * A robots exemption in pipeline/fetch (AD-5): Nominatim's `/search`, governed by the OSMF usage
+ * policy rather than its crawler robots.txt. Passed only by tools/geocode.
  */
 export const NOMINATIM_ROBOTS_EXEMPT = { origin: 'https://nominatim.openstreetmap.org', path: '/search' } as const;
+
+/** Overpass API interpreter, the only Overpass endpoint used (tools/build-places, AD-5). */
+export const OVERPASS_INTERPRETER_URL = 'https://overpass-api.de/api/interpreter';
+
+/** Pause between two Overpass requests: serial and well spaced, as the query slots are shared. */
+export const OVERPASS_DELAY_MS = 10_000;
+
+/** Per-request timeout for Overpass; matches the `[timeout:900]` in every query. */
+export const OVERPASS_TIMEOUT_MS = 900_000;
+
+/**
+ * The second robots exemption in pipeline/fetch (AD-5 amendment, operator decision 2026-10-27):
+ * Overpass's `/api/interpreter`, called manually and cached, never on a schedule. Its robots.txt
+ * disallows `/api/` for all bots. Passed only by tools/build-places.
+ */
+export const OVERPASS_ROBOTS_EXEMPT = { origin: 'https://overpass-api.de', path: '/api/interpreter' } as const;
