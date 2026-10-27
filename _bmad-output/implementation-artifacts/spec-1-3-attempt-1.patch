@@ -1,0 +1,4493 @@
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 078c11b..d38d0b0 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -25,5 +25,6 @@ jobs:
+           cache: npm
+       - run: npm ci
+       - run: npm run typecheck
++      - run: npm run check:directory
+       - run: npm test
+       - run: npm run build
+diff --git a/data/directory/.gitkeep b/data/directory/.gitkeep
+deleted file mode 100644
+index e69de29..0000000
+diff --git a/data/directory/centres.json b/data/directory/centres.json
+new file mode 100644
+index 0000000..edab242
+--- /dev/null
++++ b/data/directory/centres.json
+@@ -0,0 +1,2162 @@
++[
++	{
++		"centre_id": "akademia-zentrum-fuer-kommunikation-und-bildung-gmbh",
++		"name": "Akademia Zentrum für Kommunikation und Bildung GmbH - Nürnberg",
++		"address": {
++			"street": "Bahnhofsplatz 6",
++			"postcode": "90443",
++			"city": "Nürnberg"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.linguademia.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "anderwerk-deutschkurse",
++		"name": "Anderwerk Deutschkurse",
++		"address": {
++			"street": "Hamburger Straße 32",
++			"postcode": "80809",
++			"city": "München"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.anderwerk.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "bayerisches-rotes-kreuz",
++		"name": "Bayerisches Rotes Kreuz",
++		"address": {
++			"street": "Goethestr. 53",
++			"postcode": "81379",
++			"city": "München"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.brk-muenchen.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "berufliche-fortbildungszentren-der-bayerischen-wirtschaft",
++		"name": "Berufliche Fortbildungszentren der Bayerischen Wirtschaft gGmbH, bfz-Donauwörth-Ulm-Aalen",
++		"address": {
++			"street": "Dr. Friedrich-Drechsler-Str. 14",
++			"postcode": "86609",
++			"city": "Donauwörth"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.bfz.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "bildungszentrum-stadt-nuernberg",
++		"name": "Bildungszentrum Stadt Nürnberg",
++		"address": {
++			"street": "Gewerbemuseumsplatz 1",
++			"postcode": "90403",
++			"city": "Nürnberg"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.stadt.nuernberg.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "deutsche-angestellten-akademie-gmbh",
++		"name": "Deutsche Angestellten-Akademie GmbH",
++		"address": {
++			"street": "Marsstraße 42",
++			"postcode": "80335",
++			"city": "München"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.daa.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "euro-bildungswerk-nuernberg-euro-schulen-nordbayern",
++		"name": "Euro-Bildungswerk Nürnberg/Euro-Schulen Nordbayern",
++		"address": {
++			"street": "Solgerstr. 16a/18",
++			"postcode": "90429",
++			"city": "Nürnberg"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.eso.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "euro-schulen-aschaffenburg",
++		"name": "Euro-Schulen Aschaffenburg",
++		"address": {
++			"street": "Goldbacher Str. 6",
++			"postcode": "63739",
++			"city": "Aschaffenburg"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.eso.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "euro-schulen-nordbayern",
++		"name": "Euro-Schulen Nordbayern",
++		"address": {
++			"street": "Herzogenstr. 8",
++			"postcode": "97070",
++			"city": "Würzburg"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.eso.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "hilfe-von-mensch-zu-mensch",
++		"name": "Hilfe von Mensch zu Mensch",
++		"address": {
++			"street": "Marsstr. 25",
++			"postcode": "80335",
++			"city": "München"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.hvmzm.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "inlingua-sprachenschule-e-k",
++		"name": "inlingua Sprachenschule e. K.",
++		"address": {
++			"street": "Ludwigstraße 18",
++			"postcode": "85049",
++			"city": "Ingolstadt"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.inlingua-ingolstadt.de/",
++		"test_page_url": "https://www.inlingua-ingolstadt.de/pruefungen/einbuergerungstests/",
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": "2026-10-27T07:09:40.207Z"
++	},
++	{
++		"centre_id": "inlingua-sprachschule-u-c-bernau-gmbh",
++		"name": "Inlingua Sprachschule U.&C. Bernau GmbH",
++		"address": {
++			"street": "Sendlinger Torplatz 6",
++			"postcode": "80336",
++			"city": "München"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.inlingua-muenchen.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "ise-sprach-und-berufsbildungszentrum-gmbh",
++		"name": "ISE Sprach -und Berufsbildungszentrum GmbH",
++		"address": {
++			"street": "Kaiser-Ludwig-Ring 9",
++			"postcode": "92224",
++			"city": "Amberg"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.ise-berufsbildung.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "kolping-akademie-ingolstadt-ggmbh",
++		"name": "Kolping Akademie Ingolstadt gGmbH",
++		"address": {
++			"street": "Johannesstraße 11",
++			"postcode": "85049",
++			"city": "Ingolstadt"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.kolping-ingolstadt.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "kommunaler-zweckverband-der-volkshochschule-passau",
++		"name": "Kommunaler Zweckverband der Volkshochschule Passau",
++		"address": {
++			"street": "Nikolastr. 18",
++			"postcode": "94032",
++			"city": "Passau"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-passau.de/",
++		"test_page_url": "https://www.vhs-passau.de/fachbereich//sprachen/deutsch-als-fremdsprache/einbuergerungstest",
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": "2026-10-27T07:09:40.207Z"
++	},
++	{
++		"centre_id": "mas-sprachschule-muenchen",
++		"name": "MAS Sprachschule München",
++		"address": {
++			"street": "Lindwurmstr. 109",
++			"postcode": "80337",
++			"city": "München"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.mas-sprachschule.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "muenchner-vhs-gmbh",
++		"name": "Münchner VHS GmbH",
++		"address": {
++			"street": "Orleanstraße 34",
++			"postcode": "81667",
++			"city": "München"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.mvhs.de/",
++		"test_page_url": "https://www.mvhs.de/programm/info/sprachen/sprachpruefungen-und-zertifikate-einbuergerungstest",
++		"reader": "itemkg",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "oberallgaeuer-vhs",
++		"name": "Oberallgäuer VHS",
++		"address": {
++			"street": "Hindelanger Str. 37",
++			"postcode": "87527",
++			"city": "Sonthofen"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.oa-vhs.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-aichach-friedberg-e-v",
++		"name": "VHS Aichach-Friedberg e.V.",
++		"address": {
++			"street": "Steubstr. 3",
++			"postcode": "86551",
++			"city": "Aichach"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-aichach-friedberg.de/",
++		"test_page_url": "https://www.vhs-aichach-friedberg.de/programm/einbuergerungstest",
++		"reader": "kuferweb",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": "2026-10-27T07:09:40.207Z"
++	},
++	{
++		"centre_id": "vhs-alt-neuoetting-und-toeging-e-v",
++		"name": "VHS Alt-/Neuötting und Töging e. V.",
++		"address": {
++			"street": "Neuöttinger Str. 32",
++			"postcode": "84503",
++			"city": "Altötting"
++		},
++		"lat": null,
++		"lon": null,
++		"website": null,
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-arberland",
++		"name": "VHS ARBERLAND",
++		"address": {
++			"street": "Amtsgerichtstr. 6 - 8",
++			"postcode": "94209",
++			"city": "Regen"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-arberland.de/",
++		"test_page_url": null,
++		"reader": "itemkg",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-aschaffenburg",
++		"name": "VHS Aschaffenburg",
++		"address": {
++			"street": "Luitpoldstr. 2",
++			"postcode": "63739",
++			"city": "Aschaffenburg"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-aschaffenburg.de/",
++		"test_page_url": "https://www.vhs-aschaffenburg.de/kurse/deutsch-integration-grundbildung/einbuergerungstest",
++		"reader": "kuferweb",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-augsburg-e-v",
++		"name": "Volkshochschule Augsburg",
++		"address": {
++			"street": "Willy-Brandt-Platz 3a",
++			"postcode": "86153",
++			"city": "Augsburg"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-augsburg.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-bad-kisingen-und-hammelburg",
++		"name": "VHS Bad Kisingen und Hammelburg",
++		"address": {
++			"street": "Rathausplatz 1",
++			"postcode": "97688",
++			"city": "Bad Kissingen"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-kisshab,de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-bad-reichenhall",
++		"name": "VHS Bad Reichenhall",
++		"address": {
++			"street": "Aegidiplatz 3",
++			"postcode": "83435",
++			"city": "Bad Reichenhall"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-reichenhall.de/",
++		"test_page_url": "https://www.vhs-reichenhall.de/pruefungen-einbuergerungstest-und-deutsch",
++		"reader": "itemkg",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": "2026-10-27T07:09:40.207Z"
++	},
++	{
++		"centre_id": "vhs-bamberg",
++		"name": "VHS Bamberg",
++		"address": {
++			"street": "Tränkgasse 4",
++			"postcode": "96052",
++			"city": "Bamberg"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-bamberg.de/",
++		"test_page_url": null,
++		"reader": "itemkg",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-bamberg-land-e-v",
++		"name": "VHS Bamberg-Land e.V.",
++		"address": {
++			"street": "Ludwigstraße 25",
++			"postcode": "96052",
++			"city": "Bamberg"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-bamberg-land.de/",
++		"test_page_url": "https://www.vhs-bamberg-land.de/p/488-CAT-KAT4512071",
++		"reader": "itemkg",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": "2026-10-27T07:09:40.207Z"
++	},
++	{
++		"centre_id": "vhs-bayreuth",
++		"name": "VHS Bayreuth",
++		"address": {
++			"street": "Richard-Wagner-Str. 21",
++			"postcode": "95444",
++			"city": "Bayreuth"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.stadt.bayreuth.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-beilngries-e-v",
++		"name": "Spielzeugmuseum 1. OG}",
++		"address": {
++			"street": "Hauptstr. 47",
++			"postcode": "92339",
++			"city": "Beilngries"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-beilngries.de/",
++		"test_page_url": "https://www.vhs-beilngries.de/p/sprachen/deutsch-integration/einbuergerungstest-641-C-B3021",
++		"reader": "itemkg",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": "2026-10-27T07:09:40.207Z"
++	},
++	{
++		"centre_id": "vhs-buchloe-e-v",
++		"name": "VHS Buchloe e.V.",
++		"address": {
++			"street": "Bahnhofstr. 60",
++			"postcode": "86807",
++			"city": "Buchloe"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-buchloe.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-burghausen-burgkirchen-e-v",
++		"name": "VHS Burghausen-Burgkirchen e. V.",
++		"address": {
++			"street": "Marktler Str. 16",
++			"postcode": "84489",
++			"city": "Burghausen"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-burghausen.de/",
++		"test_page_url": null,
++		"reader": "kuferweb",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-coburg-ggmbh",
++		"name": "VHS Coburg gGmbH",
++		"address": {
++			"street": "Löwenstr. 15",
++			"postcode": "96450",
++			"city": "Coburg"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-coburg.de/",
++		"test_page_url": null,
++		"reader": "itemkg",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-dachau-gmbh",
++		"name": "VHS Dachau GmbH",
++		"address": {
++			"street": "Dr.-Engert-Str. 4",
++			"postcode": "85221",
++			"city": "Dachau"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-dachau.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-deggendorfer-land-e-v",
++		"name": "VHS Deggendorfer Land e. V.",
++		"address": {
++			"street": "Amanstr. 11",
++			"postcode": "94469",
++			"city": "Deggendorf"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-deggendorf.de/",
++		"test_page_url": "https://www.vhs-deggendorf.de/der-einbuergerungstest",
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-der-gemeinden-im-landkreis-roth",
++		"name": "VHS der Gemeinden im Landkreis Roth",
++		"address": {
++			"street": "Maria-Dorothea-Str. 8",
++			"postcode": "91161",
++			"city": "Hilpoldstein"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-roth.de/",
++		"test_page_url": null,
++		"reader": "itemkg",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-der-stadt-landsberg-lech",
++		"name": "VHS der Stadt Landsberg/Lech",
++		"address": {
++			"street": "Hubert-von-Herkomer-Str. 110",
++			"postcode": "86899",
++			"city": "Landsberg am Lech"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.landsberg.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-der-stadt-schweinfurt",
++		"name": "VHS der Stadt Schweinfurt",
++		"address": {
++			"street": "Markt 1",
++			"postcode": "97421",
++			"city": "Schweinfurt"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.schweinfurt.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-des-landkreises-ansbach",
++		"name": "VHS des Landkreises Ansbach",
++		"address": {
++			"street": "Crailsheimstr. 1",
++			"postcode": "91522",
++			"city": "Ansbach"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-lkr-ansbach.de/",
++		"test_page_url": "https://vhs-lkr-ansbach.de/Artikel/cmx66d95c61bf49b.html",
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-des-landkreises-forchheim",
++		"name": "VHS des Landkreises Forchheim",
++		"address": {
++			"street": "Hornschuchallee 20",
++			"postcode": "91301",
++			"city": "Forchheim"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-forchheim.de/",
++		"test_page_url": null,
++		"reader": "itemkg",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-des-landkreises-wunsiedel",
++		"name": "VHS des Landkreises Wunsiedel",
++		"address": {
++			"street": "Jean-Paul-Str. 9",
++			"postcode": "95632",
++			"city": "Wunsiedel"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.landkreis-wunsiedel.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-des-lk-freyung-grafenau",
++		"name": "VHS des LK Freyung-Grafenau",
++		"address": {
++			"street": "Frauenberg 17",
++			"postcode": "94481",
++			"city": "Grafenau"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-freyung-grafenau.de/",
++		"test_page_url": "https://www.vhs-freyung-grafenau.de/programm/sprachen/einbuergerungstest.html",
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": "2026-10-27T07:09:40.207Z"
++	},
++	{
++		"centre_id": "vhs-dillingen-e-v",
++		"name": "VHS Dillingen e. V.",
++		"address": {
++			"street": "Königstraße 37/38",
++			"postcode": "89407",
++			"city": "Dillingen a. d. Donau"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.dillingen-donau.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-dingolfing-e-v",
++		"name": "VHS Dingolfing e. V.",
++		"address": {
++			"street": "Stadionstr. 50",
++			"postcode": "84130",
++			"city": "Dingolfing"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-dingolfing.de/",
++		"test_page_url": "https://vhs-dingolfing.de/test",
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": "2026-10-27T07:09:40.207Z"
++	},
++	{
++		"centre_id": "vhs-donauwoerth",
++		"name": "VHS Donauwörth",
++		"address": {
++			"street": "Spindeltal 5",
++			"postcode": "86609",
++			"city": "Donauwörth"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-don.de/",
++		"test_page_url": "https://www.vhs-don.de/einbuergerungstests",
++		"reader": "itemkg",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": "2026-10-27T07:09:40.207Z"
++	},
++	{
++		"centre_id": "vhs-ebersberger-land-grafing-bei-muenchen",
++		"name": "VHS Ebersberger Land / Grafing bei München",
++		"address": {
++			"street": "Griesstr. 27",
++			"postcode": "85567",
++			"city": "Grafing b. München"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-ebersberger-land.de/",
++		"test_page_url": "https://www.vhs-ebersberger-land.de/p/sprachen/deutsch/einbuergerungstests-649-CAT-KAT215",
++		"reader": "itemkg",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": "2026-10-27T07:09:40.207Z"
++	},
++	{
++		"centre_id": "vhs-erlangen",
++		"name": "VHS Erlangen",
++		"address": {
++			"street": "Friedrichstr. 19/21",
++			"postcode": "91054",
++			"city": "Erlangen"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.stadt.erlangen.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-f-d-landkreis-regensburg-e-v",
++		"name": "VHS f. d. Landkreis Regensburg e. V.",
++		"address": {
++			"street": "Pommernstr. 4",
++			"postcode": "93073",
++			"city": "Neutraubling"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-regensburg-land.de/",
++		"test_page_url": "https://www.vhs-regensburger-land.de/p/deutsch-schule/einbuergerungstest-647-CAT-KAT256",
++		"reader": "itemkg",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": "2026-10-27T07:09:40.207Z"
++	},
++	{
++		"centre_id": "vhs-fichtelgebirge",
++		"name": "VHS Fichtelgebirge",
++		"address": {
++			"street": "Ludwigsmühle 10",
++			"postcode": "95615",
++			"city": "Selb"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-fichtelgebirge.de/",
++		"test_page_url": null,
++		"reader": "itemkg",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-freising-e-v",
++		"name": "VHS Freising e.V.",
++		"address": {
++			"street": "Kammergasse 12",
++			"postcode": "85354",
++			"city": "Freising"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-freising.org/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-fuerth-ggmbh",
++		"name": "VHS Fürth gGmbH",
++		"address": {
++			"street": "Hirschenstr. 27/29",
++			"postcode": "90762",
++			"city": "Fürth"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-fuerth.de/",
++		"test_page_url": "https://www.vhs-fuerth.de/p/grundbildung/einbuergerungen/einbuergerungstest-33-fragen-477-CAT-KAT222",
++		"reader": "itemkg",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": "2026-10-27T07:09:40.207Z"
++	},
++	{
++		"centre_id": "vhs-garmisch-partenkirchen-e-v",
++		"name": "VHS Garmisch-Partenkirchen e.V.",
++		"address": {
++			"street": "Burgstr. 21",
++			"postcode": "82467",
++			"city": "Garmisch-Partenkirchen"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-gap.de/",
++		"test_page_url": "https://www.vhs-gap.de/infocenter/einbuergerungstest",
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-germering-e-v",
++		"name": "VHS Germering e.V.",
++		"address": {
++			"street": "Therese-Giehse-Platz 6",
++			"postcode": "82110",
++			"city": "Germering"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-germering.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-geschaeftsstelle-neufarn-hallbergmoos",
++		"name": "Mittelschule",
++		"address": {
++			"street": "Galgenbachweg  30",
++			"postcode": "85375",
++			"city": "Neufahrn bei Freising"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-neufahrn.de/",
++		"test_page_url": "https://vhs-neufahrn-hallbergmoos.de/Veranstaltung/cmx69a6c68d5ad43.html",
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": "2026-10-27T07:09:40.207Z"
++	},
++	{
++		"centre_id": "vhs-groebenzell-e-v",
++		"name": "VHS Gröbenzell e.V.",
++		"address": {
++			"street": "Rathausstr. 1",
++			"postcode": "82194",
++			"city": "Gröbenzell"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-groebenzell.de/",
++		"test_page_url": null,
++		"reader": "kuferweb",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-gunzenhausen-e-v",
++		"name": "VHS Gunzenhausen e.V.",
++		"address": {
++			"street": "Dr.-Martin-Luther-Platz 4",
++			"postcode": "91710",
++			"city": "Gunzenhausen"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-gunzenhausen.de/",
++		"test_page_url": "https://vhs-gunzenhausen.de/integration",
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": "2026-10-27T07:09:40.207Z"
++	},
++	{
++		"centre_id": "vhs-herrsching",
++		"name": "VHS Herrsching",
++		"address": {
++			"street": "Kienbachstr. 3",
++			"postcode": "82211",
++			"city": "Herrsching"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-herrsching.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-herzogenaurach",
++		"name": "VHS Herzogenaurach",
++		"address": {
++			"street": "Badgasse 4",
++			"postcode": "91074",
++			"city": "Herzogenaurach"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.herzogenaurach.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-im-ldkr-neumarkt-opf",
++		"name": "VHS im Ldkr. Neumarkt/Opf.",
++		"address": {
++			"street": "Gartenstr. 1",
++			"postcode": "92318",
++			"city": "Neumarkt i.d.OPf."
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-neumarkt.de/",
++		"test_page_url": null,
++		"reader": "kuferweb",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-im-norden-des-landkreises-muenchen",
++		"name": "VHS im Norden des Landkreises München",
++		"address": {
++			"street": "Telschowstraße 5-7",
++			"postcode": "85748",
++			"city": "Garching b. München"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-nord.de/",
++		"test_page_url": null,
++		"reader": "kuferweb",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-ingolstadt",
++		"name": "VHS Ingolstadt",
++		"address": {
++			"street": "Hallstr. 5",
++			"postcode": "85049",
++			"city": "Ingolstadt"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.ingolstadt.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-kaufbeuren-e-v",
++		"name": "VHS Kaufbeuren e.V.",
++		"address": {
++			"street": "Spitaltor 5",
++			"postcode": "87600",
++			"city": "Kaufbeuren"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-kaufbeuren.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-kaufering",
++		"name": "VHS Kaufering",
++		"address": {
++			"street": "Albert-Schweizer-Str.4a",
++			"postcode": "86916",
++			"city": "Kaufering"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.kaufering.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-kempten",
++		"name": "VHS Kempten",
++		"address": {
++			"street": "Bodmanstr. 2",
++			"postcode": "87435",
++			"city": "Kempten (Allgäu)"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-kempten.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-kreis-kronach-e-v",
++		"name": "VHS Kreis Kronach e.V.",
++		"address": {
++			"street": "Kulmbacher Str. 1",
++			"postcode": "96317",
++			"city": "Kronach"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-kronach.de/",
++		"test_page_url": "https://www.vhs-kronach.de/fachbereich/programmbereich/sprachen/einbuergerungstest",
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-landkreis-amberg-sulzbach",
++		"name": "VHS Landkreis Amberg-Sulzbach",
++		"address": {
++			"street": "Obere Gartenstr. 3",
++			"postcode": "92237",
++			"city": "Sulzbach-Rosenberg"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-as.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-landkreis-pfaffenhofen-a-d-ilm",
++		"name": "VHS Landkreis Pfaffenhofen a. d. Ilm",
++		"address": {
++			"street": "Ingolstädter Str. 3",
++			"postcode": "85276",
++			"city": "Pfaffenhofen"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.landratsamt-paf.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-landshut-e-v",
++		"name": "VHS Landshut e.V.",
++		"address": {
++			"street": "Ländgasse 41",
++			"postcode": "84028",
++			"city": "Landshut"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-landshut.de/",
++		"test_page_url": "https://www.vhs-landshut.de/kurse/sprachen-integration/pruefungen-einbuergerungstest",
++		"reader": "kuferweb",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": "2026-10-27T07:09:40.207Z"
++	},
++	{
++		"centre_id": "vhs-lindau",
++		"name": "VHS Lindau",
++		"address": {
++			"street": "Uferweg 7",
++			"postcode": "88131",
++			"city": "Lindau"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.lindau.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-lohr-gemuenden",
++		"name": "Stadt Lohr a.Main",
++		"address": {
++			"street": "Schlossplatz 3",
++			"postcode": "97816",
++			"city": "Lohr a. Main"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.lohr.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-mainburg-e-v",
++		"name": "VHS Mainburg e. V.",
++		"address": {
++			"street": "Mitterweg 8",
++			"postcode": "84048",
++			"city": "Mainburg"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-mainburg.de/",
++		"test_page_url": null,
++		"reader": "kuferweb",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-memmingen",
++		"name": "VHS Memmingen",
++		"address": {
++			"street": "Ulmer Str. 19",
++			"postcode": "87700",
++			"city": "Memmingen"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.memmingen.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-moosburg-e-v",
++		"name": "VHS Moosburg e.V.",
++		"address": {
++			"street": "Stadtplatz 2",
++			"postcode": "85368",
++			"city": "Moosburg"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-moosburg.de/",
++		"test_page_url": null,
++		"reader": "kuferweb",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-muehldorf-e-v",
++		"name": "VHS Mühldorf e. V.",
++		"address": {
++			"street": "Schlörstr. 1",
++			"postcode": "84453",
++			"city": "Mühldorf a. Inn"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-muehldorf.de/",
++		"test_page_url": null,
++		"reader": "kuferweb",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-neuburg-donau-e-v",
++		"name": "VHS Neuburg/Donau e.V.",
++		"address": {
++			"street": "Franziskanerstr. 200",
++			"postcode": "86633",
++			"city": "Neuburg"
++		},
++		"lat": null,
++		"lon": null,
++		"website": null,
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-oberland-e-v-holzkirchen",
++		"name": "VHS Oberland e.V. /Holzkirchen",
++		"address": {
++			"street": "Wallenburger Str. 16a",
++			"postcode": "83714",
++			"city": "Miesbach"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-oberland.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-oberschleissheim-e-v",
++		"name": "VHS Oberschleißheim e. V.",
++		"address": {
++			"street": "Theodor-Heuss-Str. 27",
++			"postcode": "85764",
++			"city": "Oberschleißheim"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-puchheim-e-v",
++		"name": "VHS Puchheim e.V.",
++		"address": {
++			"street": "Am Grünen Markt 7",
++			"postcode": "82178",
++			"city": "Puchheim"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-puchheim.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-rhoen-grabfeld-gemeinnuetzige-gmbh",
++		"name": "VHS Rhön-Grabfeld gemeinnützige GmbH",
++		"address": {
++			"street": "Marktplatz 2",
++			"postcode": "97638",
++			"city": "Mellrichstadt"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.die-vhs.de/",
++		"test_page_url": "https://die-vhs.de/Programmbereich/cmx6a2a986855055.html",
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": "2026-10-27T07:09:40.207Z"
++	},
++	{
++		"centre_id": "vhs-rieser-noerdlingen-e-v",
++		"name": "Stadtmuseum",
++		"address": {
++			"street": "Vordere Gerbergasse 1",
++			"postcode": "86720",
++			"city": "Nördlingen"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.noerdlingen.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-rosenheim",
++		"name": "VHS Rosenheim",
++		"address": {
++			"street": "Innsbrucker Str. 3",
++			"postcode": "83022",
++			"city": "Rosenheim"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.rosenheim.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-rottal-inn-west-geschaeftsstelle-eggenfelden",
++		"name": "VHS Rottal-Inn West, Geschäftsstelle Eggenfelden",
++		"address": {
++			"street": "Rathausplatz 1",
++			"postcode": "84307",
++			"city": "Eggenfelden"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-rottalinn-west.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-schrobenhausen-e-v",
++		"name": "VHS Schrobenhausen e.V.",
++		"address": {
++			"street": "Lenbachstraße 22",
++			"postcode": "86529",
++			"city": "Schrobenhausen"
++		},
++		"lat": null,
++		"lon": null,
++		"website": null,
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-schwabach",
++		"name": "VHS Schwabach",
++		"address": {
++			"street": "Königsplatz 29a",
++			"postcode": "91126",
++			"city": "Schwabach"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.schwabach.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-schwarzachtal",
++		"name": "VHS Schwarzachtal",
++		"address": {
++			"street": "Penzenhofener Str. 1",
++			"postcode": "90610",
++			"city": "Winkelhaid"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-schwarzachtal.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-stadt-fuerstenfeldbruck-e-v",
++		"name": "VHS Stadt Fürstenfeldbruck e.V.",
++		"address": {
++			"street": "Niederbronnerweg 5",
++			"postcode": "82256",
++			"city": "Fürstenfeldbruck"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-ffb.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-staedtedreieck-e-v",
++		"name": "VHS Städtedreieck e.V.",
++		"address": {
++			"street": "Bahnhofstr. 44",
++			"postcode": "93142",
++			"city": "Maxhütte-Haidhof"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-staedtedreieck.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-starnberger-see-e-v",
++		"name": "VHS Starnberger See e. V.",
++		"address": {
++			"street": "Bahnhofplatz 14",
++			"postcode": "82319",
++			"city": "Starnberg"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-starnberger-see.de/",
++		"test_page_url": null,
++		"reader": "itemkg",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-straubing-bogen",
++		"name": "VHS Straubing -Bogen",
++		"address": {
++			"street": "Klosterhof 2",
++			"postcode": "94327",
++			"city": "Bogen"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-bildungszentrum.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-straubing-ggmbh",
++		"name": "VHS Straubing gGmbH",
++		"address": {
++			"street": "Steinweg 56",
++			"postcode": "94315",
++			"city": "Straubing"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-straubing.de/",
++		"test_page_url": "https://www.vhs-straubing.de/p/sprachen/einbuergerungstest-563-CAT-KAT406",
++		"reader": "itemkg",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": "2026-10-27T07:09:40.207Z"
++	},
++	{
++		"centre_id": "vhs-taufkirchen",
++		"name": "VHS Taufkirchen",
++		"address": {
++			"street": "Ahornring 121",
++			"postcode": "82024",
++			"city": "Taufkirchen"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-taufkirchen.de/",
++		"test_page_url": "https://www.vhs-taufkirchen.de/kurse/integration-einbuergerung/einbuergerungstest",
++		"reader": "kuferweb",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-traunreut-e-v",
++		"name": "VHS Traunreut e. V.",
++		"address": {
++			"street": "Marienstr. 20",
++			"postcode": "83301",
++			"city": "Traunreut"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-traunreut.de/",
++		"test_page_url": null,
++		"reader": "kuferweb",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-traunstein-e-v",
++		"name": "VHS Traunstein e. V.",
++		"address": {
++			"street": "Stadtplatz 38a",
++			"postcode": "83278",
++			"city": "Traunstein"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-traunstein.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-trostberg-e-v",
++		"name": "VHS Trostberg e.V.",
++		"address": {
++			"street": "Heinrich-Braun-Str. 6",
++			"postcode": "83308",
++			"city": "Trostberg"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-trostberg.de/",
++		"test_page_url": null,
++		"reader": "kuferweb",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-unterhaching-e-v",
++		"name": "VHS Unterhaching e.V.",
++		"address": {
++			"street": "Jahnstr. 1",
++			"postcode": "82008",
++			"city": "Unterhaching"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-unterhaching.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-verband-landau-e-v",
++		"name": "VHS Verband Landau e.V.",
++		"address": {
++			"street": "Fleischgasse 60",
++			"postcode": "94405",
++			"city": "Landau"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-landau.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-vilsbiburg",
++		"name": "VHS Vilsbiburg",
++		"address": {
++			"street": "Stadtplatz 30",
++			"postcode": "84137",
++			"city": "Vilsbiburg"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-vilsbiburg.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-waldkraiburg-e-v",
++		"name": "vhs Kurszentrum",
++		"address": {
++			"street": "Graslitzer Str. 17",
++			"postcode": "84478",
++			"city": "Waldkraiburg"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-waldkraiburg.de/",
++		"test_page_url": "https://vhs-waldkraiburg.de/Veranstaltung/cmx69ccdf2327d8b.html",
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": "2026-10-27T07:09:40.207Z"
++	},
++	{
++		"centre_id": "vhs-wasserburg-inn-e-v",
++		"name": "VHS Wasserburg / Inn e.V.",
++		"address": {
++			"street": "Salzburger Str. 19",
++			"postcode": "83512",
++			"city": "Wasserburg a. Inn"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-wasserburg.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-weiden-neustadt-ggmbh-weiden-i-d-opf",
++		"name": "VHS Weiden-Neustadt gGmbH / Weiden i.d.Opf.",
++		"address": {
++			"street": "Luitpoldstr. 24",
++			"postcode": "92637",
++			"city": "Weiden i.d.OPf."
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-weiden-neustadt.de.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-weiterbildungsakademie-kehlheim-e-v",
++		"name": "vhs-Weiterbildungsakademie Kehlheim e.V.",
++		"address": {
++			"street": "Lederergasse 2",
++			"postcode": "93309",
++			"city": "Kelheim"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-weiterbildungsakademie.de/",
++		"test_page_url": null,
++		"reader": "itemkg",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-wuerzburg",
++		"name": "VHS Würzburg",
++		"address": {
++			"street": "Juliuspromenade 68",
++			"postcode": "97070",
++			"city": "Würzburg"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-wuerzburg.de/",
++		"test_page_url": null,
++		"reader": "itemkg",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "vhs-zv-unteres-pegnitztal",
++		"name": "VHS-ZV Unteres Pegnitztal",
++		"address": {
++			"street": "Spitalstraße 5",
++			"postcode": "91207",
++			"city": "Lauf"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-lauf.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "volksbildungswerk-pfarrkirchen",
++		"name": "Volksbildungswerk Pfarrkirchen",
++		"address": {
++			"street": "Stadtplatz 2",
++			"postcode": "84347",
++			"city": "Pfarrkirchen"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.pfarrkirchen.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "volkshochschule-arnstorf",
++		"name": "Volkshochschule Arnstorf",
++		"address": {
++			"street": "Marktplatz 8",
++			"postcode": "94424",
++			"city": "Arnstorf"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.arnstorf.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "volkshochschule-der-stadt-ansbach",
++		"name": "Volkshochschule der Stadt Ansbach",
++		"address": {
++			"street": "Kannenstraße 16",
++			"postcode": "91522",
++			"city": "Ansbach"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.ansbach.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "volkshochschule-der-stadt-regensburg",
++		"name": "Volkshochschule der Stadt Regensburg",
++		"address": {
++			"street": "Haidplatz 8",
++			"postcode": "93047",
++			"city": "Regensburg"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.regensburg.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "volkshochschule-der-stadt-selb",
++		"name": "Volkshochschule der Stadt Selb",
++		"address": {
++			"street": "Lessingstr. 8",
++			"postcode": "95100",
++			"city": "Selb"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-selb.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "volkshochschule-des-landkreises-tirschenreuth",
++		"name": "Volkshochschule des Landkreises Tirschenreuth",
++		"address": {
++			"street": "Mähringer Str. 9",
++			"postcode": "95643",
++			"city": "Tirschenreuth"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.tirschenreuth.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "volkshochschule-eching-e-v",
++		"name": "Volkshochschule Eching e.V.",
++		"address": {
++			"street": "Roßbergstr. 8",
++			"postcode": "85386",
++			"city": "Eching"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-eching-de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "volkshochschule-guenzburg",
++		"name": "Volkshochschule Günzburg",
++		"address": {
++			"street": "Bgm.-Landmann-Platz 2",
++			"postcode": "89312",
++			"city": "Günzburg"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-guenzburg.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "volkshochschule-hofer-land-e-v",
++		"name": "Volkshochschule Hofer Land e.V.",
++		"address": {
++			"street": "Ludwigstraße 7",
++			"postcode": "95028",
++			"city": "Hof"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-landkreis-hof.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "volkshochschule-im-landkreis-cham-e-v",
++		"name": "Volkshochschule im Landkreis Cham e.V.",
++		"address": {
++			"street": "Pfarrer-Seidl-Str. 1",
++			"postcode": "93413",
++			"city": "Cham"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-cham.de/",
++		"test_page_url": null,
++		"reader": "itemkg",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "volkshochschule-im-landkreis-unterallgaeu-e-v",
++		"name": "Volkshochschule im Landkreis Unterallgäu e.V.",
++		"address": {
++			"street": "Maximilianstr. 60",
++			"postcode": "87719",
++			"city": "Mindelheim"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-ua.de/",
++		"test_page_url": null,
++		"reader": "kuferweb",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "volkshochschule-karlstadt",
++		"name": "Volkshochschule Karlstadt",
++		"address": {
++			"street": "Langgasse 17",
++			"postcode": "97753",
++			"city": "Karlstadt"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-karlstadt.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "volkshochschule-kitzingen",
++		"name": "Volkshochschule Kitzingen",
++		"address": {
++			"street": "Paul-Eber-Haus, Schulhof 1",
++			"postcode": "97318",
++			"city": "Kitzingen"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.stadt-kitzingen.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "volkshochschule-rottenburg-an-der-laaber-e-v",
++		"name": "vhs Rottenburg, Raum 209",
++		"address": {
++			"street": "Georg-Pöschl-Str. 16, 2. Stock",
++			"postcode": "84056",
++			"city": "Rottenburg"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-rottenburg-laaber.de/",
++		"test_page_url": "https://www.vhs-rottenburg-laaber.de/kurssuche/kurs/Einbuergerungstest/R26+S32",
++		"reader": "kuferweb",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": "2026-10-27T07:09:40.207Z"
++	},
++	{
++		"centre_id": "volkshochschule-straubing-bogen-ggmbh",
++		"name": "Volkshochschule Straubing-Bogen gGmbH",
++		"address": {
++			"street": "Klosterhof 2",
++			"postcode": "94327",
++			"city": "Bogen"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-straubing-bogen.de/",
++		"test_page_url": null,
++		"reader": "kuferweb",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "volkshochschule-suedost-im-lkr-muenchen",
++		"name": "Volkshochschule Südost im Lkr. München",
++		"address": {
++			"street": "Haidgraben 1c",
++			"postcode": "85521",
++			"city": "Ottobrunn"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-suedost.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "wbb-gmbh",
++		"name": "wbb GmbH",
++		"address": {
++			"street": "Erdingerstraße 26",
++			"postcode": "85356",
++			"city": "Freising"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.wbb-kuchler.de/",
++		"test_page_url": null,
++		"reader": "none",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": null
++	},
++	{
++		"centre_id": "zweckverband-vhs-im-landkreis-erding",
++		"name": "Zweckverband VHS im Landkreis Erding",
++		"address": {
++			"street": "Lethnerstr. 13",
++			"postcode": "85435",
++			"city": "Erding"
++		},
++		"lat": null,
++		"lon": null,
++		"website": "https://www.vhs-erding.de/",
++		"test_page_url": "https://www.vhs-erding.de/p/deutsch-integration/pruefungen/einbuergerungstest-664-CAT-KAT329",
++		"reader": "itemkg",
++		"reader_config": null,
++		"opted_out": false,
++		"source": "rtpartner",
++		"verified_at": "2026-10-27T07:09:40.207Z"
++	}
++]
+diff --git a/data/directory/review-note.md b/data/directory/review-note.md
+new file mode 100644
+index 0000000..5214c6b
+--- /dev/null
++++ b/data/directory/review-note.md
+@@ -0,0 +1,375 @@
++# Directory review note
++
++## Source
++
++- Source URL: https://web.archive.org/web/20260416134258id_/https://www.rtpartner.de/immigration/einbuergerungstest-pruefstellen-bayern/
++- Source date: 2026-04-16 07:48
++- Seeded at: 2026-10-27T07:04:12.014Z
++- Rows seeded: 120
++
++## Verification run
++
++- Run at: 2026-10-27T07:09:40.207Z
++- Centres: 120
++- Verified: 20
++- Unverified: 100
++- Reader kuferweb: 16, itemkg: 20, none: 84
++- HTTP requests: 146 robots.txt, 165 pages (redirect hops counted)
++- Most page requests to one host: 3 (www.vhs-bamberg-land.de)
++- Every request sent User-Agent `bgtsearch-bot/0.1.0 (+https://esiak.github.io/testplatz/about/)`: yes
++
++## Changes
++
++### inlingua-sprachenschule-e-k
++
++- `test_page_url`: null → https://www.inlingua-ingolstadt.de/pruefungen/einbuergerungstests/
++- `verified_at`: null → 2026-10-27T07:09:40.207Z
++
++### kommunaler-zweckverband-der-volkshochschule-passau
++
++- `test_page_url`: null → https://www.vhs-passau.de/fachbereich//sprachen/deutsch-als-fremdsprache/einbuergerungstest
++- `verified_at`: null → 2026-10-27T07:09:40.207Z
++
++### muenchner-vhs-gmbh
++
++- `reader`: none → itemkg
++- `test_page_url`: null → https://www.mvhs.de/programm/info/sprachen/sprachpruefungen-und-zertifikate-einbuergerungstest
++
++### vhs-aichach-friedberg-e-v
++
++- `reader`: none → kuferweb
++- `test_page_url`: null → https://www.vhs-aichach-friedberg.de/programm/einbuergerungstest
++- `verified_at`: null → 2026-10-27T07:09:40.207Z
++
++### vhs-arberland
++
++- `reader`: none → itemkg
++
++### vhs-aschaffenburg
++
++- `reader`: none → kuferweb
++- `test_page_url`: null → https://www.vhs-aschaffenburg.de/kurse/deutsch-integration-grundbildung/einbuergerungstest
++
++### vhs-augsburg-e-v
++
++- `name`: VHS Augsburg e.V. → Volkshochschule Augsburg
++
++### vhs-bad-reichenhall
++
++- `reader`: none → itemkg
++- `test_page_url`: null → https://www.vhs-reichenhall.de/pruefungen-einbuergerungstest-und-deutsch
++- `verified_at`: null → 2026-10-27T07:09:40.207Z
++
++### vhs-bamberg
++
++- `reader`: none → itemkg
++
++### vhs-bamberg-land-e-v
++
++- `reader`: none → itemkg
++- `test_page_url`: null → https://www.vhs-bamberg-land.de/p/488-CAT-KAT4512071
++- `verified_at`: null → 2026-10-27T07:09:40.207Z
++
++### vhs-beilngries-e-v
++
++- `reader`: none → itemkg
++- `address.street`: Ringstr. 16 → Hauptstr. 47
++- `name`: VHS Beilngries e.V. → Spielzeugmuseum 1. OG}
++- `test_page_url`: null → https://www.vhs-beilngries.de/p/sprachen/deutsch-integration/einbuergerungstest-641-C-B3021
++- `verified_at`: null → 2026-10-27T07:09:40.207Z
++
++### vhs-burghausen-burgkirchen-e-v
++
++- `reader`: none → kuferweb
++
++### vhs-coburg-ggmbh
++
++- `reader`: none → itemkg
++
++### vhs-deggendorfer-land-e-v
++
++- `test_page_url`: null → https://www.vhs-deggendorf.de/der-einbuergerungstest
++
++### vhs-der-gemeinden-im-landkreis-roth
++
++- `reader`: none → itemkg
++
++### vhs-des-landkreises-ansbach
++
++- `test_page_url`: null → https://vhs-lkr-ansbach.de/Artikel/cmx66d95c61bf49b.html
++
++### vhs-des-landkreises-forchheim
++
++- `reader`: none → itemkg
++
++### vhs-des-lk-freyung-grafenau
++
++- `test_page_url`: null → https://www.vhs-freyung-grafenau.de/programm/sprachen/einbuergerungstest.html
++- `verified_at`: null → 2026-10-27T07:09:40.207Z
++
++### vhs-dingolfing-e-v
++
++- `test_page_url`: null → https://vhs-dingolfing.de/test
++- `verified_at`: null → 2026-10-27T07:09:40.207Z
++
++### vhs-donauwoerth
++
++- `reader`: none → itemkg
++- `test_page_url`: null → https://www.vhs-don.de/einbuergerungstests
++- `verified_at`: null → 2026-10-27T07:09:40.207Z
++
++### vhs-ebersberger-land-grafing-bei-muenchen
++
++- `reader`: none → itemkg
++- `test_page_url`: null → https://www.vhs-ebersberger-land.de/p/sprachen/deutsch/einbuergerungstests-649-CAT-KAT215
++- `verified_at`: null → 2026-10-27T07:09:40.207Z
++
++### vhs-f-d-landkreis-regensburg-e-v
++
++- `reader`: none → itemkg
++- `test_page_url`: null → https://www.vhs-regensburger-land.de/p/deutsch-schule/einbuergerungstest-647-CAT-KAT256
++- `verified_at`: null → 2026-10-27T07:09:40.207Z
++
++### vhs-fichtelgebirge
++
++- `reader`: none → itemkg
++
++### vhs-fuerth-ggmbh
++
++- `reader`: none → itemkg
++- `test_page_url`: null → https://www.vhs-fuerth.de/p/grundbildung/einbuergerungen/einbuergerungstest-33-fragen-477-CAT-KAT222
++- `verified_at`: null → 2026-10-27T07:09:40.207Z
++
++### vhs-garmisch-partenkirchen-e-v
++
++- `test_page_url`: null → https://www.vhs-gap.de/infocenter/einbuergerungstest
++
++### vhs-geschaeftsstelle-neufarn-hallbergmoos
++
++- `address.street`: Bahnhofstraße 32 → Galgenbachweg  30
++- `address.city`: Neufahrn → Neufahrn bei Freising
++- `name`: VHS Geschäftsstelle Neufarn-Hallbergmoos → Mittelschule
++- `test_page_url`: null → https://vhs-neufahrn-hallbergmoos.de/Veranstaltung/cmx69a6c68d5ad43.html
++- `verified_at`: null → 2026-10-27T07:09:40.207Z
++
++### vhs-groebenzell-e-v
++
++- `reader`: none → kuferweb
++
++### vhs-gunzenhausen-e-v
++
++- `test_page_url`: null → https://vhs-gunzenhausen.de/integration
++- `verified_at`: null → 2026-10-27T07:09:40.207Z
++
++### vhs-im-ldkr-neumarkt-opf
++
++- `reader`: none → kuferweb
++
++### vhs-im-norden-des-landkreises-muenchen
++
++- `reader`: none → kuferweb
++
++### vhs-kreis-kronach-e-v
++
++- `test_page_url`: null → https://www.vhs-kronach.de/fachbereich/programmbereich/sprachen/einbuergerungstest
++
++### vhs-landshut-e-v
++
++- `reader`: none → kuferweb
++- `test_page_url`: null → https://www.vhs-landshut.de/kurse/sprachen-integration/pruefungen-einbuergerungstest
++- `verified_at`: null → 2026-10-27T07:09:40.207Z
++
++### vhs-lohr-gemuenden
++
++- `address.street`: Ludwigstraße 16 → Schlossplatz 3
++- `name`: VHS Lohr-Gemünden → Stadt Lohr a.Main
++
++### vhs-mainburg-e-v
++
++- `reader`: none → kuferweb
++
++### vhs-moosburg-e-v
++
++- `reader`: none → kuferweb
++
++### vhs-muehldorf-e-v
++
++- `reader`: none → kuferweb
++
++### vhs-rhoen-grabfeld-gemeinnuetzige-gmbh
++
++- `test_page_url`: null → https://die-vhs.de/Programmbereich/cmx6a2a986855055.html
++- `verified_at`: null → 2026-10-27T07:09:40.207Z
++
++### vhs-rieser-noerdlingen-e-v
++
++- `address.street`: Marktplatz 20 → Vordere Gerbergasse 1
++- `name`: VHS Rieser Nördlingen e.V. → Stadtmuseum
++
++### vhs-starnberger-see-e-v
++
++- `reader`: none → itemkg
++
++### vhs-straubing-ggmbh
++
++- `reader`: none → itemkg
++- `test_page_url`: null → https://www.vhs-straubing.de/p/sprachen/einbuergerungstest-563-CAT-KAT406
++- `verified_at`: null → 2026-10-27T07:09:40.207Z
++
++### vhs-taufkirchen
++
++- `reader`: none → kuferweb
++- `test_page_url`: null → https://www.vhs-taufkirchen.de/kurse/integration-einbuergerung/einbuergerungstest
++
++### vhs-traunreut-e-v
++
++- `reader`: none → kuferweb
++
++### vhs-trostberg-e-v
++
++- `reader`: none → kuferweb
++
++### vhs-waldkraiburg-e-v
++
++- `address.street`: Am Kalander 1 → Graslitzer Str. 17
++- `name`: VHS Waldkraiburg e.V. → vhs Kurszentrum
++- `test_page_url`: null → https://vhs-waldkraiburg.de/Veranstaltung/cmx69ccdf2327d8b.html
++- `verified_at`: null → 2026-10-27T07:09:40.207Z
++
++### vhs-weiterbildungsakademie-kehlheim-e-v
++
++- `reader`: none → itemkg
++
++### vhs-wuerzburg
++
++- `reader`: none → itemkg
++
++### volkshochschule-im-landkreis-cham-e-v
++
++- `reader`: none → itemkg
++
++### volkshochschule-im-landkreis-unterallgaeu-e-v
++
++- `reader`: none → kuferweb
++
++### volkshochschule-rottenburg-an-der-laaber-e-v
++
++- `reader`: none → kuferweb
++- `address.street`: Georg-Pöschl-Straße 16 → Georg-Pöschl-Str. 16, 2. Stock
++- `address.city`: Rottenburg a.d.Laaber → Rottenburg
++- `name`: Volkshochschule Rottenburg an der Laaber e.V. → vhs Rottenburg, Raum 209
++- `test_page_url`: null → https://www.vhs-rottenburg-laaber.de/kurssuche/kurs/Einbuergerungstest/R26+S32
++- `verified_at`: null → 2026-10-27T07:09:40.207Z
++
++### volkshochschule-straubing-bogen-ggmbh
++
++- `reader`: none → kuferweb
++
++### zweckverband-vhs-im-landkreis-erding
++
++- `reader`: none → itemkg
++- `test_page_url`: null → https://www.vhs-erding.de/p/deutsch-integration/pruefungen/einbuergerungstest-664-CAT-KAT329
++- `verified_at`: null → 2026-10-27T07:09:40.207Z
++
++## Unverified
++
++- akademia-zentrum-fuer-kommunikation-und-bildung-gmbh (https://www.linguademia.de/): no test page link
++- anderwerk-deutschkurse (https://www.anderwerk.de/): no test page link
++- bayerisches-rotes-kreuz (https://www.brk-muenchen.de/): no test page link
++- berufliche-fortbildungszentren-der-bayerischen-wirtschaft (https://www.bfz.de/): no test page link
++- bildungszentrum-stadt-nuernberg (https://www.stadt.nuernberg.de/): no test page link
++- deutsche-angestellten-akademie-gmbh (https://www.daa.de/): no test page link
++- euro-bildungswerk-nuernberg-euro-schulen-nordbayern (https://www.eso.de/): no test page link
++- euro-schulen-aschaffenburg (https://www.eso.de/): no test page link
++- euro-schulen-nordbayern (https://www.eso.de/): no test page link
++- hilfe-von-mensch-zu-mensch (https://www.hvmzm.de/): robots-disallowed (robots.txt unavailable: network error)
++- inlingua-sprachschule-u-c-bernau-gmbh (https://www.inlingua-muenchen.de/): no test page link
++- ise-sprach-und-berufsbildungszentrum-gmbh (https://www.ise-berufsbildung.de/): no test page link
++- kolping-akademie-ingolstadt-ggmbh (https://www.kolping-ingolstadt.de/): no test page link
++- mas-sprachschule-muenchen (https://www.mas-sprachschule.de/): robots-disallowed (robots.txt unavailable: network error)
++- muenchner-vhs-gmbh (https://www.mvhs.de/): postcode not on site
++- oberallgaeuer-vhs (https://www.oa-vhs.de/): no test page link
++- vhs-alt-neuoetting-und-toeging-e-v (no website): no website
++- vhs-arberland (https://www.vhs-arberland.de/): no test page link
++- vhs-aschaffenburg (https://www.vhs-aschaffenburg.de/): postcode not on site
++- vhs-augsburg-e-v (https://www.vhs-augsburg.de/): no test page link
++- vhs-bad-kisingen-und-hammelburg (https://www.vhs-kisshab,de/): robots-disallowed (robots.txt unavailable: network error)
++- vhs-bamberg (https://www.vhs-bamberg.de/): no test page link
++- vhs-bayreuth (https://www.stadt.bayreuth.de/): robots-disallowed (robots.txt unavailable: network error)
++- vhs-buchloe-e-v (https://www.vhs-buchloe.de/): no test page link
++- vhs-burghausen-burgkirchen-e-v (https://www.vhs-burghausen.de/): no test page link
++- vhs-coburg-ggmbh (https://www.vhs-coburg.de/): no test page link
++- vhs-dachau-gmbh (https://www.vhs-dachau.de/): no test page link
++- vhs-deggendorfer-land-e-v (https://www.vhs-deggendorf.de/): postcode not on site
++- vhs-der-gemeinden-im-landkreis-roth (https://www.vhs-roth.de/): no test page link
++- vhs-der-stadt-landsberg-lech (https://www.landsberg.de/): no test page link
++- vhs-der-stadt-schweinfurt (https://www.schweinfurt.de/): no test page link
++- vhs-des-landkreises-ansbach (https://www.vhs-lkr-ansbach.de/): postcode not on site
++- vhs-des-landkreises-forchheim (https://www.vhs-forchheim.de/): no test page link
++- vhs-des-landkreises-wunsiedel (https://www.landkreis-wunsiedel.de/): no test page link
++- vhs-dillingen-e-v (https://www.dillingen-donau.de/): no test page link
++- vhs-erlangen (https://www.stadt.erlangen.de/): robots-disallowed (robots.txt unavailable: network error)
++- vhs-fichtelgebirge (https://www.vhs-fichtelgebirge.de/): no test page link
++- vhs-freising-e-v (https://www.vhs-freising.org/): no test page link
++- vhs-garmisch-partenkirchen-e-v (https://www.vhs-gap.de/): postcode not on site
++- vhs-germering-e-v (https://www.vhs-germering.de/): no test page link
++- vhs-groebenzell-e-v (https://www.vhs-groebenzell.de/): no test page link
++- vhs-herrsching (https://www.vhs-herrsching.de/): unreachable: http-error 403
++- vhs-herzogenaurach (https://www.herzogenaurach.de/): no test page link
++- vhs-im-ldkr-neumarkt-opf (https://www.vhs-neumarkt.de/): no test page link
++- vhs-im-norden-des-landkreises-muenchen (https://www.vhs-nord.de/): no test page link
++- vhs-ingolstadt (https://www.ingolstadt.de/): no test page link
++- vhs-kaufbeuren-e-v (https://www.vhs-kaufbeuren.de/): no test page link
++- vhs-kaufering (https://www.kaufering.de/): no test page link
++- vhs-kempten (https://www.vhs-kempten.de/): no test page link
++- vhs-kreis-kronach-e-v (https://www.vhs-kronach.de/): postcode not on site
++- vhs-landkreis-amberg-sulzbach (https://www.vhs-as.de/): no test page link
++- vhs-landkreis-pfaffenhofen-a-d-ilm (https://www.landratsamt-paf.de/): robots-disallowed (robots.txt unavailable: network error)
++- vhs-lindau (https://www.lindau.de/): no test page link
++- vhs-lohr-gemuenden (https://www.lohr.de/): no test page link
++- vhs-mainburg-e-v (https://www.vhs-mainburg.de/): no test page link
++- vhs-memmingen (https://www.memmingen.de/): no test page link
++- vhs-moosburg-e-v (https://www.vhs-moosburg.de/): no test page link
++- vhs-muehldorf-e-v (https://www.vhs-muehldorf.de/): no test page link
++- vhs-neuburg-donau-e-v (no website): no website
++- vhs-oberland-e-v-holzkirchen (https://www.vhs-oberland.de/): no test page link
++- vhs-oberschleissheim-e-v (https://www.vhs.de/): robots-disallowed (robots.txt unavailable: network error)
++- vhs-puchheim-e-v (https://www.vhs-puchheim.de/): no test page link
++- vhs-rieser-noerdlingen-e-v (https://www.noerdlingen.de/): no test page link
++- vhs-rosenheim (https://www.rosenheim.de/): no test page link
++- vhs-rottal-inn-west-geschaeftsstelle-eggenfelden (https://www.vhs-rottalinn-west.de/): robots-disallowed (robots.txt unavailable: network error)
++- vhs-schrobenhausen-e-v (no website): no website
++- vhs-schwabach (https://www.schwabach.de/): no test page link
++- vhs-schwarzachtal (https://www.vhs-schwarzachtal.de/): no test page link
++- vhs-stadt-fuerstenfeldbruck-e-v (https://www.vhs-ffb.de/): no test page link
++- vhs-staedtedreieck-e-v (https://www.vhs-staedtedreieck.de/): no test page link
++- vhs-starnberger-see-e-v (https://www.vhs-starnberger-see.de/): no test page link
++- vhs-straubing-bogen (https://www.vhs-bildungszentrum.de/): robots-disallowed (robots.txt unavailable: network error)
++- vhs-taufkirchen (https://www.vhs-taufkirchen.de/): postcode not on site
++- vhs-traunreut-e-v (https://www.vhs-traunreut.de/): no test page link
++- vhs-traunstein-e-v (https://www.vhs-traunstein.de/): robots-disallowed (robots.txt unavailable: network error)
++- vhs-trostberg-e-v (https://www.vhs-trostberg.de/): no test page link
++- vhs-unterhaching-e-v (https://www.vhs-unterhaching.de/): no test page link
++- vhs-verband-landau-e-v (https://www.vhs-landau.de/): no test page link
++- vhs-vilsbiburg (https://www.vhs-vilsbiburg.de/): no test page link
++- vhs-wasserburg-inn-e-v (https://www.vhs-wasserburg.de/): no test page link
++- vhs-weiden-neustadt-ggmbh-weiden-i-d-opf (https://www.vhs-weiden-neustadt.de.de/): robots-disallowed (robots.txt unavailable: network error)
++- vhs-weiterbildungsakademie-kehlheim-e-v (https://www.vhs-weiterbildungsakademie.de/): no test page link
++- vhs-wuerzburg (https://www.vhs-wuerzburg.de/): no test page link
++- vhs-zv-unteres-pegnitztal (https://www.vhs-lauf.de/): robots-disallowed (robots.txt unavailable: network error)
++- volksbildungswerk-pfarrkirchen (https://www.pfarrkirchen.de/): no test page link
++- volkshochschule-arnstorf (https://www.arnstorf.de/): no test page link
++- volkshochschule-der-stadt-ansbach (https://www.ansbach.de/): no test page link
++- volkshochschule-der-stadt-regensburg (https://www.regensburg.de/): no test page link
++- volkshochschule-der-stadt-selb (https://www.vhs-selb.de/): robots-disallowed (robots.txt unavailable: network error)
++- volkshochschule-des-landkreises-tirschenreuth (https://www.tirschenreuth.de/): robots-disallowed (robots.txt unavailable: network error)
++- volkshochschule-eching-e-v (https://www.vhs-eching-de/): robots-disallowed (robots.txt unavailable: network error)
++- volkshochschule-guenzburg (https://www.vhs-guenzburg.de/): no test page link
++- volkshochschule-hofer-land-e-v (https://www.vhs-landkreis-hof.de/): robots-disallowed (robots.txt unavailable: network error)
++- volkshochschule-im-landkreis-cham-e-v (https://www.vhs-cham.de/): no test page link
++- volkshochschule-im-landkreis-unterallgaeu-e-v (https://www.vhs-ua.de/): no test page link
++- volkshochschule-karlstadt (https://www.vhs-karlstadt.de/): no test page link
++- volkshochschule-kitzingen (https://www.stadt-kitzingen.de/): no test page link
++- volkshochschule-straubing-bogen-ggmbh (https://www.vhs-straubing-bogen.de/): no test page link
++- volkshochschule-suedost-im-lkr-muenchen (https://www.vhs-suedost.de/): no test page link
++- wbb-gmbh (https://www.wbb-kuchler.de/): no test page link
+diff --git a/package.json b/package.json
+index c9da5d2..fd6adc7 100644
+--- a/package.json
++++ b/package.json
+@@ -8,7 +8,10 @@
+ 		"build": "vite build",
+ 		"preview": "vite preview",
+ 		"test": "vitest run",
+-		"typecheck": "tsc --noEmit"
++		"typecheck": "tsc --noEmit",
++		"seed:directory": "node tools/seed-directory.ts",
++		"verify:directory": "node tools/verify-directory.ts",
++		"check:directory": "node tools/check-directory.ts"
+ 	},
+ 	"dependencies": {
+ 		"cheerio": "~1.2.0",
+diff --git a/pipeline/config.ts b/pipeline/config.ts
+index e1fdc45..7b679e1 100644
+--- a/pipeline/config.ts
++++ b/pipeline/config.ts
+@@ -8,3 +8,9 @@ export const ABOUT_URL = `${SITE_URL}about/`;
+ 
+ /** Identified User-Agent for every outbound request (AD-5). */
+ export const USER_AGENT = `bgtsearch-bot/${pkg.version} (+${ABOUT_URL})`;
++
++/** Default pause between two requests to the same host (pipeline/fetch). */
++export const FETCH_DELAY_MS = 2000;
++
++/** Default per-request timeout, covering headers and body (pipeline/fetch). */
++export const FETCH_TIMEOUT_MS = 20000;
+diff --git a/pipeline/fetch/.gitkeep b/pipeline/fetch/.gitkeep
+deleted file mode 100644
+index e69de29..0000000
+diff --git a/pipeline/fetch/decode.ts b/pipeline/fetch/decode.ts
+new file mode 100644
+index 0000000..304b685
+--- /dev/null
++++ b/pipeline/fetch/decode.ts
+@@ -0,0 +1,29 @@
++/** Body decoding: Content-Type charset, else an HTML meta charset in the first 1024 bytes, else UTF-8. */
++
++const CHARSET_PARAM = /charset\s*=\s*["']?([\w.:-]+)/i;
++const META_CHARSET = /<meta[^>]+charset\s*=\s*["']?([\w.:-]+)/i;
++
++/** The charset label in a Content-Type header value, or null. */
++export const charsetFromContentType = (contentType: string | null): string | null =>
++	contentType?.match(CHARSET_PARAM)?.[1] ?? null;
++
++/** A charset declared by `<meta charset>` or `<meta http-equiv content="…charset=…">` in the first 1024 bytes. */
++export function charsetFromMeta(bytes: Uint8Array): string | null {
++	const head = new TextDecoder('latin1').decode(bytes.subarray(0, 1024));
++	return head.match(META_CHARSET)?.[1] ?? null;
++}
++
++function decoderFor(label: string | null): TextDecoder | null {
++	if (label === null) return null;
++	try {
++		return new TextDecoder(label);
++	} catch {
++		return null;
++	}
++}
++
++export function decodeBody(bytes: Uint8Array, contentType: string | null): string {
++	const decoder =
++		decoderFor(charsetFromContentType(contentType)) ?? decoderFor(charsetFromMeta(bytes)) ?? new TextDecoder('utf-8');
++	return decoder.decode(bytes);
++}
+diff --git a/pipeline/fetch/index.ts b/pipeline/fetch/index.ts
+new file mode 100644
+index 0000000..45c5fef
+--- /dev/null
++++ b/pipeline/fetch/index.ts
+@@ -0,0 +1,183 @@
++import { FETCH_DELAY_MS, FETCH_TIMEOUT_MS, USER_AGENT } from '../config.ts';
++import { decodeBody } from './decode.ts';
++import { ALLOW_ALL, DISALLOW_ALL, parseRobots, type RobotsRules } from './robots.ts';
++
++/**
++ * The one polite HTTP client for all outbound requests (AD-5). One client = one run:
++ * robots.txt is fetched once per origin, requests to one host run one at a time with a delay
++ * between them, and redirects are followed here so every hop gets the same rules.
++ */
++
++export type FetchFailureReason = 'robots-disallowed' | 'timeout' | 'network-error' | 'http-error' | 'too-many-redirects';
++
++export interface FetchSuccess {
++	ok: true;
++	status: number;
++	url: string;
++	contentType: string | null;
++	text: string;
++}
++
++export interface FetchFailure {
++	ok: false;
++	reason: FetchFailureReason;
++	url: string;
++	status: number | null;
++}
++
++export type FetchResult = FetchSuccess | FetchFailure;
++
++export type FetchImpl = (url: string, init: RequestInit) => Promise<Response>;
++
++export interface FetchClientOptions {
++	userAgent?: string;
++	delayMs?: number;
++	timeoutMs?: number;
++	fetchImpl?: FetchImpl;
++	sleep?: (ms: number) => Promise<void>;
++}
++
++export interface FetchClient {
++	get(url: string): Promise<FetchResult>;
++}
++
++export const MAX_REDIRECTS = 5;
++
++/** The platform fetch, for callers that wrap the client's transport (e.g. to count requests). */
++export const nativeFetch: FetchImpl = (url, init) => globalThis.fetch(url, init);
++
++const defaultSleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
++
++type RawResult =
++	| { kind: 'response'; status: number; location: string | null; contentType: string | null; bytes: Uint8Array }
++	| { kind: 'error'; reason: 'timeout' | 'network-error' };
++
++const isRedirect = (status: number): boolean => [301, 302, 303, 307, 308].includes(status);
++
++export function createFetchClient(options: FetchClientOptions = {}): FetchClient {
++	const userAgent = options.userAgent ?? USER_AGENT;
++	const delayMs = options.delayMs ?? FETCH_DELAY_MS;
++	const timeoutMs = options.timeoutMs ?? FETCH_TIMEOUT_MS;
++	const fetchImpl = options.fetchImpl ?? nativeFetch;
++	const sleep = options.sleep ?? defaultSleep;
++
++	/** Per host: the tail of its request chain and whether it has been contacted yet. */
++	const queues = new Map<string, { tail: Promise<unknown>; used: boolean }>();
++	/** Per robots.txt URL: the parsed rules, fetched once. */
++	const robots = new Map<string, Promise<RobotsRules>>();
++
++	/** Runs one request to `host` after every earlier one has finished, `delayMs` apart. */
++	function enqueue<T>(host: string, task: () => Promise<T>): Promise<T> {
++		let queue = queues.get(host);
++		if (!queue) {
++			queue = { tail: Promise.resolve(), used: false };
++			queues.set(host, queue);
++		}
++		const state = queue;
++		const run = state.tail.then(async () => {
++			if (state.used) await sleep(delayMs);
++			state.used = true;
++			return task();
++		});
++		state.tail = run.catch(() => undefined);
++		return run;
++	}
++
++	/** One HTTP request, no redirect following; the timeout covers headers and body. */
++	function request(url: URL): Promise<RawResult> {
++		return enqueue(url.host, async () => {
++			const controller = new AbortController();
++			const timer = setTimeout(() => controller.abort(), timeoutMs);
++			try {
++				const response = await fetchImpl(url.href, {
++					redirect: 'manual',
++					signal: controller.signal,
++					headers: { 'User-Agent': userAgent },
++				});
++				const bytes = new Uint8Array(await response.arrayBuffer());
++				return {
++					kind: 'response' as const,
++					status: response.status,
++					location: response.headers.get('location'),
++					contentType: response.headers.get('content-type'),
++					bytes,
++				};
++			} catch {
++				return { kind: 'error' as const, reason: controller.signal.aborted ? 'timeout' : 'network-error' };
++			} finally {
++				clearTimeout(timer);
++			}
++		});
++	}
++
++	/**
++	 * The rules served at one robots.txt URL: 2xx → parsed, 4xx → allow all, anything else →
++	 * disallow all. Redirects are followed (max 5); every robots.txt URL is requested at most
++	 * once per client, so origins that redirect to the same place share one fetch.
++	 */
++	function robotsAt(target: URL, hops: number): Promise<RobotsRules> {
++		let rules = robots.get(target.href);
++		if (!rules) {
++			rules = (async () => {
++				const raw = await request(target);
++				if (raw.kind === 'error') return DISALLOW_ALL;
++				if (isRedirect(raw.status) && raw.location !== null) {
++					if (hops >= MAX_REDIRECTS || !URL.canParse(raw.location, target)) return DISALLOW_ALL;
++					const next = new URL(raw.location, target);
++					next.hash = '';
++					return robotsAt(next, hops + 1);
++				}
++				if (raw.status >= 200 && raw.status < 300) return parseRobots(decodeBody(raw.bytes, raw.contentType));
++				if (raw.status >= 400 && raw.status < 500) return ALLOW_ALL;
++				return DISALLOW_ALL;
++			})();
++			robots.set(target.href, rules);
++		}
++		return rules;
++	}
++
++	const robotsFor = (origin: string): Promise<RobotsRules> => robotsAt(new URL('/robots.txt', origin), 0);
++
++	async function get(url: string): Promise<FetchResult> {
++		if (!URL.canParse(url)) return { ok: false, reason: 'network-error', url, status: null };
++		let current = new URL(url);
++		current.hash = '';
++
++		for (let redirects = 0; ; redirects++) {
++			if (current.protocol !== 'http:' && current.protocol !== 'https:') {
++				return { ok: false, reason: 'network-error', url: current.href, status: null };
++			}
++			const rules = await robotsFor(current.origin);
++			if (!rules.isAllowed(current.pathname + current.search)) {
++				return { ok: false, reason: 'robots-disallowed', url: current.href, status: null };
++			}
++
++			const raw = await request(current);
++			if (raw.kind === 'error') return { ok: false, reason: raw.reason, url: current.href, status: null };
++
++			if (isRedirect(raw.status) && raw.location !== null) {
++				if (redirects >= MAX_REDIRECTS) {
++					return { ok: false, reason: 'too-many-redirects', url: current.href, status: raw.status };
++				}
++				if (!URL.canParse(raw.location, current)) {
++					return { ok: false, reason: 'network-error', url: current.href, status: raw.status };
++				}
++				current = new URL(raw.location, current);
++				current.hash = '';
++				continue;
++			}
++			if (raw.status < 200 || raw.status >= 300) {
++				return { ok: false, reason: 'http-error', url: current.href, status: raw.status };
++			}
++			return {
++				ok: true,
++				status: raw.status,
++				url: current.href,
++				contentType: raw.contentType,
++				text: decodeBody(raw.bytes, raw.contentType),
++			};
++		}
++	}
++
++	return { get };
++}
+diff --git a/pipeline/fetch/robots.ts b/pipeline/fetch/robots.ts
+new file mode 100644
+index 0000000..543e151
+--- /dev/null
++++ b/pipeline/fetch/robots.ts
+@@ -0,0 +1,85 @@
++/** robots.txt parsing and matching (RFC 9309 subset: groups, Allow/Disallow, `*` and `$`). */
++
++export const BOT_TOKEN = 'bgtsearch-bot';
++
++interface Rule {
++	allow: boolean;
++	pattern: string;
++	regex: RegExp;
++}
++
++export interface RobotsRules {
++	/** True when `pathAndQuery` (e.g. `/kurse?x=1`) may be requested. */
++	isAllowed(pathAndQuery: string): boolean;
++}
++
++export const ALLOW_ALL: RobotsRules = { isAllowed: () => true };
++export const DISALLOW_ALL: RobotsRules = { isAllowed: () => false };
++
++function toRegex(pattern: string): RegExp {
++	const anchored = pattern.endsWith('$');
++	const body = anchored ? pattern.slice(0, -1) : pattern;
++	const source = body
++		.split('*')
++		.map((part) => part.replace(/[.+?^${}()|[\]\\/]/g, '\\$&'))
++		.join('.*');
++	return new RegExp(`^${source}${anchored ? '$' : ''}`);
++}
++
++interface Group {
++	agents: string[];
++	rules: Rule[];
++}
++
++/** Parses robots.txt and returns the rules that apply to `token` (its own groups win over `*`). */
++export function parseRobots(text: string, token: string = BOT_TOKEN): RobotsRules {
++	const groups: Group[] = [];
++	let current: Group | null = null;
++	let lastWasAgent = false;
++
++	for (const rawLine of text.split(/\r\n|\r|\n/)) {
++		const line = rawLine.replace(/#.*$/, '').trim();
++		const colon = line.indexOf(':');
++		if (colon < 0) continue;
++		const key = line.slice(0, colon).trim().toLowerCase();
++		const value = line.slice(colon + 1).trim();
++
++		if (key === 'user-agent') {
++			if (!lastWasAgent || current === null) {
++				current = { agents: [], rules: [] };
++				groups.push(current);
++			}
++			current.agents.push(value.toLowerCase());
++			lastWasAgent = true;
++			continue;
++		}
++		lastWasAgent = false;
++		if ((key === 'allow' || key === 'disallow') && current !== null) {
++			// An empty Disallow allows everything; it adds no rule.
++			if (value === '') continue;
++			current.rules.push({ allow: key === 'allow', pattern: value, regex: toRegex(value) });
++		}
++	}
++
++	const lower = token.toLowerCase();
++	const own = groups.filter((g) => g.agents.includes(lower));
++	const chosen = own.length > 0 ? own : groups.filter((g) => g.agents.includes('*'));
++	const rules = chosen.flatMap((g) => g.rules);
++
++	return {
++		isAllowed(pathAndQuery: string): boolean {
++			let best: Rule | null = null;
++			for (const rule of rules) {
++				if (!rule.regex.test(pathAndQuery)) continue;
++				if (
++					best === null ||
++					rule.pattern.length > best.pattern.length ||
++					(rule.pattern.length === best.pattern.length && rule.allow && !best.allow)
++				) {
++					best = rule;
++				}
++			}
++			return best === null || best.allow;
++		},
++	};
++}
+diff --git a/shared/.gitkeep b/shared/.gitkeep
+deleted file mode 100644
+index e69de29..0000000
+diff --git a/shared/directory.ts b/shared/directory.ts
+new file mode 100644
+index 0000000..510a00b
+--- /dev/null
++++ b/shared/directory.ts
+@@ -0,0 +1,102 @@
++import { z } from 'zod';
++
++/** Reader systems a centre can be read with. `none` = not read automatically. */
++export const READERS = ['kuferweb', 'itemkg', 'none'] as const;
++export type Reader = (typeof READERS)[number];
++
++/** Where a directory entry came from. */
++export const SOURCES = ['rtpartner'] as const;
++
++export const CENTRE_ID_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
++
++const isHttpUrl = (value: string): boolean => {
++	if (!URL.canParse(value)) return false;
++	const { protocol } = new URL(value);
++	return protocol === 'http:' || protocol === 'https:';
++};
++
++const httpUrl = z.string().refine(isHttpUrl, { message: 'must be an http(s) URL' });
++
++export const addressSchema = z.strictObject({
++	street: z.string().min(1),
++	postcode: z.string().regex(/^\d{5}$/, { message: 'must be 5 digits' }),
++	city: z.string().min(1),
++});
++
++export const readerConfigSchema = z.strictObject({ list_url: httpUrl });
++
++export const centreSchema = z
++	.strictObject({
++		centre_id: z.string().regex(CENTRE_ID_PATTERN, { message: 'must be a lowercase slug' }),
++		name: z.string().min(1),
++		address: addressSchema,
++		lat: z.number().nullable(),
++		lon: z.number().nullable(),
++		website: httpUrl.nullable(),
++		test_page_url: httpUrl.nullable(),
++		reader: z.enum(READERS),
++		reader_config: readerConfigSchema.nullable(),
++		opted_out: z.boolean(),
++		source: z.enum(SOURCES),
++		verified_at: z.iso.datetime().nullable(),
++	})
++	.superRefine((centre, ctx) => {
++		if ((centre.lat === null) !== (centre.lon === null)) {
++			ctx.addIssue({
++				code: 'custom',
++				path: [centre.lat === null ? 'lat' : 'lon'],
++				message: 'lat and lon must both be numbers or both be null',
++			});
++		}
++		if (centre.reader === 'none' && centre.reader_config !== null) {
++			ctx.addIssue({ code: 'custom', path: ['reader_config'], message: 'must be null when reader is "none"' });
++		}
++	});
++
++export const directorySchema = z.array(centreSchema).superRefine((centres, ctx) => {
++	const seen = new Set<string>();
++	centres.forEach((centre, index) => {
++		if (seen.has(centre.centre_id)) {
++			ctx.addIssue({
++				code: 'custom',
++				path: [index, 'centre_id'],
++				message: `duplicate centre_id "${centre.centre_id}"`,
++			});
++		}
++		seen.add(centre.centre_id);
++	});
++});
++
++export type Address = z.infer<typeof addressSchema>;
++export type Centre = z.infer<typeof centreSchema>;
++export type Directory = z.infer<typeof directorySchema>;
++
++const SLUG_MAX = 60;
++
++/** Lowercase ASCII slug: ä→ae ö→oe ü→ue ß→ss, other accents stripped, the rest → `-`. */
++export function slugify(text: string): string {
++	let slug = text
++		.toLowerCase()
++		.replace(/ä/g, 'ae')
++		.replace(/ö/g, 'oe')
++		.replace(/ü/g, 'ue')
++		.replace(/ß/g, 'ss')
++		.normalize('NFD')
++		.replace(/\p{M}/gu, '')
++		.replace(/[^a-z0-9]+/g, '-')
++		.replace(/^-+|-+$/g, '');
++	if (slug.length > SLUG_MAX) {
++		const cut = slug.slice(0, SLUG_MAX + 1);
++		const lastDash = cut.lastIndexOf('-');
++		slug = (lastDash > 0 ? cut.slice(0, lastDash) : cut.slice(0, SLUG_MAX)).replace(/-+$/, '');
++	}
++	return slug;
++}
++
++/** Sorted by `centre_id`, the order the directory file is kept in. */
++export const sortDirectory = (centres: readonly Centre[]): Centre[] =>
++	[...centres].sort((a, b) => (a.centre_id < b.centre_id ? -1 : a.centre_id > b.centre_id ? 1 : 0));
++
++/** The canonical file text: sorted, tab-indented, trailing newline. */
++export const serializeDirectory = (centres: readonly Centre[]): string =>
++	`${JSON.stringify(sortDirectory(centres), null, '\t')}\n`;
+diff --git a/tests/directory.test.ts b/tests/directory.test.ts
+new file mode 100644
+index 0000000..8a2bed0
+--- /dev/null
++++ b/tests/directory.test.ts
+@@ -0,0 +1,148 @@
++import { spawnSync } from 'node:child_process';
++import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
++import { tmpdir } from 'node:os';
++import { join } from 'node:path';
++import { fileURLToPath } from 'node:url';
++import { describe, expect, it } from 'vitest';
++import { centreSchema, directorySchema, serializeDirectory, slugify, type Centre } from '../shared/directory.ts';
++import { checkDirectoryText } from '../tools/check-directory.ts';
++
++const repoRoot = fileURLToPath(new URL('..', import.meta.url));
++
++const centre = (overrides: Partial<Centre> = {}): Centre => ({
++	centre_id: 'vhs-fuerth',
++	name: 'VHS Fürth gGmbH',
++	address: { street: 'Hirschenstr. 27/29', postcode: '90762', city: 'Fürth' },
++	lat: null,
++	lon: null,
++	website: 'https://www.vhs-fuerth.de/',
++	test_page_url: null,
++	reader: 'none',
++	reader_config: null,
++	opted_out: false,
++	source: 'rtpartner',
++	verified_at: null,
++	...overrides,
++});
++
++describe('centreSchema', () => {
++	it('accepts a seeded entry and a fully verified one', () => {
++		expect(centreSchema.safeParse(centre()).success).toBe(true);
++		const verified = centre({
++			lat: 49.47,
++			lon: 10.99,
++			test_page_url: 'https://www.vhs-fuerth.de/einbuergerungstest',
++			reader: 'itemkg',
++			reader_config: { list_url: 'https://www.vhs-fuerth.de/p/x-123-CAT-KAT1' },
++			verified_at: '2026-10-27T08:00:00.000Z',
++		});
++		expect(centreSchema.safeParse(verified).success).toBe(true);
++	});
++
++	it.each([
++		['an unknown reader', { reader: 'foo' }, 'reader'],
++		['a reader_config with reader none', { reader_config: { list_url: 'https://x.de/' } }, 'reader_config'],
++		['lat without lon', { lat: 48.1 }, 'lon'],
++		['a bad postcode', { address: { street: 'A 1', postcode: '9076', city: 'Fürth' } }, 'address.postcode'],
++		['a non-http website', { website: 'ftp://x.de/' }, 'website'],
++		['a non-UTC verified_at', { verified_at: '2026-10-27T08:00:00+02:00' }, 'verified_at'],
++		['an id that is not a slug', { centre_id: 'VHS_Fürth' }, 'centre_id'],
++		['a non-strict reader_config', { reader: 'kuferweb', reader_config: { list_url: 'https://x.de/', extra: 1 } }, 'reader_config'],
++	])('rejects %s', (_, overrides, field) => {
++		const result = centreSchema.safeParse({ ...centre(), ...overrides });
++		expect(result.success).toBe(false);
++		expect(result.error!.issues.map((i) => i.path.join('.'))).toContain(field);
++	});
++
++	it('rejects unknown keys and missing keys', () => {
++		expect(centreSchema.safeParse({ ...centre(), phone: '0911' }).success).toBe(false);
++		const { verified_at: _, ...missing } = centre();
++		expect(centreSchema.safeParse(missing).success).toBe(false);
++	});
++});
++
++describe('directorySchema', () => {
++	it('fails on a duplicate id and names it', () => {
++		const result = directorySchema.safeParse([centre(), centre()]);
++		expect(result.success).toBe(false);
++		expect(result.error!.issues[0]!.message).toContain('vhs-fuerth');
++		expect(result.error!.issues[0]!.path).toEqual([1, 'centre_id']);
++	});
++});
++
++describe('slugify', () => {
++	it.each([
++		['Fürth', 'fuerth'],
++		['Hirschenstraße', 'hirschenstrasse'],
++		['VHS Bad Kisingen und Hammelburg', 'vhs-bad-kisingen-und-hammelburg'],
++		['Euro-Schulen Nordbayern', 'euro-schulen-nordbayern'],
++		['VHS Alt-/Neuötting und Töging e. V.', 'vhs-alt-neuoetting-und-toeging-e-v'],
++		['ÄÖÜ Crème brûlée  ', 'aeoeue-creme-brulee'],
++		['Inlingua Sprachschule U.&C. Bernau GmbH', 'inlingua-sprachschule-u-c-bernau-gmbh'],
++	])('%s → %s', (input, expected) => {
++		expect(slugify(input)).toBe(expected);
++	});
++
++	it('cuts at a dash to at most 60 characters', () => {
++		const slug = slugify('Berufliche Fortbildungszentren der Bayerischen Wirtschaft gGmbH, bfz-Donauwörth-Ulm-Aalen');
++		expect(slug).toBe('berufliche-fortbildungszentren-der-bayerischen-wirtschaft');
++		expect(slug.length).toBeLessThanOrEqual(60);
++	});
++});
++
++describe('check-directory', () => {
++	it('reports the count for a valid directory', () => {
++		const text = serializeDirectory([centre({ centre_id: 'b' }), centre({ centre_id: 'a' })]);
++		expect(checkDirectoryText(text)).toEqual({ ok: true, lines: ['2 centres OK'] });
++	});
++
++	it('names the duplicate id', () => {
++		const result = checkDirectoryText(JSON.stringify([centre(), centre()]));
++		expect(result.ok).toBe(false);
++		expect(result.lines.join('\n')).toContain('vhs-fuerth');
++	});
++
++	it.each([
++		[{ reader: 'foo' }, 'entry 0 (vhs-fuerth) reader'],
++		[{ extra: true }, 'entry 0 (vhs-fuerth) extra'],
++		[{ reader_config: { list_url: 'https://x.de/' } }, 'entry 0 (vhs-fuerth) reader_config'],
++		[{ lat: 49.4 }, 'entry 0 (vhs-fuerth) lon'],
++	])('names the entry index and field for %j', (overrides, expected) => {
++		const result = checkDirectoryText(JSON.stringify([{ ...centre(), ...overrides }]));
++		expect(result.ok).toBe(false);
++		expect(result.lines.join('\n')).toContain(expected);
++	});
++
++	it('rejects an unsorted file', () => {
++		const result = checkDirectoryText(JSON.stringify([centre({ centre_id: 'b' }), centre({ centre_id: 'a' })]));
++		expect(result.ok).toBe(false);
++	});
++
++	it('exits non-zero from the CLI on an invalid file', () => {
++		const dir = mkdtempSync(join(tmpdir(), 'bgt-check-'));
++		const bad = join(dir, 'centres.json');
++		writeFileSync(bad, JSON.stringify([centre(), centre()]));
++		const run = spawnSync(process.execPath, ['tools/check-directory.ts', bad], { cwd: repoRoot, encoding: 'utf8' });
++		expect(run.status).toBe(1);
++		expect(run.stderr).toContain('vhs-fuerth');
++	});
++});
++
++describe('committed data/directory/centres.json', () => {
++	const text = readFileSync(join(repoRoot, 'data/directory/centres.json'), 'utf8');
++
++	it('passes the schema and the check', () => {
++		expect(directorySchema.safeParse(JSON.parse(text)).success).toBe(true);
++		expect(checkDirectoryText(text).ok).toBe(true);
++	});
++
++	it('is the canonical serialisation (sorted, tabs, trailing newline)', () => {
++		expect(serializeDirectory(directorySchema.parse(JSON.parse(text)))).toBe(text);
++	});
++
++	it('holds one rtpartner entry per source row and no coordinates yet', () => {
++		const centres = directorySchema.parse(JSON.parse(text));
++		expect(centres).toHaveLength(120);
++		expect(centres.every((c) => c.source === 'rtpartner' && c.lat === null && c.lon === null)).toBe(true);
++	});
++});
+diff --git a/tests/fetch.test.ts b/tests/fetch.test.ts
+new file mode 100644
+index 0000000..3c6b510
+--- /dev/null
++++ b/tests/fetch.test.ts
+@@ -0,0 +1,263 @@
++import { describe, expect, it } from 'vitest';
++import { USER_AGENT } from '../pipeline/config.ts';
++import { decodeBody } from '../pipeline/fetch/decode.ts';
++import { createFetchClient, type FetchImpl } from '../pipeline/fetch/index.ts';
++import { parseRobots } from '../pipeline/fetch/robots.ts';
++
++type Route = (init: RequestInit) => Response | Promise<Response>;
++
++interface Call {
++	url: string;
++	userAgent: string | null;
++	start: number;
++	end: number;
++}
++
++/** A fake network: routes by full URL; unknown URLs get 404. Records every call. */
++function fakeNetwork(routes: Record<string, Route>, latencyMs = 5) {
++	const calls: Call[] = [];
++	const fetchImpl: FetchImpl = async (url, init) => {
++		const start = performance.now();
++		await new Promise((r) => setTimeout(r, latencyMs));
++		const route = routes[url];
++		const response = route ? await route(init) : new Response('not found', { status: 404 });
++		calls.push({ url, userAgent: new Headers(init.headers).get('user-agent'), start, end: performance.now() });
++		return response;
++	};
++	return { calls, fetchImpl };
++}
++
++const html = (body: string, headers: Record<string, string> = {}) => () =>
++	new Response(body, { status: 200, headers: { 'content-type': 'text/html; charset=utf-8', ...headers } });
++const text = (body: string) => () => new Response(body, { status: 200, headers: { 'content-type': 'text/plain' } });
++const redirect = (location: string, status = 301) => () => new Response(null, { status, headers: { location } });
++const status = (code: number) => () => new Response('', { status: code });
++
++describe('parseRobots', () => {
++	it('prefers the bgtsearch-bot group over *', () => {
++		const rules = parseRobots('User-agent: *\nDisallow: /\n\nUser-agent: bgtsearch-bot\nDisallow: /private\n');
++		expect(rules.isAllowed('/kurse')).toBe(true);
++		expect(rules.isAllowed('/private/x')).toBe(false);
++	});
++
++	it('uses the longest match, Allow winning ties, with * and $', () => {
++		const rules = parseRobots(
++			'User-agent: *\nDisallow: /kurse\nAllow: /kurse/einbuergerung\nDisallow: /*.pdf$\nAllow: /a\nDisallow: /a\n',
++		);
++		expect(rules.isAllowed('/kurse/x')).toBe(false);
++		expect(rules.isAllowed('/kurse/einbuergerungstest')).toBe(true);
++		expect(rules.isAllowed('/docs/flyer.pdf')).toBe(false);
++		expect(rules.isAllowed('/docs/flyer.pdf?x=1')).toBe(true);
++		expect(rules.isAllowed('/a')).toBe(true);
++		expect(rules.isAllowed('/')).toBe(true);
++	});
++
++	it('ignores comments, empty Disallow and groups for other bots', () => {
++		const rules = parseRobots('# hi\nUser-agent: otherbot\nDisallow: /\nUser-agent: *\nDisallow:   # nothing\n');
++		expect(rules.isAllowed('/anything')).toBe(true);
++	});
++
++	it('joins consecutive user-agent lines into one group', () => {
++		const rules = parseRobots('User-agent: foo\nUser-agent: BGTSearch-Bot\nDisallow: /x\n');
++		expect(rules.isAllowed('/x')).toBe(false);
++	});
++});
++
++describe('createFetchClient', () => {
++	it('returns the page with the bot User-Agent on every request', async () => {
++		const net = fakeNetwork({ 'https://a.de/robots.txt': status(404), 'https://a.de/p': html('<p>hi</p>') });
++		const client = createFetchClient({ fetchImpl: net.fetchImpl, delayMs: 0 });
++		const result = await client.get('https://a.de/p#frag');
++		expect(result).toEqual({
++			ok: true,
++			status: 200,
++			url: 'https://a.de/p',
++			contentType: 'text/html; charset=utf-8',
++			text: '<p>hi</p>',
++		});
++		expect(net.calls.map((c) => c.userAgent)).toEqual([USER_AGENT, USER_AGENT]);
++	});
++
++	it('never requests a robots-disallowed path and fetches robots.txt once', async () => {
++		const net = fakeNetwork({
++			'https://a.de/robots.txt': text('User-agent: *\nDisallow: /kurse\n'),
++			'https://a.de/': html('home'),
++			'https://a.de/other': html('other'),
++		});
++		const client = createFetchClient({ fetchImpl: net.fetchImpl, delayMs: 0 });
++		expect(await client.get('https://a.de/kurse/x')).toEqual({
++			ok: false,
++			reason: 'robots-disallowed',
++			url: 'https://a.de/kurse/x',
++			status: null,
++		});
++		expect((await client.get('https://a.de/')).ok).toBe(true);
++		expect((await client.get('https://a.de/other')).ok).toBe(true);
++		expect(net.calls.map((c) => c.url)).toEqual(['https://a.de/robots.txt', 'https://a.de/', 'https://a.de/other']);
++	});
++
++	it('treats a 4xx robots.txt as allow-all and a 5xx as disallow-all', async () => {
++		const net = fakeNetwork({
++			'https://a.de/robots.txt': status(404),
++			'https://a.de/x': html('x'),
++			'https://b.de/robots.txt': status(503),
++			'https://b.de/x': html('x'),
++		});
++		const client = createFetchClient({ fetchImpl: net.fetchImpl, delayMs: 0 });
++		expect((await client.get('https://a.de/x')).ok).toBe(true);
++		expect(await client.get('https://b.de/x')).toMatchObject({ ok: false, reason: 'robots-disallowed' });
++		expect(await client.get('https://b.de/')).toMatchObject({ ok: false, reason: 'robots-disallowed' });
++		expect(net.calls.filter((c) => c.url.startsWith('https://b.de')).map((c) => c.url)).toEqual(['https://b.de/robots.txt']);
++	});
++
++	it('treats a robots.txt timeout or network error as disallow-all', async () => {
++		const net = fakeNetwork({
++			'https://a.de/robots.txt': () => Promise.reject(new TypeError('fetch failed')),
++		});
++		const client = createFetchClient({ fetchImpl: net.fetchImpl, delayMs: 0 });
++		expect(await client.get('https://a.de/x')).toMatchObject({ ok: false, reason: 'robots-disallowed' });
++	});
++
++	it('runs requests to one host serially, at least the delay apart; other hosts in parallel', async () => {
++		const delayMs = 60;
++		const net = fakeNetwork(
++			{
++				'https://a.de/robots.txt': status(404),
++				'https://a.de/1': html('1'),
++				'https://a.de/2': html('2'),
++				'https://a.de/3': html('3'),
++				'https://b.de/robots.txt': status(404),
++				'https://b.de/1': html('1'),
++			},
++			20,
++		);
++		const client = createFetchClient({ fetchImpl: net.fetchImpl, delayMs });
++		const results = await Promise.all(
++			['https://a.de/1', 'https://a.de/2', 'https://a.de/3', 'https://b.de/1'].map((u) => client.get(u)),
++		);
++		expect(results.every((r) => r.ok)).toBe(true);
++
++		const aCalls = net.calls.filter((c) => c.url.startsWith('https://a.de')).sort((x, y) => x.start - y.start);
++		expect(aCalls).toHaveLength(4);
++		for (let i = 1; i < aCalls.length; i++) {
++			expect(aCalls[i]!.start - aCalls[i - 1]!.end).toBeGreaterThanOrEqual(delayMs - 2);
++		}
++		const bFirst = net.calls.find((c) => c.url === 'https://b.de/robots.txt')!;
++		expect(bFirst.start).toBeLessThan(aCalls[1]!.start);
++	});
++
++	it('uses the injected sleep between requests to a host', async () => {
++		const slept: number[] = [];
++		const net = fakeNetwork({ 'https://a.de/robots.txt': status(404), 'https://a.de/1': html('1') }, 0);
++		const client = createFetchClient({
++			fetchImpl: net.fetchImpl,
++			delayMs: 1000,
++			sleep: async (ms) => {
++				slept.push(ms);
++			},
++		});
++		await client.get('https://a.de/1');
++		expect(slept).toEqual([1000]);
++	});
++
++	it('times out a slow server', async () => {
++		const net = fakeNetwork({
++			'https://a.de/robots.txt': status(404),
++			'https://a.de/slow': (init) =>
++				new Promise<Response>((_, reject) => {
++					init.signal!.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')));
++				}),
++		});
++		const client = createFetchClient({ fetchImpl: net.fetchImpl, delayMs: 0, timeoutMs: 30 });
++		expect(await client.get('https://a.de/slow')).toEqual({
++			ok: false,
++			reason: 'timeout',
++			url: 'https://a.de/slow',
++			status: null,
++		});
++	});
++
++	it('reports network and http errors as values', async () => {
++		const net = fakeNetwork({
++			'https://a.de/robots.txt': status(404),
++			'https://a.de/down': () => Promise.reject(new TypeError('fetch failed')),
++			'https://a.de/gone': status(410),
++		});
++		const client = createFetchClient({ fetchImpl: net.fetchImpl, delayMs: 0 });
++		expect(await client.get('https://a.de/down')).toMatchObject({ ok: false, reason: 'network-error', status: null });
++		expect(await client.get('https://a.de/gone')).toMatchObject({ ok: false, reason: 'http-error', status: 410 });
++		expect(await client.get('not a url')).toMatchObject({ ok: false, reason: 'network-error' });
++	});
++
++	it('follows a cross-host redirect, checking the new host’s robots.txt', async () => {
++		const net = fakeNetwork({
++			'https://a.de/robots.txt': status(404),
++			'https://a.de/': redirect('https://b.de/p'),
++			'https://b.de/robots.txt': text('User-agent: *\nDisallow: /private\n'),
++			'https://b.de/p': html('landed'),
++			'https://a.de/x': redirect('https://b.de/private/y', 302),
++		});
++		const client = createFetchClient({ fetchImpl: net.fetchImpl, delayMs: 0 });
++		expect(await client.get('https://a.de/')).toMatchObject({ ok: true, url: 'https://b.de/p', text: 'landed' });
++		expect(net.calls.map((c) => c.url)).toContain('https://b.de/robots.txt');
++		expect(await client.get('https://a.de/x')).toMatchObject({
++			ok: false,
++			reason: 'robots-disallowed',
++			url: 'https://b.de/private/y',
++		});
++		expect(net.calls.map((c) => c.url)).not.toContain('https://b.de/private/y');
++	});
++
++	it('fetches a robots.txt URL once even when several origins redirect to it', async () => {
++		const net = fakeNetwork({
++			'https://www.a.de/robots.txt': redirect('https://a.de/robots.txt'),
++			'http://a.de/robots.txt': redirect('https://a.de/robots.txt'),
++			'https://a.de/robots.txt': status(404),
++			'https://www.a.de/': redirect('http://a.de/'),
++			'http://a.de/': redirect('https://a.de/'),
++			'https://a.de/': html('home'),
++		});
++		const client = createFetchClient({ fetchImpl: net.fetchImpl, delayMs: 0 });
++		expect(await client.get('https://www.a.de/')).toMatchObject({ ok: true, url: 'https://a.de/' });
++		expect(net.calls.filter((c) => c.url === 'https://a.de/robots.txt')).toHaveLength(1);
++	});
++
++	it('stops after 5 redirects', async () => {
++		const routes: Record<string, Route> = { 'https://a.de/robots.txt': status(404) };
++		for (let i = 0; i < 10; i++) routes[`https://a.de/${i}`] = redirect(`/${i + 1}`);
++		const net = fakeNetwork(routes, 0);
++		const client = createFetchClient({ fetchImpl: net.fetchImpl, delayMs: 0 });
++		expect(await client.get('https://a.de/0')).toMatchObject({ ok: false, reason: 'too-many-redirects', status: 301 });
++		expect(net.calls.filter((c) => c.url !== 'https://a.de/robots.txt')).toHaveLength(6);
++	});
++
++	it('decodes a Latin-1 page from the Content-Type charset', async () => {
++		const net = fakeNetwork({
++			'https://a.de/robots.txt': status(404),
++			'https://a.de/l1': () =>
++				new Response(new Uint8Array([0x46, 0xfc, 0x72, 0x74, 0x68]), {
++					status: 200,
++					headers: { 'content-type': 'text/html; charset=iso-8859-1' },
++				}),
++		});
++		const client = createFetchClient({ fetchImpl: net.fetchImpl, delayMs: 0 });
++		expect(await client.get('https://a.de/l1')).toMatchObject({ ok: true, text: 'Fürth' });
++	});
++});
++
++describe('decodeBody', () => {
++	const latin1 = (s: string) => Uint8Array.from(s, (ch) => ch.charCodeAt(0));
++
++	it('uses an HTML meta charset when the header has none', () => {
++		expect(decodeBody(latin1('<meta charset="iso-8859-1"><p>Fürth'), 'text/html')).toContain('Fürth');
++		expect(
++			decodeBody(latin1('<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">ü'), null),
++		).toContain('ü');
++	});
++
++	it('falls back to UTF-8 for an unknown label or no charset', () => {
++		const utf8 = new TextEncoder().encode('Fürth');
++		expect(decodeBody(utf8, 'text/html; charset=x-made-up')).toBe('Fürth');
++		expect(decodeBody(utf8, null)).toBe('Fürth');
++	});
++});
+diff --git a/tests/fixtures/no-table.html b/tests/fixtures/no-table.html
+new file mode 100644
+index 0000000..21ba97b
+--- /dev/null
++++ b/tests/fixtures/no-table.html
+@@ -0,0 +1,3 @@
++<!doctype html>
++<html lang="de"><head><meta charset="utf-8"><title>Fehler</title></head>
++<body><p>Fehler beim Herunterladen der Datei</p></body></html>
+diff --git a/tests/fixtures/rtpartner-table.html b/tests/fixtures/rtpartner-table.html
+new file mode 100644
+index 0000000..1ed395d
+--- /dev/null
++++ b/tests/fixtures/rtpartner-table.html
+@@ -0,0 +1,13 @@
++<!doctype html>
++<html lang="de"><head><meta charset="utf-8"><title>Prüfstellen Bayern</title></head>
++<body>
++<p class="update">Informationen automatisch aktualisiert: 16.04.2026 - 07:48<br>Quelle: BAMF</p>
++<table id="myTable"><thead><tr><th>Einrichtung</th><th>Adresse</th><th>Telefon</th><th>E-Mail</th><th>Webseite</th></tr></thead>
++<tbody>
++<tr><td>Euro-Schulen Nordbayern</td><td>Herzogenstr. 8, 97070 Würzburg</td><td><a href="tel:+49931000">0931-000</a></td><td><a href="mailto:info@example.org">info@example.org</a></td><td><a href="https://www.eso.de/">https://www.eso.de/</a></td></tr>
++<tr><td>Volkshochschule</td><td>Hirschenstr. 27/29, 90762 Fürth</td><td><a href="tel:+49911000">0911-000</a></td><td><a href="mailto:vhs@example.org">vhs@example.org</a></td><td><a href="https://www.vhs-fuerth.de ">https://www.vhs-fuerth.de</a></td></tr>
++<tr><td>Volkshochschule</td><td>Paul-Eber-Haus, Schulhof 1, 97318  Kitzingen</td><td></td><td></td><td><a href="https://www.stadt-kitzingen.de">x</a></td></tr>
++<tr><td>Volkshochschule</td><td>Marktplatz 8, 97318 Kitzingen</td><td></td><td></td><td></td></tr>
++<tr><td>Volkshochschule</td><td>Lindenweg 2, 97318 Kitzingen</td><td></td><td></td><td></td></tr>
++</tbody></table>
++</body></html>
+diff --git a/tests/fixtures/site-home.html b/tests/fixtures/site-home.html
+new file mode 100644
+index 0000000..e8a3786
+--- /dev/null
++++ b/tests/fixtures/site-home.html
+@@ -0,0 +1,20 @@
++<!doctype html>
++<html lang="de"><head><meta charset="utf-8"><title>VHS Fürth</title>
++<link rel="stylesheet" href="/typo3conf/ext/itemkg_theme/Resources/Public/main.css">
++<script type="application/ld+json">
++{"@context":"https://schema.org","@graph":[
++ {"@type":"WebSite","name":"VHS Fürth Website"},
++ {"@type":"EducationalOrganization","name":"Volkshochschule Fürth gGmbH",
++  "address":{"@type":"PostalAddress","streetAddress":"Hirschenstraße 27/29","postalCode":"90762","addressLocality":"Fürth"}}
++]}
++</script>
++</head>
++<body>
++<nav>
++<a href="https://other.example/einbuergerungstest">Einbürgerungstest elsewhere</a>
++<a href="/kurse">Kurse</a>
++<a href="https://kurse.vhs-fuerth.de/einbuergerungstest#termine">Termine</a>
++<a href="/einbuergerungstest">Einbürgerungstest</a>
++</nav>
++<footer>VHS Fürth, Hirschenstr. 27/29, 90762 Fürth</footer>
++</body></html>
+diff --git a/tests/fixtures/site-test-page.html b/tests/fixtures/site-test-page.html
+new file mode 100644
+index 0000000..4bb0d38
+--- /dev/null
++++ b/tests/fixtures/site-test-page.html
+@@ -0,0 +1,3 @@
++<!doctype html>
++<html lang="de"><head><meta charset="utf-8"><title>Einbürgerungstest</title></head>
++<body><h1>Einbürgerungstest</h1><p>Termine und Anmeldung.</p></body></html>
+diff --git a/tests/seed-verify.test.ts b/tests/seed-verify.test.ts
+new file mode 100644
+index 0000000..5f3a5e0
+--- /dev/null
++++ b/tests/seed-verify.test.ts
+@@ -0,0 +1,318 @@
++import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
++import { tmpdir } from 'node:os';
++import { join } from 'node:path';
++import { describe, expect, it } from 'vitest';
++import { USER_AGENT } from '../pipeline/config.ts';
++import type { FetchImpl, FetchResult } from '../pipeline/fetch/index.ts';
++import { directorySchema, serializeDirectory, type Centre } from '../shared/directory.ts';
++import { buildEntries, parseAddress, parseRtpartnerTable, parseSourceDate, runSeed } from '../tools/seed-directory.ts';
++import { assessSite, detectReader, fetchSite, findTestLink, jsonLdAddresses, runVerify, type SitePages } from '../tools/verify-directory.ts';
++
++const fixture = (name: string): string => readFileSync(new URL(`./fixtures/${name}`, import.meta.url), 'utf8');
++const tmp = (): string => mkdtempSync(join(tmpdir(), 'bgt-dir-'));
++const quiet = { log: () => {}, error: () => {} };
++const NOW = '2026-10-27T08:00:00.000Z';
++
++const htmlResponse = (body: string) => new Response(body, { status: 200, headers: { 'content-type': 'text/html; charset=utf-8' } });
++
++/** Fake network from a URL → body/status map; records every request. */
++function fakeNet(routes: Record<string, string | number>) {
++	const calls: { url: string; userAgent: string | null }[] = [];
++	const fetchImpl: FetchImpl = async (url, init) => {
++		calls.push({ url, userAgent: new Headers(init.headers).get('user-agent') });
++		const route = routes[url];
++		if (route === undefined) return new Response('', { status: 404 });
++		if (typeof route === 'number') return new Response('', { status: route });
++		return htmlResponse(route);
++	};
++	return { calls, fetchImpl };
++}
++
++describe('seed: parseRtpartnerTable / buildEntries', () => {
++	const rows = parseRtpartnerTable(fixture('rtpartner-table.html'));
++
++	it('reads one row per table row, without phone or e-mail', () => {
++		expect(rows).toHaveLength(5);
++		expect(rows[0]).toEqual({
++			name: 'Euro-Schulen Nordbayern',
++			street: 'Herzogenstr. 8',
++			postcode: '97070',
++			city: 'Würzburg',
++			website: 'https://www.eso.de/',
++		});
++		expect(JSON.stringify(rows)).not.toMatch(/0931|mailto|@example/);
++	});
++
++	it('splits an address at the postcode, keeping commas in the street', () => {
++		expect(rows[2]).toMatchObject({ street: 'Paul-Eber-Haus, Schulhof 1', postcode: '97318', city: 'Kitzingen' });
++		expect(parseAddress('Georg-Pöschl-Straße 16, 84056  Rottenburg a.d.Laaber')).toEqual({
++			street: 'Georg-Pöschl-Straße 16',
++			postcode: '84056',
++			city: 'Rottenburg a.d.Laaber',
++		});
++		expect(parseAddress('no postcode here')).toBeNull();
++	});
++
++	it('normalises websites and leaves an empty cell null', () => {
++		expect(rows[1]!.website).toBe('https://www.vhs-fuerth.de/');
++		expect(rows[3]!.website).toBeNull();
++	});
++
++	it('builds seeded entries with unique ids: name, then -<city>, then -2', () => {
++		const entries = buildEntries(rows);
++		expect(entries.map((e) => e.centre_id)).toEqual([
++			'euro-schulen-nordbayern',
++			'volkshochschule',
++			'volkshochschule-kitzingen',
++			'volkshochschule-2',
++			'volkshochschule-3',
++		]);
++		for (const e of entries) {
++			expect(e).toMatchObject({ source: 'rtpartner', verified_at: null, reader: 'none', lat: null, lon: null, opted_out: false });
++		}
++		expect(directorySchema.safeParse(entries).success).toBe(true);
++	});
++
++	it('reads the source date stamp', () => {
++		expect(parseSourceDate(fixture('rtpartner-table.html'))).toBe('2026-04-16 07:48');
++	});
++
++	it('throws on a page without the table', () => {
++		expect(() => parseRtpartnerTable(fixture('no-table.html'))).toThrow(/myTable/);
++	});
++});
++
++describe('seed: runSeed', () => {
++	const SOURCE = 'https://src.example/table';
++
++	it('writes a sorted centres.json and the source section', async () => {
++		const dir = tmp();
++		const net = fakeNet({ [SOURCE]: fixture('rtpartner-table.html') });
++		expect(await runSeed({ sourceUrl: SOURCE, force: false, dir, fetchImpl: net.fetchImpl, ...quiet })).toBe(0);
++		const text = readFileSync(join(dir, 'centres.json'), 'utf8');
++		expect(text).toBe(serializeDirectory(directorySchema.parse(JSON.parse(text))));
++		expect(text.startsWith('[\n\t{')).toBe(true);
++		const note = readFileSync(join(dir, 'review-note.md'), 'utf8');
++		expect(note).toContain(`Source URL: ${SOURCE}`);
++		expect(note).toContain('Source date: 2026-04-16 07:48');
++		expect(net.calls.every((c) => c.userAgent === USER_AGENT)).toBe(true);
++	});
++
++	it('exits non-zero and writes nothing when the page has no table', async () => {
++		const dir = tmp();
++		const net = fakeNet({ [SOURCE]: fixture('no-table.html') });
++		expect(await runSeed({ sourceUrl: SOURCE, force: false, dir, fetchImpl: net.fetchImpl, ...quiet })).toBe(1);
++		expect(existsSync(join(dir, 'centres.json'))).toBe(false);
++		expect(existsSync(join(dir, 'review-note.md'))).toBe(false);
++	});
++
++	it('refuses to overwrite a non-empty directory unless --force', async () => {
++		const dir = tmp();
++		writeFileSync(join(dir, 'centres.json'), '[{"centre_id":"x"}]\n');
++		const net = fakeNet({ [SOURCE]: fixture('rtpartner-table.html') });
++		expect(await runSeed({ sourceUrl: SOURCE, force: false, dir, fetchImpl: net.fetchImpl, ...quiet })).toBe(1);
++		expect(net.calls).toHaveLength(0);
++		expect(await runSeed({ sourceUrl: SOURCE, force: true, dir, fetchImpl: net.fetchImpl, ...quiet })).toBe(0);
++		expect(JSON.parse(readFileSync(join(dir, 'centres.json'), 'utf8'))).toHaveLength(5);
++	});
++});
++
++const entry = (overrides: Partial<Centre> = {}): Centre => ({
++	centre_id: 'vhs-fuerth',
++	name: 'VHS Fürth gGmbH',
++	address: { street: 'Hirschenstr. 27/29', postcode: '90762', city: 'Fürth' },
++	lat: null,
++	lon: null,
++	website: 'https://www.vhs-fuerth.de/',
++	test_page_url: null,
++	reader: 'none',
++	reader_config: null,
++	opted_out: false,
++	source: 'rtpartner',
++	verified_at: null,
++	...overrides,
++});
++
++const ok = (url: string, text: string): FetchResult => ({ ok: true, status: 200, url, contentType: 'text/html', text });
++const HOME = 'https://www.vhs-fuerth.de/';
++const TEST = 'https://www.vhs-fuerth.de/einbuergerungstest';
++
++describe('verify: page helpers', () => {
++	it('finds the first test link on the host or a subdomain, fragment dropped', () => {
++		expect(findTestLink(fixture('site-home.html'), HOME, ['vhs-fuerth.de'])).toBe(
++			'https://kurse.vhs-fuerth.de/einbuergerungstest',
++		);
++		expect(findTestLink('<a href="/kurse/einb%C3%BCrgerung-test">x</a><a href="/k">Einbuergerungstest</a>', HOME, ['vhs-fuerth.de'])).toBe(
++			'https://www.vhs-fuerth.de/k',
++		);
++		expect(findTestLink('<a href="https://other.example/einbuergerungstest">Einbürgerungstest</a>', HOME, ['vhs-fuerth.de'])).toBeNull();
++	});
++
++	it('detects reader fingerprints; both or neither → none', () => {
++		expect(detectReader(['<link href="/fileadmin/kuferweb/webbasys/x.css">'])).toBe('kuferweb');
++		expect(detectReader(['<a href="/p/einbuergerungstest-123-CAT-KAT7">'])).toBe('itemkg');
++		expect(detectReader(['typo3conf/ext/itemkg_x', '/fileadmin/kuferweb/webbasys/'])).toBe('none');
++		expect(detectReader(['<p>plain</p>'])).toBe('none');
++	});
++
++	it('reads JSON-LD PostalAddresses at any depth with their holder name', () => {
++		expect(jsonLdAddresses(fixture('site-home.html'))).toEqual([
++			{ postalCode: '90762', streetAddress: 'Hirschenstraße 27/29', addressLocality: 'Fürth', holderName: 'Volkshochschule Fürth gGmbH' },
++		]);
++	});
++});
++
++describe('verify: assessSite', () => {
++	const home = ok(HOME, fixture('site-home.html'));
++	const testPage = ok(TEST, fixture('site-test-page.html'));
++	const confirmed: SitePages = { home, testLink: TEST, testPage };
++
++	it('confirms a reachable site with a test page and the postcode, applying JSON-LD corrections', () => {
++		const result = assessSite(entry(), confirmed, NOW);
++		expect(result.reason).toBeNull();
++		expect(result.entry).toMatchObject({
++			test_page_url: TEST,
++			verified_at: NOW,
++			reader: 'itemkg',
++			name: 'Volkshochschule Fürth gGmbH',
++			address: { street: 'Hirschenstraße 27/29', postcode: '90762', city: 'Fürth' },
++		});
++		expect(result.changes.map((c) => c.field).sort()).toEqual(
++			['address.street', 'name', 'reader', 'test_page_url', 'verified_at'].sort(),
++		);
++		expect(result.changes.find((c) => c.field === 'address.street')).toEqual({
++			field: 'address.street',
++			from: 'Hirschenstr. 27/29',
++			to: 'Hirschenstraße 27/29',
++		});
++	});
++
++	it('never applies a different JSON-LD postcode, but notes it', () => {
++		const result = assessSite(entry({ address: { street: 'Markt 1', postcode: '90763', city: 'Fürth' } }), confirmed, NOW);
++		expect(result.entry.address).toEqual({ street: 'Markt 1', postcode: '90763', city: 'Fürth' });
++		expect(result.entry.name).toBe('VHS Fürth gGmbH');
++		expect(result.notes).toEqual(['site JSON-LD states postcode 90762 (not applied)']);
++		expect(result.reason).toBe('postcode not on site');
++		expect(result.entry.verified_at).toBeNull();
++	});
++
++	it.each<[string, Partial<Centre>, SitePages | null, string]>([
++		['no website', { website: null }, null, 'no website'],
++		[
++			'robots-disallowed',
++			{},
++			{ home: { ok: false, reason: 'robots-disallowed', url: HOME, status: null }, testLink: null, testPage: null },
++			'robots-disallowed',
++		],
++		[
++			'unreachable',
++			{},
++			{ home: { ok: false, reason: 'http-error', url: HOME, status: 503 }, testLink: null, testPage: null },
++			'unreachable: http-error 503',
++		],
++		['no test link', {}, { home: ok(HOME, '<p>90762 Fürth</p>'), testLink: null, testPage: null }, 'no test page link'],
++		[
++			'test page unreachable',
++			{},
++			{ home, testLink: TEST, testPage: { ok: false, reason: 'timeout', url: TEST, status: null } },
++			'test page not reachable',
++		],
++		[
++			'postcode absent',
++			{ address: { street: 'X 1', postcode: '12345', city: 'Fürth' } },
++			confirmed,
++			'postcode not on site',
++		],
++	])('leaves verified_at null when %s', (_, overrides, pages, reason) => {
++		const result = assessSite(entry({ verified_at: NOW, ...overrides }), pages, NOW);
++		expect(result.reason).toBe(reason);
++		expect(result.entry.verified_at).toBeNull();
++		expect(result.changes).toContainEqual({ field: 'verified_at', from: NOW, to: null });
++	});
++
++	it('defaults reader to none when no fingerprint matches', () => {
++		const result = assessSite(entry({ reader: 'kuferweb' }), { home: ok(HOME, '<p>x</p>'), testLink: null, testPage: null }, NOW);
++		expect(result.entry.reader).toBe('none');
++	});
++});
++
++describe('verify: fetchSite', () => {
++	it('makes no second request when the homepage is the test page', async () => {
++		const requested: string[] = [];
++		const page = '<a href="/">Einbürgerungstest</a><p>90762</p>';
++		const pages = await fetchSite(async (url) => {
++			requested.push(url);
++			return ok(url, page);
++		}, HOME);
++		expect(requested).toEqual([HOME]);
++		expect(pages.testPage).toBe(pages.home);
++		expect(assessSite(entry(), pages, NOW).reason).toBeNull();
++	});
++});
++
++describe('verify: runVerify', () => {
++	it('fetches each host once, stays within robots + 2 pages per host, and writes the review note', async () => {
++		const dir = tmp();
++		const centres = buildEntries([
++			{ name: 'VHS Fürth', street: 'Hirschenstr. 27/29', postcode: '90762', city: 'Fürth', website: 'https://www.vhs-fuerth.de/' },
++			{ name: 'Euro-Schulen Nordbayern', street: 'Herzogenstr. 8', postcode: '97070', city: 'Würzburg', website: 'https://www.eso.de/' },
++			{ name: 'Euro-Schulen Aschaffenburg', street: 'Goldbacher Str. 6', postcode: '63739', city: 'Aschaffenburg', website: 'https://www.eso.de/' },
++			{ name: 'VHS Ohne Seite', street: 'Markt 1', postcode: '86633', city: 'Neuburg', website: null },
++			{ name: 'VHS Blocked', street: 'Markt 2', postcode: '86529', city: 'Schrobenhausen', website: 'https://blocked.example/' },
++			{ name: 'VHS Down', street: 'Markt 3', postcode: '86530', city: 'Irgendwo', website: 'https://down.example/' },
++			{ name: 'Kolping Moved', street: 'Johannesstr. 11', postcode: '85049', city: 'Ingolstadt', website: 'https://old.example/' },
++		]);
++		writeFileSync(join(dir, 'centres.json'), serializeDirectory(centres));
++		writeFileSync(join(dir, 'review-note.md'), '# Directory review note\n\n## Source\n\n- Source URL: https://src.example/\n- Source date: 2026-04-16 07:48\n\n## Verification run\n\nNot run yet.\n');
++
++		const net = fakeNet({
++			'https://www.vhs-fuerth.de/robots.txt': 404,
++			'https://www.vhs-fuerth.de/': fixture('site-home.html'),
++			'https://kurse.vhs-fuerth.de/robots.txt': 404,
++			'https://kurse.vhs-fuerth.de/einbuergerungstest': fixture('site-test-page.html'),
++			'https://www.eso.de/robots.txt': 404,
++			'https://www.eso.de/': '<a href="/standorte/einbuergerungstest">Einbürgerungstest</a> 97070 Würzburg',
++			'https://www.eso.de/standorte/einbuergerungstest': '<h1>Einbürgerungstest</h1>',
++			'https://blocked.example/robots.txt': 'User-agent: *\nDisallow: /\n',
++			'https://down.example/robots.txt': 503,
++			'https://new.example/robots.txt': 404,
++			'https://new.example/': '<a href="https://new.example/einbuergerungstest">Test</a> 85049 Ingolstadt',
++			'https://new.example/einbuergerungstest': '<h1>Einbuergerungstest</h1>',
++		});
++		const moved = net.fetchImpl;
++		net.fetchImpl = async (url, init) =>
++			url.startsWith('https://old.example/')
++				? (await moved(url, init), new Response(null, { status: 301, headers: { location: url.replace('old.example', 'new.example') } }))
++				: moved(url, init);
++		expect(await runVerify({ dir, fetchImpl: net.fetchImpl, delayMs: 0, ...quiet })).toBe(0);
++
++		const hosts = new Map<string, number>();
++		for (const c of net.calls) hosts.set(new URL(c.url).host, (hosts.get(new URL(c.url).host) ?? 0) + 1);
++		expect(Math.max(...hosts.values())).toBeLessThanOrEqual(3);
++		expect(hosts.get('www.eso.de')).toBe(3);
++		expect(net.calls.every((c) => c.userAgent === USER_AGENT)).toBe(true);
++
++		const out = directorySchema.parse(JSON.parse(readFileSync(join(dir, 'centres.json'), 'utf8')));
++		const byId = Object.fromEntries(out.map((c) => [c.centre_id, c]));
++		expect(byId['vhs-fuerth']!.verified_at).not.toBeNull();
++		expect(byId['vhs-fuerth']!.test_page_url).toBe('https://kurse.vhs-fuerth.de/einbuergerungstest');
++		expect(byId['euro-schulen-nordbayern']!.verified_at).not.toBeNull();
++		expect(byId['euro-schulen-aschaffenburg']!.verified_at).toBeNull();
++		expect(byId['kolping-moved']!.test_page_url).toBe('https://new.example/einbuergerungstest');
++		expect(byId['kolping-moved']!.verified_at).not.toBeNull();
++
++		const note = readFileSync(join(dir, 'review-note.md'), 'utf8');
++		expect(note).toContain('- Source URL: https://src.example/');
++		expect(note).toContain('- Source date: 2026-04-16 07:48');
++		expect(note).toMatch(/- Run at: \d{4}-\d{2}-\d{2}T/);
++		expect(note).toContain('- Verified: 3');
++		expect(note).toContain('- Unverified: 4');
++		expect(note).toContain('- Reader kuferweb: 0, itemkg: 1, none: 6');
++		expect(note).toContain('- vhs-down (https://down.example/): robots-disallowed (robots.txt unavailable: HTTP 503)');
++		expect(note).toContain('- `address.street`: Hirschenstr. 27/29 → Hirschenstraße 27/29');
++		expect(note).toContain('- euro-schulen-aschaffenburg (https://www.eso.de/): postcode not on site');
++		expect(note).toContain('- vhs-ohne-seite (no website): no website');
++		expect(note).toContain('- vhs-blocked (https://blocked.example/): robots-disallowed');
++		expect(note).not.toContain('Not run yet');
++	});
++});
+diff --git a/tests/workflows.test.ts b/tests/workflows.test.ts
+index 15d2112..60f4666 100644
+--- a/tests/workflows.test.ts
++++ b/tests/workflows.test.ts
+@@ -31,6 +31,19 @@ describe('ci.yml', () => {
+ 		expect(ci).toContain('run: npm run typecheck');
+ 		expect(ci).toContain('run: npm test');
+ 	});
++
++	it('validates the centre directory right after the type-check', () => {
++		const steps: string[] = ci.match(/^      - run: .*$/gm) ?? [];
++		const typecheck = steps.indexOf('      - run: npm run typecheck');
++		expect(typecheck).toBeGreaterThanOrEqual(0);
++		expect(steps[typecheck + 1]).toBe('      - run: npm run check:directory');
++	});
++
++	it('runs on directory changes (data/directory/** is not ignored)', () => {
++		for (const trigger of ['push', 'pull_request']) {
++			expect(pathsIgnore(ci, trigger).some((p) => 'data/directory/centres.json'.startsWith(p.replace('**', '')))).toBe(false);
++		}
++	});
+ });
+ 
+ describe('pipeline.yml', () => {
+diff --git a/tools/.gitkeep b/tools/.gitkeep
+deleted file mode 100644
+index e69de29..0000000
+diff --git a/tools/check-directory.ts b/tools/check-directory.ts
+new file mode 100644
+index 0000000..29b0552
+--- /dev/null
++++ b/tools/check-directory.ts
+@@ -0,0 +1,52 @@
++/**
++ * Validates data/directory/centres.json against the directory schema and its sort order (CI step).
++ *
++ *   node tools/check-directory.ts [path]
++ *
++ * Prints `<n> centres OK`, or one line per issue (entry index, field, centre_id) and exits 1.
++ */
++import { readFileSync } from 'node:fs';
++import type { z } from 'zod';
++import { directorySchema, sortDirectory } from '../shared/directory.ts';
++import { CENTRES_PATH } from './seed-directory.ts';
++
++export interface CheckResult {
++	ok: boolean;
++	lines: string[];
++}
++
++function describeIssue(issue: z.core.$ZodIssue, data: unknown): string {
++	const [index, ...rest] = issue.path;
++	if (typeof index !== 'number') return `${issue.path.join('.') || 'file'}: ${issue.message}`;
++	const entry = Array.isArray(data) ? (data[index] as { centre_id?: unknown } | undefined) : undefined;
++	const id = typeof entry?.centre_id === 'string' ? entry.centre_id : '?';
++	const keys = issue.code === 'unrecognized_keys' ? issue.keys : [];
++	const field = rest.length > 0 ? rest.join('.') : keys.length > 0 ? keys.join(', ') : '(entry)';
++	return `entry ${index} (${id}) ${field}: ${issue.message}`;
++}
++
++/** Checks the directory file text: valid JSON, schema-valid, canonical form. */
++export function checkDirectoryText(text: string): CheckResult {
++	let data: unknown;
++	try {
++		data = JSON.parse(text);
++	} catch (error) {
++		return { ok: false, lines: [`not valid JSON: ${(error as Error).message}`] };
++	}
++	const result = directorySchema.safeParse(data);
++	if (!result.success) return { ok: false, lines: result.error.issues.map((issue) => describeIssue(issue, data)) };
++	const ids = result.data.map((c) => c.centre_id);
++	const sorted = sortDirectory(result.data).map((c) => c.centre_id);
++	const misplaced = ids.findIndex((id, i) => id !== sorted[i]);
++	if (misplaced >= 0) {
++		return { ok: false, lines: [`entry ${misplaced} (${ids[misplaced]}) centre_id: entries must be sorted by centre_id`] };
++	}
++	return { ok: true, lines: [`${result.data.length} centres OK`] };
++}
++
++if (import.meta.main) {
++	const path = process.argv[2] ?? CENTRES_PATH;
++	const result = checkDirectoryText(readFileSync(path, 'utf8'));
++	for (const line of result.lines) (result.ok ? console.log : console.error)(line);
++	process.exitCode = result.ok ? 0 : 1;
++}
+diff --git a/tools/seed-directory.ts b/tools/seed-directory.ts
+new file mode 100644
+index 0000000..b5f42cc
+--- /dev/null
++++ b/tools/seed-directory.ts
+@@ -0,0 +1,178 @@
++/**
++ * Seeds data/directory/centres.json from the rtpartner.de table of Bavarian test centres.
++ *
++ *   node tools/seed-directory.ts [--source <url>] [--force]
++ *
++ * Writes only data/directory/ (centres.json and the source section of review-note.md).
++ * Phone numbers and e-mail addresses in the table are never read.
++ */
++import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
++import { join } from 'node:path';
++import { fileURLToPath } from 'node:url';
++import { load } from 'cheerio';
++import { createFetchClient, type FetchImpl } from '../pipeline/fetch/index.ts';
++import { directorySchema, serializeDirectory, slugify, type Centre } from '../shared/directory.ts';
++
++export const LIVE_SOURCE_URL = 'https://www.rtpartner.de/immigration/einbuergerungstest-pruefstellen-bayern/';
++
++export const DIRECTORY_DIR = fileURLToPath(new URL('../data/directory/', import.meta.url));
++export const CENTRES_PATH = join(DIRECTORY_DIR, 'centres.json');
++
++export interface SourceRow {
++	name: string;
++	street: string;
++	postcode: string;
++	city: string;
++	website: string | null;
++}
++
++const clean = (text: string): string => text.replace(/\s+/g, ' ').trim();
++
++/** "Street Nr, PLZ City" → parts; the postcode is the last 5-digit group after a comma. */
++export function parseAddress(text: string): { street: string; postcode: string; city: string } | null {
++	const match = clean(text).match(/^(.+?),\s*(\d{5})\s+(.+)$/);
++	if (!match) return null;
++	return { street: match[1]!.trim(), postcode: match[2]!, city: match[3]!.trim() };
++}
++
++/** An http(s) URL normalised by WHATWG URL parsing, or null. */
++export function normaliseWebsite(href: string | undefined): string | null {
++	const value = href?.trim();
++	if (!value || !URL.canParse(value)) return null;
++	const url = new URL(value);
++	return url.protocol === 'http:' || url.protocol === 'https:' ? url.href : null;
++}
++
++/**
++ * Rows of the rtpartner `#myTable` (Einrichtung | Adresse | Telefon | E-Mail | Webseite).
++ * Throws when the page has no table, a row has no parsable address, or the table is empty.
++ */
++export function parseRtpartnerTable(html: string): SourceRow[] {
++	const $ = load(html);
++	const table = $('#myTable');
++	if (table.length === 0) throw new Error('source page has no #myTable');
++	const rows: SourceRow[] = [];
++	table.find('tbody tr').each((index, tr) => {
++		const cells = $(tr).children('td');
++		if (cells.length < 5) throw new Error(`row ${index + 1}: expected 5 cells, found ${cells.length}`);
++		const name = clean(cells.eq(0).text());
++		const address = parseAddress(cells.eq(1).text());
++		if (!name) throw new Error(`row ${index + 1}: empty name`);
++		if (!address) throw new Error(`row ${index + 1} (${name}): cannot parse address "${clean(cells.eq(1).text())}"`);
++		rows.push({ name, ...address, website: normaliseWebsite(cells.eq(4).find('a').attr('href')) });
++	});
++	if (rows.length === 0) throw new Error('source table has no rows');
++	return rows;
++}
++
++/** The "Informationen automatisch aktualisiert: DD.MM.YYYY - HH:MM" stamp on the page, if any. */
++export function parseSourceDate(html: string): string | null {
++	const match = load(html).text().match(/aktualisiert:\s*(\d{2})\.(\d{2})\.(\d{4})(?:\s*-\s*(\d{2}:\d{2}))?/);
++	if (!match) return null;
++	return `${match[3]}-${match[2]}-${match[1]}${match[4] ? ` ${match[4]}` : ''}`;
++}
++
++/** One entry per row; ids from the name, collisions get `-<city>`, then `-2`, `-3`, … */
++export function buildEntries(rows: readonly SourceRow[]): Centre[] {
++	const used = new Set<string>();
++	const entries = rows.map((row): Centre => {
++		const base = slugify(row.name);
++		let id = base;
++		if (used.has(id)) id = `${base}-${slugify(row.city)}`;
++		for (let n = 2; used.has(id); n++) id = `${base}-${n}`;
++		used.add(id);
++		return {
++			centre_id: id,
++			name: row.name,
++			address: { street: row.street, postcode: row.postcode, city: row.city },
++			lat: null,
++			lon: null,
++			website: row.website,
++			test_page_url: null,
++			reader: 'none',
++			reader_config: null,
++			opted_out: false,
++			source: 'rtpartner',
++			verified_at: null,
++		};
++	});
++	return directorySchema.parse(entries);
++}
++
++export function sourceSection(sourceUrl: string, sourceDate: string | null, seededAt: string, count: number): string {
++	return [
++		'## Source',
++		'',
++		`- Source URL: ${sourceUrl}`,
++		`- Source date: ${sourceDate ?? 'not stated on the page'}`,
++		`- Seeded at: ${seededAt}`,
++		`- Rows seeded: ${count}`,
++		'',
++	].join('\n');
++}
++
++function hasEntries(path: string): boolean {
++	if (!existsSync(path)) return false;
++	try {
++		const data: unknown = JSON.parse(readFileSync(path, 'utf8'));
++		return !Array.isArray(data) || data.length > 0;
++	} catch {
++		return true;
++	}
++}
++
++export interface SeedOptions {
++	sourceUrl: string;
++	force: boolean;
++	/** Directory to write centres.json and review-note.md into. */
++	dir?: string;
++	fetchImpl?: FetchImpl;
++	log?: (line: string) => void;
++	error?: (line: string) => void;
++}
++
++/** Seeds the directory; returns the exit code. Writes nothing unless the whole table parsed. */
++export async function runSeed(options: SeedOptions): Promise<number> {
++	const { sourceUrl, force, dir = DIRECTORY_DIR, log = console.log, error = console.error } = options;
++	const centresPath = join(dir, 'centres.json');
++	if (!force && hasEntries(centresPath)) {
++		error(`${centresPath} already has entries; pass --force to overwrite`);
++		return 1;
++	}
++
++	const seededAt = new Date().toISOString();
++	const result = await createFetchClient({ fetchImpl: options.fetchImpl }).get(sourceUrl);
++	if (!result.ok) {
++		error(`could not fetch ${result.url}: ${result.reason}${result.status ? ` ${result.status}` : ''}`);
++		return 1;
++	}
++
++	let entries: Centre[];
++	try {
++		entries = buildEntries(parseRtpartnerTable(result.text));
++	} catch (caught) {
++		error(`could not read the source table: ${(caught as Error).message}`);
++		return 1;
++	}
++
++	mkdirSync(dir, { recursive: true });
++	writeFileSync(centresPath, serializeDirectory(entries));
++	writeFileSync(
++		join(dir, 'review-note.md'),
++		`# Directory review note\n\n${sourceSection(sourceUrl, parseSourceDate(result.text), seededAt, entries.length)}\n## Verification run\n\nNot run yet: run \`npm run verify:directory\`.\n`,
++	);
++	log(`${entries.length} centres seeded from ${sourceUrl}`);
++	return 0;
++}
++
++if (import.meta.main) {
++	const argv = process.argv.slice(2);
++	const sourceIndex = argv.indexOf('--source');
++	const sourceUrl = sourceIndex >= 0 ? argv[sourceIndex + 1] : LIVE_SOURCE_URL;
++	if (!sourceUrl) {
++		console.error('--source needs a URL');
++		process.exitCode = 1;
++	} else {
++		process.exitCode = await runSeed({ sourceUrl, force: argv.includes('--force') });
++	}
++}
+diff --git a/tools/verify-directory.ts b/tools/verify-directory.ts
+new file mode 100644
+index 0000000..4ec205f
+--- /dev/null
++++ b/tools/verify-directory.ts
+@@ -0,0 +1,386 @@
++/**
++ * Verifies data/directory/centres.json against each centre's own website.
++ *
++ *   node tools/verify-directory.ts
++ *
++ * Per distinct website host: robots.txt, the homepage and at most one candidate test page.
++ * Writes centres.json and review-note.md in data/directory/; the operator reviews and commits.
++ */
++import { existsSync, readFileSync, writeFileSync } from 'node:fs';
++import { join } from 'node:path';
++import { load } from 'cheerio';
++import { createFetchClient, nativeFetch, type FetchImpl, type FetchResult } from '../pipeline/fetch/index.ts';
++import { USER_AGENT } from '../pipeline/config.ts';
++import { directorySchema, serializeDirectory, type Centre, type Reader } from '../shared/directory.ts';
++import { DIRECTORY_DIR } from './seed-directory.ts';
++
++export const TEST_PATTERN = /einb(ü|ue|u)rgerungstest/i;
++const KUFERWEB_FINGERPRINT = /\/fileadmin\/kuferweb\/webbasys\//i;
++const ITEMKG_FINGERPRINT = /typo3conf\/ext\/itemkg_|\/p\/[a-z0-9-]+-\d+-CAT-KAT\d+/i;
++const HOST_CONCURRENCY = 4;
++
++/** What was fetched for one website host. */
++export interface SitePages {
++	home: FetchResult;
++	/** The candidate test page link found on the homepage, or null. */
++	testLink: string | null;
++	/** The fetched test page (the homepage itself when it is the test page), or null when there was no link. */
++	testPage: FetchResult | null;
++}
++
++export interface Change {
++	field: string;
++	from: unknown;
++	to: unknown;
++}
++
++export interface Assessment {
++	entry: Centre;
++	changes: Change[];
++	/** Why the entry stays unverified, or null when verified. */
++	reason: string | null;
++	/** Things for the operator that were not applied (e.g. a different postcode on the site). */
++	notes: string[];
++}
++
++const stripWww = (host: string): string => host.toLowerCase().replace(/^www\./, '');
++
++/** The website's host without `www.`, or null. */
++export const siteHost = (website: string | null): string | null =>
++	website !== null && URL.canParse(website) ? stripWww(new URL(website).hostname) : null;
++
++/** Visible page text (scripts and styles removed). */
++export function pageText(html: string): string {
++	const $ = load(html);
++	$('script, style, noscript').remove();
++	return $.root().text().replace(/\s+/g, ' ');
++}
++
++/**
++ * First `<a>` on one of `hosts` (or a subdomain of one) whose text or href names the
++ * Einbürgerungstest. `hosts` are given without `www.`.
++ */
++export function findTestLink(html: string, baseUrl: string, hosts: readonly string[]): string | null {
++	const $ = load(html);
++	for (const anchor of $('a[href]').toArray()) {
++		const href = $(anchor).attr('href')!.trim();
++		if (!URL.canParse(href, baseUrl)) continue;
++		let decoded = href;
++		try {
++			decoded = decodeURIComponent(href);
++		} catch {
++			// keep the raw href
++		}
++		if (!TEST_PATTERN.test($(anchor).text()) && !TEST_PATTERN.test(decoded)) continue;
++		const url = new URL(href, baseUrl);
++		if (url.protocol !== 'http:' && url.protocol !== 'https:') continue;
++		const linkHost = stripWww(url.hostname);
++		if (!hosts.some((host) => linkHost === host || linkHost.endsWith(`.${host}`))) continue;
++		url.hash = '';
++		return url.href;
++	}
++	return null;
++}
++
++export function detectReader(htmls: readonly string[]): Reader {
++	const kuferweb = htmls.some((html) => KUFERWEB_FINGERPRINT.test(html));
++	const itemkg = htmls.some((html) => ITEMKG_FINGERPRINT.test(html));
++	if (kuferweb === itemkg) return 'none';
++	return kuferweb ? 'kuferweb' : 'itemkg';
++}
++
++interface JsonLdAddress {
++	postalCode: string;
++	streetAddress: string | null;
++	addressLocality: string | null;
++	/** `name` of the node that holds this address, if any. */
++	holderName: string | null;
++}
++
++const asString = (value: unknown): string | null =>
++	typeof value === 'string' && value.trim() !== '' ? value.trim() : typeof value === 'number' ? String(value) : null;
++
++const isPostalAddress = (node: Record<string, unknown>): boolean => {
++	const type = node['@type'];
++	return type === 'PostalAddress' || (Array.isArray(type) && type.includes('PostalAddress'));
++};
++
++/** Every schema.org PostalAddress with a postalCode, at any depth (`@graph` included). */
++export function jsonLdAddresses(html: string): JsonLdAddress[] {
++	const $ = load(html);
++	const found: JsonLdAddress[] = [];
++	const visit = (node: unknown, holder: Record<string, unknown> | null): void => {
++		if (Array.isArray(node)) {
++			for (const item of node) visit(item, holder);
++			return;
++		}
++		if (node === null || typeof node !== 'object') return;
++		const record = node as Record<string, unknown>;
++		if (isPostalAddress(record)) {
++			const postalCode = asString(record['postalCode']);
++			if (postalCode !== null) {
++				found.push({
++					postalCode,
++					streetAddress: asString(record['streetAddress']),
++					addressLocality: asString(record['addressLocality']),
++					holderName: holder ? asString(holder['name']) : null,
++				});
++			}
++		}
++		for (const [key, value] of Object.entries(record)) {
++			visit(value, key === 'address' ? record : null);
++		}
++	};
++	$('script[type="application/ld+json"]').each((_, script) => {
++		try {
++			visit(JSON.parse($(script).text()), null);
++		} catch {
++			// malformed JSON-LD states nothing
++		}
++	});
++	return found;
++}
++
++const okHtml = (result: FetchResult | null): string | null => (result?.ok ? result.text : null);
++
++/** Pure: applies what the fetched pages state to one entry. */
++export function assessSite(entry: Centre, pages: SitePages | null, now: string): Assessment {
++	const next: Centre = structuredClone(entry);
++	const changes: Change[] = [];
++	const notes: string[] = [];
++	const set = <K extends keyof Centre>(field: K, value: Centre[K]): void => {
++		if (JSON.stringify(next[field]) === JSON.stringify(value)) return;
++		changes.push({ field, from: next[field], to: value });
++		next[field] = value;
++	};
++	const setAddress = (field: 'street' | 'city', value: string): void => {
++		if (next.address[field] === value) return;
++		changes.push({ field: `address.${field}`, from: next.address[field], to: value });
++		next.address = { ...next.address, [field]: value };
++	};
++	const finish = (reason: string | null): Assessment => {
++		set('verified_at', reason === null ? now : null);
++		return { entry: next, changes, reason, notes };
++	};
++
++	if (entry.website === null || pages === null) return finish('no website');
++	const { home, testLink, testPage } = pages;
++	if (!home.ok) {
++		if (home.reason === 'robots-disallowed') return finish('robots-disallowed');
++		return finish(`unreachable: ${home.reason}${home.status !== null ? ` ${home.status}` : ''}`);
++	}
++
++	const testHtml = okHtml(testPage);
++	const htmls = testHtml !== null && testPage !== home ? [home.text, testHtml] : [home.text];
++
++	set('reader', detectReader(htmls));
++	if (next.reader === 'none') set('reader_config', null);
++
++	// Address and name: only from JSON-LD with the entry's own postcode.
++	const postcode = entry.address.postcode;
++	const addresses = htmls.flatMap(jsonLdAddresses);
++	const own = addresses.find((a) => a.postalCode === postcode);
++	if (own) {
++		if (own.streetAddress) setAddress('street', own.streetAddress);
++		if (own.addressLocality) setAddress('city', own.addressLocality);
++		if (own.holderName) set('name', own.holderName);
++	} else {
++		for (const other of new Set(addresses.map((a) => a.postalCode).filter((code) => /^\d{5}$/.test(code)))) {
++			notes.push(`site JSON-LD states postcode ${other} (not applied)`);
++		}
++	}
++
++	const testConfirmed = testHtml !== null && TEST_PATTERN.test(pageText(testHtml));
++	if (testConfirmed) set('test_page_url', testPage!.url);
++
++	if (testLink === null) return finish('no test page link');
++	if (!testConfirmed) return finish('test page not reachable');
++	const postcodePattern = new RegExp(`(?<!\\d)${postcode}(?!\\d)`);
++	const postcodeOnSite = htmls.some((html) => postcodePattern.test(pageText(html))) || own !== undefined;
++	if (!postcodeOnSite) return finish('postcode not on site');
++	return finish(null);
++}
++
++/**
++ * Fetches what one host needs: the homepage and at most one test page. A test link may be on
++ * the website's host or, when the homepage redirected elsewhere, on the host it landed on.
++ */
++export async function fetchSite(get: (url: string) => Promise<FetchResult>, website: string): Promise<SitePages> {
++	const home = await get(website);
++	if (!home.ok) return { home, testLink: null, testPage: null };
++	const hosts = [...new Set([siteHost(website)!, siteHost(home.url)!])];
++	const testLink = findTestLink(home.text, home.url, hosts);
++	if (testLink === null) return { home, testLink, testPage: null };
++	const testPage = testLink === home.url ? home : await get(testLink);
++	return { home, testLink, testPage };
++}
++
++async function pool<T>(items: readonly T[], limit: number, work: (item: T) => Promise<void>): Promise<void> {
++	let next = 0;
++	const worker = async (): Promise<void> => {
++		while (next < items.length) await work(items[next++]!);
++	};
++	await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
++}
++
++const show = (value: unknown): string => (value === null ? 'null' : typeof value === 'string' ? value : JSON.stringify(value));
++
++export interface RunStats {
++	robotsRequests: number;
++	pageRequests: number;
++	/** Most page requests (redirect hops included) any one host received, and that host. */
++	maxPagesPerHost: number;
++	maxHost: string | null;
++	allWithUserAgent: boolean;
++}
++
++export function reviewNote(input: {
++	sourceSection: string;
++	runAt: string;
++	results: readonly Assessment[];
++	stats: RunStats;
++}): string {
++	const { results, stats } = input;
++	const verified = results.filter((r) => r.reason === null).length;
++	const readerCount = (reader: Reader): number => results.filter((r) => r.entry.reader === reader).length;
++	const byId = [...results].sort((a, b) => (a.entry.centre_id < b.entry.centre_id ? -1 : 1));
++	const lines = [
++		'# Directory review note',
++		'',
++		input.sourceSection.trimEnd(),
++		'',
++		'## Verification run',
++		'',
++		`- Run at: ${input.runAt}`,
++		`- Centres: ${results.length}`,
++		`- Verified: ${verified}`,
++		`- Unverified: ${results.length - verified}`,
++		`- Reader kuferweb: ${readerCount('kuferweb')}, itemkg: ${readerCount('itemkg')}, none: ${readerCount('none')}`,
++		`- HTTP requests: ${stats.robotsRequests} robots.txt, ${stats.pageRequests} pages (redirect hops counted)`,
++		`- Most page requests to one host: ${stats.maxPagesPerHost}${stats.maxHost ? ` (${stats.maxHost})` : ''}`,
++		`- Every request sent User-Agent \`${USER_AGENT}\`: ${stats.allWithUserAgent ? 'yes' : 'NO'}`,
++		'',
++		'## Changes',
++		'',
++	];
++	const changed = byId.filter((r) => r.changes.length > 0);
++	if (changed.length === 0) lines.push('None.');
++	for (const r of changed) {
++		lines.push(`### ${r.entry.centre_id}`, '');
++		for (const c of r.changes) lines.push(`- \`${c.field}\`: ${show(c.from)} → ${show(c.to)}`);
++		lines.push('');
++	}
++	lines.push('', '## Unverified', '');
++	const unverified = byId.filter((r) => r.reason !== null);
++	if (unverified.length === 0) lines.push('None.');
++	for (const r of unverified) lines.push(`- ${r.entry.centre_id} (${r.entry.website ?? 'no website'}): ${r.reason}`);
++	const noted = byId.filter((r) => r.notes.length > 0);
++	if (noted.length > 0) {
++		lines.push('', '## Not applied', '');
++		for (const r of noted) for (const n of r.notes) lines.push(`- ${r.entry.centre_id}: ${n}`);
++	}
++	return `${lines.join('\n').replace(/\n{3,}/g, '\n\n')}\n`;
++}
++
++/** The `## Source` section written by the seed tool, kept as is. */
++function readSourceSection(notePath: string): string {
++	const note = existsSync(notePath) ? readFileSync(notePath, 'utf8') : '';
++	return note.match(/^## Source\n[\s\S]*?(?=^## |(?![\s\S]))/m)?.[0] ?? '## Source\n\n- Not recorded.\n';
++}
++
++export interface VerifyOptions {
++	/** Directory holding centres.json and review-note.md. */
++	dir?: string;
++	fetchImpl?: FetchImpl;
++	delayMs?: number;
++	log?: (line: string) => void;
++	error?: (line: string) => void;
++}
++
++/** Verifies every entry and writes centres.json and review-note.md; returns the exit code. */
++export async function runVerify(options: VerifyOptions = {}): Promise<number> {
++	const { dir = DIRECTORY_DIR, log = console.log, error = console.error } = options;
++	const centresPath = join(dir, 'centres.json');
++	const notePath = join(dir, 'review-note.md');
++	const baseFetch = options.fetchImpl ?? nativeFetch;
++	const runAt = new Date().toISOString();
++	const parsed = directorySchema.safeParse(JSON.parse(readFileSync(centresPath, 'utf8')));
++	if (!parsed.success) {
++		error('centres.json is invalid; run npm run check:directory');
++		return 1;
++	}
++	const centres = parsed.data;
++
++	const pagesPerHost = new Map<string, number>();
++	/** Per origin: why its robots.txt could not be used, when it failed. */
++	const robotsFailures = new Map<string, string>();
++	let robotsRequests = 0;
++	let pageRequests = 0;
++	let allWithUserAgent = true;
++	const countingFetch: FetchImpl = async (url, init) => {
++		const { host, origin, pathname } = new URL(url);
++		const isRobots = pathname === '/robots.txt';
++		if (isRobots) robotsRequests++;
++		else {
++			pageRequests++;
++			pagesPerHost.set(host, (pagesPerHost.get(host) ?? 0) + 1);
++		}
++		if (new Headers(init.headers).get('user-agent') !== USER_AGENT) allWithUserAgent = false;
++		try {
++			const response = await baseFetch(url, init);
++			if (isRobots && response.status >= 500) robotsFailures.set(origin, `HTTP ${response.status}`);
++			return response;
++		} catch (caught) {
++			if (isRobots) robotsFailures.set(origin, init.signal?.aborted ? 'timeout' : 'network error');
++			throw caught;
++		}
++	};
++	const client = createFetchClient({ fetchImpl: countingFetch, delayMs: options.delayMs });
++
++	const groups = new Map<string, Centre[]>();
++	for (const centre of centres) {
++		const host = siteHost(centre.website);
++		if (host === null) continue;
++		groups.set(host, [...(groups.get(host) ?? []), centre]);
++	}
++	const sites = new Map<string, SitePages>();
++	let done = 0;
++	await pool([...groups.keys()], HOST_CONCURRENCY, async (host) => {
++		sites.set(host, await fetchSite(client.get, groups.get(host)![0]!.website!));
++		log(`[${++done}/${groups.size}] ${host}`);
++	});
++
++	const results = centres.map((centre) => {
++		const host = siteHost(centre.website);
++		const pages = host === null ? null : (sites.get(host) ?? null);
++		const result = assessSite(centre, pages, runAt);
++		// Say why robots.txt blocked the host when it was unavailable rather than restrictive.
++		const failure = pages && !pages.home.ok && URL.canParse(pages.home.url) ? robotsFailures.get(new URL(pages.home.url).origin) : undefined;
++		if (result.reason === 'robots-disallowed' && failure) result.reason = `robots-disallowed (robots.txt unavailable: ${failure})`;
++		return result;
++	});
++	const next = directorySchema.safeParse(results.map((r) => r.entry));
++	if (!next.success) {
++		error(`verified directory fails the schema, nothing written:\n${next.error.message}`);
++		return 1;
++	}
++
++	let maxHost: string | null = null;
++	let maxPagesPerHost = 0;
++	for (const [host, count] of pagesPerHost) {
++		if (count > maxPagesPerHost) [maxHost, maxPagesPerHost] = [host, count];
++	}
++	const note = reviewNote({
++		sourceSection: readSourceSection(notePath),
++		runAt,
++		results,
++		stats: { robotsRequests, pageRequests, maxPagesPerHost, maxHost, allWithUserAgent },
++	});
++	writeFileSync(centresPath, serializeDirectory(next.data));
++	writeFileSync(notePath, note);
++	const verified = results.filter((r) => r.reason === null).length;
++	log(`${verified} of ${results.length} centres verified; see ${notePath}`);
++	return 0;
++}
++
++if (import.meta.main) process.exitCode = await runVerify();
