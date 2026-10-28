@@ -170,7 +170,7 @@ FR34: Epic 4 - Impressum and Privacy
 ### Epic 1: Find every test centre near me
 A user enters a Bavarian town, postcode or their location, picks a radius, and sees every BAMF test centre in range: distance, address, map link and a direct link to each centre's test page. Works in German and English, shareable by link, deployed for €0. Every centre shows as "Not checked automatically" for now, which already saves opening 5–10 sites to find out where you can test.
 **FRs covered:** FR1, FR2 (uncovered cards), FR4, FR11, FR17, FR18, FR19, FR22 (flag), FR23, FR25, FR26, FR27, FR28, FR30 (unchecked count), FR31 (search, loading, no-centres, load-fail), FR32, FR33 (static sections)
-**Notes:** Story 1 is the `npm create preact` scaffold, repo layout, shared schemas and the GitHub Pages deploy. Builds the places table, directory, snapshot publish (centres only), and the uncovered card. Story 1.11 completes the place table that Story 1.5 shipped partially; it must land before 1.8's "Bavaria only" error and 1.10. Covers UX-DR1–7, 10, 11, 12 (Distance), 17, 18–22, 24–27, 29.
+**Notes:** Story 1 is the `npm create preact` scaffold, repo layout, shared schemas and the GitHub Pages deploy. Builds the places table, directory, snapshot publish (centres only), and the uncovered card. Story 1.11 completes the place table that Story 1.5 shipped partially; it must land before 1.8's "Bavaria only" error and 1.10. **Deferred 2026-10-28 (operator decision):** Stories 1.10 and 1.11 are taken out of Epic 1 and left for later, because the public Overpass run behind 1.11 is very slow and fails; 1.10 needs 1.11's Bavaria boundary. Epic 1 closes with Stories 1.1–1.9 plus Story 1.12, which fixes the search bugs the retrospective found; see `implementation-artifacts/deferred-work.md` and the Epic 1 retrospective. Covers UX-DR1–7, 10, 11, 12 (Distance), 17, 18–22, 24–27, 29.
 
 ### Epic 2: See current test dates from KuferWeb and ITEM KG centres
 About 55 centres switch from "not checked" to real dates with status, deadline, registration method and a deep link, refreshed 4 times a day and honest about freshness and failures.
@@ -424,6 +424,8 @@ So that I pick the right place quickly, even with spelling variants.
 
 ### Story 1.10: Search from my location
 
+> **Deferred 2026-10-28 (operator decision).** Not part of Epic 1 any more; see `implementation-artifacts/deferred-work.md`.
+
 As a user at a bus stop,
 I want to use my phone's location instead of typing,
 So that I see nearby centres in one tap.
@@ -449,6 +451,8 @@ So that I see nearby centres in one tap.
 
 ### Story 1.11: Complete the place table
 
+> **Deferred 2026-10-28 (operator decision).** Not part of Epic 1 any more; see `implementation-artifacts/deferred-work.md`.
+
 As a user outside Bavaria, or using my location near its border,
 I want the place table to cover all of Germany and the Bavaria boundary,
 So that a non-Bavarian town shows "Bavaria only" instead of "not found", and my location is checked against the real boundary.
@@ -469,6 +473,92 @@ So that a non-Bavarian town shows "Bavaria only" instead of "not found", and my 
 **Given** the full file
 **When** its size is recorded
 **Then** the note shows the gzipped size, flagged if over 300 KB (AD-9)
+
+### Story 1.12: Search shows every centre and the right place
+
+As a person searching for a test centre near me,
+I want every centre in range to show, and my town to be recognised correctly,
+So that I never miss a centre because of a gap in the data, and never get another town's results.
+
+**Context:** The Epic 1 retrospective (`implementation-artifacts/epic-1-retro-2026-10-28.md`, findings F1–F3, F5) found three bugs on the live site. Each comes from two stories that no single session saw together.
+
+1. **Centres without coordinates disappear.**
+   - Story 1.4 left 8 centres without coordinates. Story 1.8 skips them (`web/src/search/search.ts:269`), with no hint.
+   - Kitzingen and Kronach at 10 km say "No test centres within 10 km", though each has a VHS test centre. München at 20 km leaves out Münchner Volkshochschule.
+   - The operator's fix is to set coordinates by hand, but that breaks `npm test` (`tests/directory.test.ts:204`). `npm test` gates publishing.
+2. **A Bavarian town gets "Bavaria only".**
+   - "Lindau" matches Lindau (Schleswig-Holstein) exactly, so it gets "Bavaria only". The Bavarian row is "Lindau (Bodensee)".
+   - "88131 Lindau" gets "not found".
+   - The same is likely for Landsberg, Weiden, Neuburg and Pfaffenhofen once more states are known.
+3. **Non-Bavarian cities become Bavarian towns.**
+   - "Essen" searches Essenbach, "Hamm" Hammelburg, "Siegen" Siegenburg and "Halle" Hallerndorf. The field and the link are rewritten to the Bavarian name.
+   - Cause: `places.json` is partial (`complete: false`, Story 1.11 deferred), and Story 1.9 searches a single suggestion directly.
+
+The cached Overpass `index` (`data/places/cache/index.json`, from Story 1.5) already lists all 10,940 German municipalities with names and official codes. So fix 3 needs no new Overpass request.
+
+**Acceptance Criteria:**
+
+*Fix 1: centres without coordinates (FR2, FR7, NFR5)*
+
+**Given** a search for a Bavarian place
+**When** a centre has no coordinates and its postcode is one of the place's postcodes, or its city matches the place's name (shared normaliser)
+**Then** it appears once as an uncovered card with Distance "unknown" (never a guessed number), after the cards with a distance, and it counts in the count line
+
+**Given** any search result state, including "No test centres within N km"
+**When** the snapshot has centres without coordinates that were not shown as cards
+**Then** a notice line says how many centres have no map position yet and may be nearby, and links to About `#no-location`; the line is absent when every centre has coordinates
+
+**Given** the About page
+**When** it renders
+**Then** it lists the centres without coordinates under `#no-location`, with the reason "we don't know where this centre is yet", whatever their coverage (so a centre covered in Epic 2 cannot drop off every page)
+
+**Given** the operator sets a centre's coordinates by hand in `centres.json` (no geocode-cache record, as `tools/geocode.ts` documents)
+**When** `npm test` runs
+**Then** it passes; the cache-consistency test checks only centres that have a cache record
+
+*Fix 2: Bavarian towns with a qualifier in their name (FR27, FR25)*
+
+**Given** input that names no Bavarian place exactly
+**When** Bavarian rows start with the input as whole words (normalised: "Lindau" → "Lindau (Bodensee)", "Weiden" → "Weiden in der Oberpfalz"; "Neuburg" and "Pfaffenhofen" → several)
+**Then** one such row is searched and several give "Several places match. Pick one." with the list, before any exact match outside Bavaria is considered
+
+**Given** the qualified form "<postcode> <name>" (e.g. "88131 Lindau")
+**When** a row with that postcode starts with the name as whole words
+**Then** that row is searched
+
+*Fix 3: places outside Bavaria (FR27)*
+
+**Given** `tools/build-places`
+**When** it builds `places.json` (including `--cached-only`)
+**Then** it adds the names of every German municipality from the cached `index`, with state code from the official code, for states whose rows are missing; the places schema accepts them (name and state only, no coordinates or postcodes), and the size is recorded in the note (flag if > 300 KB gzipped)
+
+**Given** input that matches no Bavarian place exactly or as whole words (Fix 2)
+**When** it exactly matches a place outside Bavaria, including those name-only entries
+**Then** "Error: This site covers Bavaria only. You can only take the test in your own state." shows, and no Bavarian town is searched in its place: "Essen", "Hamm", "Siegen", "Halle", "Gera", "Berlin" and "Kiel" all give this message
+
+**Given** input that matches nothing exactly anywhere
+**When** exactly one Bavarian suggestion matches ("Augs")
+**Then** Story 1.9's rule still applies and that place is searched
+
+*Tests and CI*
+
+**Given** the committed `places.json` and `snapshot.json`
+**When** `npm test` runs
+**Then** committed-data tests assert all of the following, with expectations derived from the files and never failing on a legitimate data change:
+- the cities named above give "Bavaria only";
+- "Lindau" resolves to Lindau (Bodensee);
+- no Bavarian row with a qualifier resolves to "Bavaria only" from its first word(s);
+- every centre without coordinates is listed on About under `#no-location`.
+
+**Given** `ci.yml`
+**When** a commit changes `data/public/places.json`
+**Then** CI runs: only `data/state/**` and `data/public/snapshot.json` are ignored, and `tests/workflows.test.ts` matches
+
+**Given** the deployed site after this story
+**When** the operator checks München 20 km, Kitzingen 10 km, Lindau, Essen and Augs in a browser
+**Then** each shows the behaviour above, and the check is repeated after any review patch that changes behaviour
+
+**Notes:** Operator data task alongside (not part of the code ACs): fix the 8 addresses or set coordinates by hand, as listed in `data/directory/geocode-note.md`.
 
 ## Epic 2: See current test dates from KuferWeb and ITEM KG centres
 
