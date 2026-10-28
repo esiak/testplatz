@@ -227,6 +227,37 @@ describe('no hard-coded UI text', () => {
 			expect(leftoverText()).toEqual([]);
 		});
 
+		it('suggestions list open, for names and postcodes', async () => {
+			stubSearchData(centres);
+			setBrowser(['de-DE']);
+			mount('search', SENTINELS);
+			await settle();
+			const field = root.querySelector<HTMLInputElement>('form[role="search"] input')!;
+			for (const [text, rows] of [
+				['Kastl', 3],
+				['Ober', 6],
+				['8923', 1],
+			] as const) {
+				act(() => {
+					field.focus();
+					field.value = text;
+					field.dispatchEvent(new Event('input', { bubbles: true }));
+				});
+				expect(root.querySelectorAll('[role="listbox"] > [role="option"]'), text).toHaveLength(rows);
+				expect(root.querySelector('[role="status"]')!.textContent).toMatch(/^\[\[search\.suggestions_count(_one)?\]\]$/);
+				// Place names and postcodes are data text.
+				const names = [...root.querySelectorAll('.place-suggestions__name')].map((n) => n.textContent ?? '');
+				expect(leftoverText([...names, '89231'])).toEqual([]);
+			}
+		});
+
+		it('several places match', async () => {
+			await searchPage('Kastl');
+			expect(root.querySelector('[role="alert"]')!.textContent).toBe('[[error.several_places]]');
+			expect(root.querySelectorAll('[role="listbox"] > [role="option"]')).toHaveLength(3);
+			expect(leftoverText(['Kastl'])).toEqual([]);
+		});
+
 		it('outside Bavaria', async () => {
 			await searchPage('Kiel');
 			expect(root.querySelector('[role="alert"]')!.textContent).toBe('[[error.outside_bavaria]]');

@@ -710,3 +710,409 @@ describe('schemaVersion mismatch', () => {
 		expect(store.has(RELOAD_FLAG)).toBe(false);
 	});
 });
+
+describe('place suggestions', () => {
+	const listbox = () => root.querySelector<HTMLUListElement>('ul[role="listbox"]')!;
+	const options = () => [...root.querySelectorAll<HTMLLIElement>('ul[role="listbox"] > li[role="option"]')];
+	const optionNames = () => options().map((o) => o.querySelector('.place-suggestions__name')!.textContent);
+	const optionMeta = () => options().map((o) => o.querySelector('.place-suggestions__meta')?.textContent ?? null);
+	const expanded = () => field().getAttribute('aria-expanded');
+	const activeOption = () => {
+		const id = field().getAttribute('aria-activedescendant');
+		return id === null ? null : document.getElementById(id);
+	};
+
+	function press(key: string): KeyboardEvent {
+		const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
+		act(() => {
+			field().dispatchEvent(event);
+		});
+		return event;
+	}
+
+	async function ready(hash = ''): Promise<void> {
+		setBrowser(hash);
+		mount();
+		await settle();
+	}
+
+	it('is an ARIA 1.2 combobox controlling a listbox labelled by the field label', async () => {
+		await ready();
+		expect(field().getAttribute('role')).toBe('combobox');
+		expect(field().getAttribute('aria-autocomplete')).toBe('list');
+		expect(expanded()).toBe('false');
+		expect(field().getAttribute('aria-controls')).toBe(listbox().id);
+		const label = root.querySelector(`label[for="${field().id}"]`)!;
+		expect(listbox().getAttribute('aria-labelledby')).toBe(label.id);
+		expect(listbox().hidden).toBe(true);
+		expect(field().hasAttribute('aria-activedescendant')).toBe(false);
+	});
+
+	it('opens after 2 characters with matches for spelling variants, and announces the count', async () => {
+		await ready();
+		type('N');
+		expect(expanded()).toBe('false');
+		expect(options()).toEqual([]);
+		for (const text of ['nu', 'Nue', 'NÜRN']) {
+			type(text);
+			expect(expanded(), text).toBe('true');
+			expect(listbox().hidden).toBe(false);
+			expect(optionNames()).toEqual(['Nürnberg']);
+		}
+		expect(statusText()).toBe('1 suggestion');
+		expect(status()).toHaveLength(1);
+		type('Ober');
+		expect(options()).toHaveLength(6);
+		expect(statusText()).toBe('6 suggestions');
+		for (const option of options()) expect(option.getAttribute('aria-selected')).toBe('false');
+	});
+
+	it('announces only when the rows change, and nothing on close', async () => {
+		await ready();
+		type('Ka');
+		const first = status()[0]!.firstElementChild;
+		expect(statusText()).toBe('3 suggestions');
+		type('Kas');
+		expect(status()[0]!.firstElementChild).toBe(first);
+		type('Kast');
+		press('Escape');
+		expect(status()[0]!.firstElementChild).toBe(first);
+		type('Ob');
+		expect(status()[0]!.firstElementChild).not.toBe(first);
+		expect(statusText()).toBe('6 suggestions');
+	});
+
+	it('closes for one character, text without matches and blur', async () => {
+		await ready();
+		type('Ob');
+		expect(expanded()).toBe('true');
+		type('O');
+		expect(expanded()).toBe('false');
+		type('Atlantis');
+		expect(expanded()).toBe('false');
+		type('Ob');
+		expect(expanded()).toBe('true');
+		act(() => field().blur());
+		expect(expanded()).toBe('false');
+		act(() => field().focus());
+		expect(expanded()).toBe('false');
+		type('Obe');
+		expect(expanded()).toBe('true');
+	});
+
+	it('shows postcode rows with the matched postcode as meta', async () => {
+		await ready();
+		type('8923');
+		expect(optionNames()).toEqual(['Neu-Ulm']);
+		expect(optionMeta()).toEqual(['89231']);
+	});
+
+	it('shows same-name towns with postcode and district, and only them get a meta line', async () => {
+		await ready();
+		type('Kastl');
+		expect(optionNames()).toEqual(['Kastl', 'Kastl', 'Kastl']);
+		expect(optionMeta()).toEqual(['84556 · Landkreis Altötting', '92280 · Landkreis Amberg-Sulzbach', '95506 · Landkreis Tirschenreuth']);
+		type('Augs');
+		expect(optionMeta()).toEqual([null]);
+	});
+
+	it('collapses same-name rows sharing a postcode, and Enter searches it', async () => {
+		await ready();
+		type('Chiemsee');
+		expect(optionNames()).toEqual(['Chiemsee']);
+		submit();
+		await settle();
+		expect(alerts()).toEqual([]);
+		expect(location.hash).toBe('#q=Chiemsee&r=40&lang=en');
+	});
+
+	it('moves the highlight with ↓ and ↑, wrapping, via aria-activedescendant', async () => {
+		await ready();
+		type('Ober');
+		expect(activeOption()).toBeNull();
+		expect(press('ArrowDown').defaultPrevented).toBe(true);
+		expect(activeOption()).toBe(options()[0]);
+		expect(options()[0]!.getAttribute('aria-selected')).toBe('true');
+		press('ArrowDown');
+		expect(activeOption()).toBe(options()[1]);
+		expect(options()[0]!.getAttribute('aria-selected')).toBe('false');
+		for (let i = 0; i < 4; i++) press('ArrowDown');
+		expect(activeOption()).toBe(options()[5]);
+		press('ArrowDown');
+		expect(activeOption()).toBe(options()[0]);
+		press('ArrowUp');
+		expect(activeOption()).toBe(options()[5]);
+		press('ArrowUp');
+		expect(activeOption()).toBe(options()[4]);
+		// A change of rows clears the highlight.
+		type('Oberau');
+		expect(activeOption()).toBeNull();
+		press('ArrowUp');
+		expect(activeOption()).toBe(options()[options().length - 1]);
+	});
+
+	it('closes on Escape and keeps the text; ↓ reopens with the first row highlighted', async () => {
+		await ready();
+		type('Ober');
+		press('ArrowDown');
+		expect(press('Escape').defaultPrevented).toBe(true);
+		expect(expanded()).toBe('false');
+		expect(field().value).toBe('Ober');
+		expect(field().hasAttribute('aria-activedescendant')).toBe(false);
+		expect(options()).toEqual([]);
+		press('ArrowDown');
+		expect(expanded()).toBe('true');
+		expect(activeOption()).toBe(options()[0]);
+	});
+
+	it('picks the highlighted row with Enter: searches it, closes the list and writes the pick text to the fragment', async () => {
+		await ready();
+		chooseRadius(100);
+		type('Kastl');
+		const replace = vi.spyOn(history, 'replaceState');
+		const push = vi.spyOn(history, 'pushState');
+		press('ArrowDown');
+		press('ArrowDown');
+		expect(press('Enter').defaultPrevented).toBe(true);
+		await settle();
+		expect(field().value).toBe('92280 Kastl');
+		expect(expanded()).toBe('false');
+		expect(location.hash).toBe('#q=92280+Kastl&r=100&lang=en');
+		expect(replace).toHaveBeenCalled();
+		expect(push).not.toHaveBeenCalled();
+		expect(document.activeElement).toBe(field());
+		expect([...cardNames()].sort()).toEqual(['Akademie Nürnberg', 'bfz Fürth', 'vhs Erlangen']);
+	});
+
+	it('picks a row on click without blurring the field', async () => {
+		await ready();
+		chooseRadius(100);
+		type('Kastl');
+		const option = options()[0]!;
+		const down = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
+		act(() => {
+			option.dispatchEvent(down);
+		});
+		expect(down.defaultPrevented).toBe(true);
+		const mouseDown = new MouseEvent('mousedown', { bubbles: true, cancelable: true });
+		act(() => {
+			option.dispatchEvent(mouseDown);
+		});
+		expect(mouseDown.defaultPrevented).toBe(true);
+		act(() => option.click());
+		await settle();
+		expect(field().value).toBe('84556 Kastl');
+		expect(document.activeElement).toBe(field());
+		expect(expanded()).toBe('false');
+		expect(location.hash).toBe('#q=84556+Kastl&r=100&lang=en');
+		expect(cardNames()).toEqual(['vhs München']);
+	});
+
+	it('submits normally on Enter without a highlighted row: one match runs as before', async () => {
+		await ready();
+		type('Nürnberg');
+		expect(press('Enter').defaultPrevented).toBe(false);
+		submit();
+		await settle();
+		expect(expanded()).toBe('false');
+		expect(cardNames()).toHaveLength(3);
+		expect(statusText()).toBe('0 dates and 3 unchecked centres within 40 km');
+		expect(field().hasAttribute('aria-invalid')).toBe(false);
+	});
+
+	it('searches the one suggestion on Enter, writing its pick text to the field and fragment', async () => {
+		await ready();
+		chooseRadius(100);
+		type('Augs');
+		expect(optionNames()).toEqual(['Augsburg']);
+		const replace = vi.spyOn(history, 'replaceState');
+		const push = vi.spyOn(history, 'pushState');
+		submit();
+		await settle();
+		expect(alerts()).toEqual([]);
+		expect(field().value).toBe('Augsburg');
+		expect(location.hash).toBe('#q=Augsburg&r=100&lang=en');
+		// Once for the typed text, once for the pick text; a rerun of "Augsburg" would add a third.
+		expect(replace.mock.calls.map((call) => String(call[2]))).toEqual([
+			'/testplatz/#q=Augs&r=100&lang=en',
+			'/testplatz/#q=Augsburg&r=100&lang=en',
+		]);
+		expect(push).not.toHaveBeenCalled();
+		expect(expanded()).toBe('false');
+		expect(document.activeElement).toBe(field());
+		expect(cardNames()).toEqual(['vhs München']);
+	});
+
+	for (const text of ['Ober', 'Neu']) {
+		it(`asks to pick one when several suggestions match "${text}" on Enter`, async () => {
+			await ready();
+			await search('Nürnberg');
+			await search(text);
+			expect(alerts()[0]!.textContent).toBe(en['error.several_places']);
+			expect(field().hasAttribute('aria-invalid')).toBe(false);
+			expect(field().value).toBe(text);
+			expect(cards()).toEqual([]);
+			expect(expanded()).toBe('true');
+			expect(options().length).toBeGreaterThan(1);
+			expect(location.hash).toBe(`#q=${text}&r=40&lang=en`);
+		});
+	}
+
+	it('searches an exact name even when other towns start with it', async () => {
+		await ready();
+		type('Au');
+		expect(optionNames()).toEqual(['Au', 'Augsburg']);
+		submit();
+		await settle();
+		expect(alerts()).toEqual([]);
+		expect(field().value).toBe('Au');
+		expect(location.hash).toBe('#q=Au&r=40&lang=en');
+		expect(expanded()).toBe('false');
+	});
+
+	it('searches the one suggestion for a partial name in a link, rewriting the field and fragment', async () => {
+		setBrowser('#q=Augs&r=100&lang=en');
+		const replace = vi.spyOn(history, 'replaceState');
+		mount();
+		await settle();
+		const announcement = status()[0]!.firstElementChild;
+		await settle();
+		expect(status()[0]!.firstElementChild).toBe(announcement);
+		// The rewrite to "Augsburg" does not run the search a second time.
+		expect(replace.mock.calls.filter((call) => String(call[2]).includes('q=Augsburg'))).toHaveLength(1);
+		expect(alerts()).toEqual([]);
+		expect(field().value).toBe('Augsburg');
+		expect(location.hash).toBe('#q=Augsburg&r=100&lang=en');
+		expect(cardNames()).toEqual(['vhs München']);
+		expect(expanded()).toBe('false');
+	});
+
+	it('searches an exact postcode on Enter', async () => {
+		await ready();
+		await search('89231');
+		expect(alerts()).toEqual([]);
+		expect(location.hash).toBe('#q=89231&r=40&lang=en');
+		expect(expanded()).toBe('false');
+	});
+
+	it('asks to pick one for an ambiguous name, keeping the list open without aria-invalid', async () => {
+		await ready();
+		await search('Nürnberg');
+		expect(cards()).toHaveLength(3);
+		await search('Kastl');
+		const [alert] = alerts();
+		expect(alert!.textContent).toBe(en['error.several_places']);
+		expect(field().getAttribute('aria-describedby')).toBe(alert!.id);
+		expect(field().hasAttribute('aria-invalid')).toBe(false);
+		expect(field().value).toBe('Kastl');
+		expect(cards()).toEqual([]);
+		expect(root.querySelector('.search__results')!.textContent).toBe('');
+		expect(root.querySelectorAll('.field-message__suggestion')).toHaveLength(0);
+		expect(expanded()).toBe('true');
+		expect(optionNames()).toEqual(['Kastl', 'Kastl', 'Kastl']);
+		expect(statusText()).toBe('3 suggestions');
+
+		chooseRadius(100);
+		act(() => options()[1]!.click());
+		await settle();
+		expect(alerts()).toEqual([]);
+		expect(field().value).toBe('92280 Kastl');
+		expect(location.hash).toBe('#q=92280+Kastl&r=100&lang=en');
+		expect(cardNames()).toHaveLength(3);
+	});
+
+	it('asks again for a repeated ambiguous submit, re-announcing the suggestions', async () => {
+		await ready();
+		await search('Kastl');
+		const first = status()[0]!.firstElementChild;
+		submit();
+		await settle();
+		expect(expanded()).toBe('true');
+		expect(status()[0]!.firstElementChild).not.toBe(first);
+		expect(statusText()).toBe('3 suggestions');
+	});
+
+	it('reproduces a qualified pick text from a link', async () => {
+		await ready('#q=92280+Kastl&r=100&lang=en');
+		expect(field().value).toBe('92280 Kastl');
+		expect(alerts()).toEqual([]);
+		expect([...cardNames()].sort()).toEqual(['Akademie Nürnberg', 'bfz Fürth', 'vhs Erlangen']);
+		expect(expanded()).toBe('false');
+	});
+
+	it('asks to pick one for an ambiguous link, with the list open', async () => {
+		await ready('#q=Kastl&lang=en');
+		expect(document.activeElement).toBe(field());
+		expect(alerts()[0]!.textContent).toBe(en['error.several_places']);
+		expect(expanded()).toBe('true');
+		expect(options()).toHaveLength(3);
+	});
+
+	it('does not pop the list open after a fragment fill', async () => {
+		await ready('#q=Augsburg&lang=en');
+		expect(field().value).toBe('Augsburg');
+		expect(expanded()).toBe('false');
+		navigateHash('#q=F%C3%BCrth&lang=en');
+		await settle();
+		expect(field().value).toBe('Fürth');
+		expect(expanded()).toBe('false');
+	});
+
+	it('closes after "Search N km"', async () => {
+		await ready();
+		await search('Augsburg', 10);
+		type('Augsburg');
+		expect(expanded()).toBe('true');
+		act(() => buttonByText('Search 20 km')!.click());
+		await settle();
+		expect(expanded()).toBe('false');
+	});
+
+	it('shows no list before the data is ready, and opens on typing once it is', async () => {
+		let resolvePlaces: (response: Response) => void = () => {};
+		serve(ok(snapshotOf(CENTRES)), () => new Promise((resolve) => (resolvePlaces = resolve)));
+		setBrowser();
+		mount();
+		await settle();
+		type('Ober');
+		press('ArrowDown');
+		expect(expanded()).toBe('false');
+		expect(options()).toEqual([]);
+		expect(statusText()).toBe('');
+		await act(async () => {
+			resolvePlaces(jsonResponse(smallPlaces()));
+		});
+		await settle();
+		expect(expanded()).toBe('false');
+		type('Obe');
+		expect(expanded()).toBe('true');
+		expect(fetchMock).toHaveBeenCalledTimes(2);
+	});
+
+	it('keeps the rows on a language switch and shows the catalogue text in the new language', async () => {
+		await ready('#lang=de');
+		type('Kastl');
+		expect(statusText()).toBe('3 Vorschläge');
+		const before = optionMeta();
+		act(() => root.querySelector<HTMLAnchorElement>('nav a[hreflang="en"]')!.click());
+		expect(expanded()).toBe('true');
+		expect(optionMeta()).toEqual(before);
+		expect(statusText()).toBe('3 suggestions');
+	});
+
+	it('shows the several message in German', async () => {
+		await ready('#lang=de');
+		await search('Kastl');
+		expect(alerts()[0]!.textContent).toBe(de['error.several_places']);
+		expect(de['error.several_places']).toBe('Mehrere Orte passen. Wählen Sie bitte einen aus.');
+	});
+
+	it('does not put place keys or coordinates in the fragment', async () => {
+		await ready();
+		type('Kastl');
+		press('ArrowDown');
+		press('Enter');
+		await settle();
+		expect(location.hash).not.toMatch(/09171121|48\.2|12\.7|lat|lon/);
+	});
+});

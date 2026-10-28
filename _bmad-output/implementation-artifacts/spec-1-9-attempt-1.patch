@@ -1,0 +1,1250 @@
+diff --git a/tests/fixtures/places.ts b/tests/fixtures/places.ts
+index fd9e96c..d919462 100644
+--- a/tests/fixtures/places.ts
++++ b/tests/fixtures/places.ts
+@@ -19,7 +19,11 @@ export function placesOf(rows: PlaceRow[]): Places {
+ 	};
+ }
+ 
+-/** A small table: Nürnberg, München, Augsburg, Fürth (BY); Kiel (SH); a "Neustadt" in BY and SH. */
++/**
++ * A small table: Nürnberg, München, Augsburg, Fürth (BY); Kiel (SH); a "Neustadt" twice in BY
++ * (different postcodes) and once in SH; three Bavarian "Kastl" towns plus an SH namesake; two
++ * "Chiemsee" rows sharing a postcode; Neu-Ulm; and seven "Ober…" towns.
++ */
+ export const PLACE_ROWS = {
+ 	nuernberg: placeRow('09564000', 'Nürnberg', { postcodes: ['90402', '90443'], lat: 49.4539, lon: 11.0773 }),
+ 	muenchen: placeRow('09162000', 'München', { postcodes: ['80331'], lat: 48.1374, lon: 11.5755 }),
+@@ -29,6 +33,20 @@ export const PLACE_ROWS = {
+ 	neustadtSh: placeRow('01055033', 'Neustadt', { postcodes: ['23730'], lat: 54.1, lon: 10.8 }),
+ 	neustadtBy2: placeRow('09575150', 'Neustadt', { postcodes: ['91413'], lat: 49.58, lon: 10.61 }),
+ 	neustadtBy1: placeRow('09372147', 'Neustadt', { postcodes: ['92660'], lat: 49.73, lon: 12.17 }),
++	kastlAoe: placeRow('09171121', 'Kastl', { postcodes: ['84556'], district: 'Landkreis Altötting', lat: 48.2, lon: 12.7 }),
++	kastlAs: placeRow('09371135', 'Kastl', { postcodes: ['92280'], district: 'Landkreis Amberg-Sulzbach', lat: 49.37, lon: 11.68 }),
++	kastlTir: placeRow('09377128', 'Kastl', { postcodes: ['95506'], district: 'Landkreis Tirschenreuth', lat: 49.85, lon: 12.0 }),
++	kastlSh: placeRow('01058099', 'Kastl', { postcodes: ['24999', '92280'], district: 'Kreis Rendsburg-Eckernförde', lat: 54.3, lon: 9.7 }),
++	chiemsee: placeRow('09187128', 'Chiemsee', { postcodes: ['83209'], district: 'Landkreis Rosenheim', lat: 47.87, lon: 12.42 }),
++	chiemseeArea: placeRow('09187451', 'Chiemsee', { postcodes: ['83209', '83256'], district: 'Landkreis Rosenheim', lat: 47.9, lon: 12.45 }),
++	neuUlm: placeRow('09775135', 'Neu-Ulm', { postcodes: ['89231', '89233'], district: 'Landkreis Neu-Ulm', lat: 48.3953, lon: 10.0005 }),
++	oberding: placeRow('09177130', 'Oberding'),
++	oberaurach: placeRow('09674221', 'Oberaurach'),
++	oberau: placeRow('09180125', 'Oberau'),
++	oberammergau: placeRow('09180124', 'Oberammergau'),
++	oberbergkirchen: placeRow('09183133', 'Oberbergkirchen'),
++	oberasbach: placeRow('09573125', 'Oberasbach'),
++	oberaudorf: placeRow('09187157', 'Oberaudorf'),
+ } as const;
+ 
+ export const smallPlaces = (): Places => placesOf(Object.values(PLACE_ROWS));
+diff --git a/tests/search-page.test.tsx b/tests/search-page.test.tsx
+index ee2200e..8d51b30 100644
+--- a/tests/search-page.test.tsx
++++ b/tests/search-page.test.tsx
+@@ -710,3 +710,341 @@ describe('schemaVersion mismatch', () => {
+ 		expect(store.has(RELOAD_FLAG)).toBe(false);
+ 	});
+ });
++
++describe('place suggestions', () => {
++	const listbox = () => root.querySelector<HTMLUListElement>('ul[role="listbox"]')!;
++	const options = () => [...root.querySelectorAll<HTMLLIElement>('ul[role="listbox"] > li[role="option"]')];
++	const optionNames = () => options().map((o) => o.querySelector('.place-suggestions__name')!.textContent);
++	const optionMeta = () => options().map((o) => o.querySelector('.place-suggestions__meta')?.textContent ?? null);
++	const expanded = () => field().getAttribute('aria-expanded');
++	const activeOption = () => {
++		const id = field().getAttribute('aria-activedescendant');
++		return id === null ? null : document.getElementById(id);
++	};
++
++	function press(key: string): KeyboardEvent {
++		const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
++		act(() => {
++			field().dispatchEvent(event);
++		});
++		return event;
++	}
++
++	async function ready(hash = ''): Promise<void> {
++		setBrowser(hash);
++		mount();
++		await settle();
++	}
++
++	it('is an ARIA 1.2 combobox controlling a listbox labelled by the field label', async () => {
++		await ready();
++		expect(field().getAttribute('role')).toBe('combobox');
++		expect(field().getAttribute('aria-autocomplete')).toBe('list');
++		expect(expanded()).toBe('false');
++		expect(field().getAttribute('aria-controls')).toBe(listbox().id);
++		const label = root.querySelector(`label[for="${field().id}"]`)!;
++		expect(listbox().getAttribute('aria-labelledby')).toBe(label.id);
++		expect(listbox().hidden).toBe(true);
++		expect(field().hasAttribute('aria-activedescendant')).toBe(false);
++	});
++
++	it('opens after 2 characters with matches for spelling variants, and announces the count', async () => {
++		await ready();
++		type('N');
++		expect(expanded()).toBe('false');
++		expect(options()).toEqual([]);
++		for (const text of ['nu', 'Nue', 'NÜRN']) {
++			type(text);
++			expect(expanded(), text).toBe('true');
++			expect(listbox().hidden).toBe(false);
++			expect(optionNames()).toEqual(['Nürnberg']);
++		}
++		expect(statusText()).toBe('1 suggestion');
++		expect(status()).toHaveLength(1);
++		type('Ober');
++		expect(options()).toHaveLength(6);
++		expect(statusText()).toBe('6 suggestions');
++		for (const option of options()) expect(option.getAttribute('aria-selected')).toBe('false');
++	});
++
++	it('announces only when the rows change, and nothing on close', async () => {
++		await ready();
++		type('Ka');
++		const first = status()[0]!.firstElementChild;
++		expect(statusText()).toBe('3 suggestions');
++		type('Kas');
++		expect(status()[0]!.firstElementChild).toBe(first);
++		type('Kast');
++		press('Escape');
++		expect(status()[0]!.firstElementChild).toBe(first);
++		type('Ob');
++		expect(status()[0]!.firstElementChild).not.toBe(first);
++		expect(statusText()).toBe('6 suggestions');
++	});
++
++	it('closes for one character, text without matches and blur', async () => {
++		await ready();
++		type('Ob');
++		expect(expanded()).toBe('true');
++		type('O');
++		expect(expanded()).toBe('false');
++		type('Atlantis');
++		expect(expanded()).toBe('false');
++		type('Ob');
++		expect(expanded()).toBe('true');
++		act(() => field().blur());
++		expect(expanded()).toBe('false');
++		act(() => field().focus());
++		expect(expanded()).toBe('false');
++		type('Obe');
++		expect(expanded()).toBe('true');
++	});
++
++	it('shows postcode rows with the matched postcode as meta', async () => {
++		await ready();
++		type('8923');
++		expect(optionNames()).toEqual(['Neu-Ulm']);
++		expect(optionMeta()).toEqual(['89231']);
++	});
++
++	it('shows same-name towns with postcode and district, and only them get a meta line', async () => {
++		await ready();
++		type('Kastl');
++		expect(optionNames()).toEqual(['Kastl', 'Kastl', 'Kastl']);
++		expect(optionMeta()).toEqual(['84556 · Landkreis Altötting', '92280 · Landkreis Amberg-Sulzbach', '95506 · Landkreis Tirschenreuth']);
++		type('Augs');
++		expect(optionMeta()).toEqual([null]);
++	});
++
++	it('collapses same-name rows sharing a postcode, and Enter searches it', async () => {
++		await ready();
++		type('Chiemsee');
++		expect(optionNames()).toEqual(['Chiemsee']);
++		submit();
++		await settle();
++		expect(alerts()).toEqual([]);
++		expect(location.hash).toBe('#q=Chiemsee&r=40&lang=en');
++	});
++
++	it('moves the highlight with ↓ and ↑, wrapping, via aria-activedescendant', async () => {
++		await ready();
++		type('Ober');
++		expect(activeOption()).toBeNull();
++		expect(press('ArrowDown').defaultPrevented).toBe(true);
++		expect(activeOption()).toBe(options()[0]);
++		expect(options()[0]!.getAttribute('aria-selected')).toBe('true');
++		press('ArrowDown');
++		expect(activeOption()).toBe(options()[1]);
++		expect(options()[0]!.getAttribute('aria-selected')).toBe('false');
++		for (let i = 0; i < 4; i++) press('ArrowDown');
++		expect(activeOption()).toBe(options()[5]);
++		press('ArrowDown');
++		expect(activeOption()).toBe(options()[0]);
++		press('ArrowUp');
++		expect(activeOption()).toBe(options()[5]);
++		press('ArrowUp');
++		expect(activeOption()).toBe(options()[4]);
++		// A change of rows clears the highlight.
++		type('Oberau');
++		expect(activeOption()).toBeNull();
++		press('ArrowUp');
++		expect(activeOption()).toBe(options()[options().length - 1]);
++	});
++
++	it('closes on Escape and keeps the text; ↓ reopens with the first row highlighted', async () => {
++		await ready();
++		type('Ober');
++		press('ArrowDown');
++		expect(press('Escape').defaultPrevented).toBe(true);
++		expect(expanded()).toBe('false');
++		expect(field().value).toBe('Ober');
++		expect(field().hasAttribute('aria-activedescendant')).toBe(false);
++		expect(options()).toEqual([]);
++		press('ArrowDown');
++		expect(expanded()).toBe('true');
++		expect(activeOption()).toBe(options()[0]);
++	});
++
++	it('picks the highlighted row with Enter: searches it, closes the list and writes the pick text to the fragment', async () => {
++		await ready();
++		chooseRadius(100);
++		type('Kastl');
++		const replace = vi.spyOn(history, 'replaceState');
++		const push = vi.spyOn(history, 'pushState');
++		press('ArrowDown');
++		press('ArrowDown');
++		expect(press('Enter').defaultPrevented).toBe(true);
++		await settle();
++		expect(field().value).toBe('92280 Kastl');
++		expect(expanded()).toBe('false');
++		expect(location.hash).toBe('#q=92280+Kastl&r=100&lang=en');
++		expect(replace).toHaveBeenCalled();
++		expect(push).not.toHaveBeenCalled();
++		expect(document.activeElement).toBe(field());
++		expect([...cardNames()].sort()).toEqual(['Akademie Nürnberg', 'bfz Fürth', 'vhs Erlangen']);
++	});
++
++	it('picks a row on click without blurring the field', async () => {
++		await ready();
++		chooseRadius(100);
++		type('Kastl');
++		const option = options()[0]!;
++		const down = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
++		act(() => {
++			option.dispatchEvent(down);
++		});
++		expect(down.defaultPrevented).toBe(true);
++		const mouseDown = new MouseEvent('mousedown', { bubbles: true, cancelable: true });
++		act(() => {
++			option.dispatchEvent(mouseDown);
++		});
++		expect(mouseDown.defaultPrevented).toBe(true);
++		act(() => option.click());
++		await settle();
++		expect(field().value).toBe('84556 Kastl');
++		expect(document.activeElement).toBe(field());
++		expect(expanded()).toBe('false');
++		expect(location.hash).toBe('#q=84556+Kastl&r=100&lang=en');
++		expect(cardNames()).toEqual(['vhs München']);
++	});
++
++	it('submits normally on Enter without a highlighted row: one match runs as before', async () => {
++		await ready();
++		type('Nürnberg');
++		expect(press('Enter').defaultPrevented).toBe(false);
++		submit();
++		await settle();
++		expect(expanded()).toBe('false');
++		expect(cardNames()).toHaveLength(3);
++		expect(statusText()).toBe('0 dates and 3 unchecked centres within 40 km');
++		expect(field().hasAttribute('aria-invalid')).toBe(false);
++	});
++
++	it('searches an exact postcode on Enter', async () => {
++		await ready();
++		await search('89231');
++		expect(alerts()).toEqual([]);
++		expect(location.hash).toBe('#q=89231&r=40&lang=en');
++		expect(expanded()).toBe('false');
++	});
++
++	it('asks to pick one for an ambiguous name, keeping the list open without aria-invalid', async () => {
++		await ready();
++		await search('Nürnberg');
++		expect(cards()).toHaveLength(3);
++		await search('Kastl');
++		const [alert] = alerts();
++		expect(alert!.textContent).toBe(en['error.several_places']);
++		expect(field().getAttribute('aria-describedby')).toBe(alert!.id);
++		expect(field().hasAttribute('aria-invalid')).toBe(false);
++		expect(field().value).toBe('Kastl');
++		expect(cards()).toEqual([]);
++		expect(root.querySelector('.search__results')!.textContent).toBe('');
++		expect(root.querySelectorAll('.field-message__suggestion')).toHaveLength(0);
++		expect(expanded()).toBe('true');
++		expect(optionNames()).toEqual(['Kastl', 'Kastl', 'Kastl']);
++		expect(statusText()).toBe('3 suggestions');
++
++		chooseRadius(100);
++		act(() => options()[1]!.click());
++		await settle();
++		expect(alerts()).toEqual([]);
++		expect(field().value).toBe('92280 Kastl');
++		expect(location.hash).toBe('#q=92280+Kastl&r=100&lang=en');
++		expect(cardNames()).toHaveLength(3);
++	});
++
++	it('asks again for a repeated ambiguous submit, re-announcing the suggestions', async () => {
++		await ready();
++		await search('Kastl');
++		const first = status()[0]!.firstElementChild;
++		submit();
++		await settle();
++		expect(expanded()).toBe('true');
++		expect(status()[0]!.firstElementChild).not.toBe(first);
++		expect(statusText()).toBe('3 suggestions');
++	});
++
++	it('reproduces a qualified pick text from a link', async () => {
++		await ready('#q=92280+Kastl&r=100&lang=en');
++		expect(field().value).toBe('92280 Kastl');
++		expect(alerts()).toEqual([]);
++		expect([...cardNames()].sort()).toEqual(['Akademie Nürnberg', 'bfz Fürth', 'vhs Erlangen']);
++		expect(expanded()).toBe('false');
++	});
++
++	it('asks to pick one for an ambiguous link, with the list open', async () => {
++		await ready('#q=Kastl&lang=en');
++		expect(document.activeElement).toBe(field());
++		expect(alerts()[0]!.textContent).toBe(en['error.several_places']);
++		expect(expanded()).toBe('true');
++		expect(options()).toHaveLength(3);
++	});
++
++	it('does not pop the list open after a fragment fill', async () => {
++		await ready('#q=Augsburg&lang=en');
++		expect(field().value).toBe('Augsburg');
++		expect(expanded()).toBe('false');
++		navigateHash('#q=Ober&lang=en');
++		await settle();
++		expect(expanded()).toBe('false');
++	});
++
++	it('closes after "Search N km"', async () => {
++		await ready();
++		await search('Augsburg', 10);
++		type('Augsburg');
++		expect(expanded()).toBe('true');
++		act(() => buttonByText('Search 20 km')!.click());
++		await settle();
++		expect(expanded()).toBe('false');
++	});
++
++	it('shows no list before the data is ready, and opens on typing once it is', async () => {
++		let resolvePlaces: (response: Response) => void = () => {};
++		serve(ok(snapshotOf(CENTRES)), () => new Promise((resolve) => (resolvePlaces = resolve)));
++		setBrowser();
++		mount();
++		await settle();
++		type('Ober');
++		press('ArrowDown');
++		expect(expanded()).toBe('false');
++		expect(options()).toEqual([]);
++		expect(statusText()).toBe('');
++		await act(async () => {
++			resolvePlaces(jsonResponse(smallPlaces()));
++		});
++		await settle();
++		expect(expanded()).toBe('false');
++		type('Obe');
++		expect(expanded()).toBe('true');
++		expect(fetchMock).toHaveBeenCalledTimes(2);
++	});
++
++	it('keeps the rows on a language switch and shows the catalogue text in the new language', async () => {
++		await ready('#lang=de');
++		type('Kastl');
++		expect(statusText()).toBe('3 Vorschläge');
++		const before = optionMeta();
++		act(() => root.querySelector<HTMLAnchorElement>('nav a[hreflang="en"]')!.click());
++		expect(expanded()).toBe('true');
++		expect(optionMeta()).toEqual(before);
++		expect(statusText()).toBe('3 suggestions');
++	});
++
++	it('shows the several message in German', async () => {
++		await ready('#lang=de');
++		await search('Kastl');
++		expect(alerts()[0]!.textContent).toBe(de['error.several_places']);
++		expect(de['error.several_places']).toBe('Mehrere Orte passen. Wählen Sie bitte einen aus.');
++	});
++
++	it('does not put place keys or coordinates in the fragment', async () => {
++		await ready();
++		type('Kastl');
++		press('ArrowDown');
++		press('Enter');
++		await settle();
++		expect(location.hash).not.toMatch(/09171121|48\.2|12\.7|lat|lon/);
++	});
++});
+diff --git a/tests/search.test.ts b/tests/search.test.ts
+index 5fbd4f2..11e0a0a 100644
+--- a/tests/search.test.ts
++++ b/tests/search.test.ts
+@@ -10,15 +10,20 @@ import {
+ 	destinationDomain,
+ 	didYouMean,
+ 	formatAddress,
++	isAmbiguousName,
++	labelPostcode,
+ 	levenshtein,
++	MAX_PLACE_SUGGESTIONS,
+ 	mapsUrl,
+ 	nextRadius,
+ 	parseSearchFragment,
++	pickText,
+ 	RADII,
+ 	resolvePlace,
+ 	runSearch,
+ 	searchFragment,
+ 	snapRadius,
++	suggestPlaces,
+ } from '../web/src/search/search.ts';
+ import { PLACE_ROWS, placeRow, smallPlaces } from './fixtures/places.ts';
+ import { snapshotCentre } from './fixtures/snapshot.ts';
+@@ -90,8 +95,39 @@ describe('resolvePlace', () => {
+ 		expect(resolvePlace('90443', places)).toEqual({ kind: 'found', place: PLACE_ROWS.nuernberg });
+ 	});
+ 
+-	it('uses the lowest-key Bavarian row when a name exists in BY and another state', () => {
+-		expect(resolvePlace('Neustadt', places)).toEqual({ kind: 'found', place: PLACE_ROWS.neustadtBy1 });
++	it('uses the Bavarian row when a name exists in BY and another state', () => {
++		const rows = [placeRow('01000001', 'Wald', { postcodes: ['24000'] }), placeRow('09000002', 'Wald', { postcodes: ['93000'] })];
++		expect(resolvePlace('Wald', rows)).toEqual({ kind: 'found', place: rows[1] });
++	});
++
++	it('reports several places for a name Bavarian towns share under different postcodes', () => {
++		for (const input of ['Kastl', ' kastl ', 'Neustadt']) expect(resolvePlace(input, places), input).toEqual({ kind: 'several' });
++	});
++
++	it('uses the lowest-key row for a name whose Bavarian rows share one label postcode', () => {
++		expect(resolvePlace('Chiemsee', places)).toEqual({ kind: 'found', place: PLACE_ROWS.chiemsee });
++	});
++
++	it('resolves the qualified form "<postcode> <name>" to that row, Bavarian rows first', () => {
++		expect(resolvePlace('92280 Kastl', places)).toEqual({ kind: 'found', place: PLACE_ROWS.kastlAs });
++		expect(resolvePlace('84556  kastl', places)).toEqual({ kind: 'found', place: PLACE_ROWS.kastlAoe });
++		expect(resolvePlace('95506 Kastl', places)).toEqual({ kind: 'found', place: PLACE_ROWS.kastlTir });
++		expect(resolvePlace('91413 Neustadt', places)).toEqual({ kind: 'found', place: PLACE_ROWS.neustadtBy2 });
++		expect(resolvePlace('83209 Chiemsee', places)).toEqual({ kind: 'found', place: PLACE_ROWS.chiemsee });
++	});
++
++	it('reports a qualified form matching only outside Bavaria as outside Bavaria', () => {
++		expect(resolvePlace('24999 Kastl', places)).toEqual({ kind: 'outside_bavaria' });
++	});
++
++	it('handles a qualified form that matches no row as plain text', () => {
++		expect(resolvePlace('99999 Kastl', places)).toEqual({ kind: 'not_found', suggestions: [] });
++		expect(resolvePlace('90402 München', places)).toEqual({ kind: 'not_found', suggestions: [] });
++	});
++
++	it('keeps a 5-digit postcode on the lowest-key Bavarian row', () => {
++		expect(resolvePlace('89231', places)).toEqual({ kind: 'found', place: PLACE_ROWS.neuUlm });
++		expect(resolvePlace('92280', places)).toEqual({ kind: 'found', place: PLACE_ROWS.kastlAs });
+ 	});
+ 
+ 	it('uses the lowest-key Bavarian row among several postcode matches', () => {
+@@ -119,6 +155,91 @@ describe('resolvePlace', () => {
+ 	});
+ });
+ 
++describe('suggestPlaces', () => {
++	const picks = (input: string) => suggestPlaces(input, places).map((s) => s.pickText);
++
++	it('suggests nothing below 2 characters (trimmed)', () => {
++		for (const input of ['', 'M', ' M ', '8', '  ']) expect(suggestPlaces(input, places), input).toEqual([]);
++	});
++
++	it('matches name prefixes ignoring case and umlaut spelling', () => {
++		for (const input of ['nü', 'nue', 'NU', 'Nürnb', ' nurnberg ']) expect(picks(input), input).toEqual(['Nürnberg']);
++		expect(picks('Mün')).toEqual(['München']);
++		expect(picks('Fu')).toEqual(['Fürth']);
++	});
++
++	it('suggests only Bavarian rows', () => {
++		expect(picks('Kiel')).toEqual([]);
++		for (const s of suggestPlaces('Kastl', places)) expect(s.place.state).toBe('BY');
++	});
++
++	it('qualifies same-name towns with their label postcode, with postcode and district meta', () => {
++		expect(suggestPlaces('Kastl', places)).toEqual([
++			{ place: PLACE_ROWS.kastlAoe, pickText: '84556 Kastl', meta: { postcode: '84556', district: 'Landkreis Altötting' } },
++			{ place: PLACE_ROWS.kastlAs, pickText: '92280 Kastl', meta: { postcode: '92280', district: 'Landkreis Amberg-Sulzbach' } },
++			{ place: PLACE_ROWS.kastlTir, pickText: '95506 Kastl', meta: { postcode: '95506', district: 'Landkreis Tirschenreuth' } },
++		]);
++	});
++
++	it('gives unique names no meta line', () => {
++		expect(suggestPlaces('Augs', places)).toEqual([{ place: PLACE_ROWS.augsburg, pickText: 'Augsburg', meta: null }]);
++	});
++
++	it('puts exact matches first, then German collation, then key', () => {
++		const rows = [
++			placeRow('09000001', 'Aub'),
++			placeRow('09000002', 'Aubstadt'),
++			placeRow('09000003', 'Au', { postcodes: ['84000'] }),
++			placeRow('09000004', 'Äu'),
++		];
++		// "Äu" normalises like "Au", so both are exact matches and come first, in German collation.
++		expect(suggestPlaces('Au', rows).map((s) => s.place.key)).toEqual(['09000003', '09000004', '09000001', '09000002']);
++		const ties = [placeRow('09000009', 'Zell', { postcodes: ['97000'] }), placeRow('09000008', 'Zell', { postcodes: ['97000'] })];
++		expect(suggestPlaces('Zel', ties).map((s) => s.place.key)).toEqual(['09000008']);
++	});
++
++	it('collapses rows with the same name and label postcode into the lowest-key row', () => {
++		expect(suggestPlaces('Chiemsee', places)).toEqual([{ place: PLACE_ROWS.chiemsee, pickText: 'Chiemsee', meta: null }]);
++	});
++
++	it('matches postcode prefixes for 2–5 digits, with the smallest matched postcode as meta', () => {
++		expect(suggestPlaces('8923', places)).toEqual([{ place: PLACE_ROWS.neuUlm, pickText: 'Neu-Ulm', meta: { postcode: '89231', district: null } }]);
++		expect(suggestPlaces('89233', places)).toEqual([{ place: PLACE_ROWS.neuUlm, pickText: 'Neu-Ulm', meta: { postcode: '89233', district: null } }]);
++		expect(suggestPlaces('892330', places)).toEqual([]);
++		expect(suggestPlaces('24', places)).toEqual([]); // Kiel and the SH Kastl are not Bavarian
++	});
++
++	it('orders postcode matches by the matched postcode, then name', () => {
++		expect(picks('9')).toEqual([]);
++		expect(suggestPlaces('9', places)).toEqual([]);
++		expect(suggestPlaces('90', places).map((s) => [s.pickText, s.meta?.postcode])).toEqual([
++			['Nürnberg', '90402'],
++			['Fürth', '90762'],
++		]);
++	});
++
++	it('adds the district to postcode meta for an ambiguous name', () => {
++		expect(suggestPlaces('92', places)).toEqual([
++			{ place: PLACE_ROWS.kastlAs, pickText: '92280 Kastl', meta: { postcode: '92280', district: 'Landkreis Amberg-Sulzbach' } },
++			{ place: PLACE_ROWS.neustadtBy1, pickText: '92660 Neustadt', meta: { postcode: '92660', district: 'Neustadt' } },
++		]);
++	});
++
++	it('caps the list at 6 rows', () => {
++		expect(MAX_PLACE_SUGGESTIONS).toBe(6);
++		expect(picks('Ober')).toEqual(['Oberammergau', 'Oberasbach', 'Oberau', 'Oberaudorf', 'Oberaurach', 'Oberbergkirchen']);
++	});
++
++	it('names the pick text and label postcode', () => {
++		expect(labelPostcode(PLACE_ROWS.neuUlm)).toBe('89231');
++		expect(labelPostcode(PLACE_ROWS.oberau)).toBeNull();
++		expect(isAmbiguousName('KASTL', places)).toBe(true);
++		expect(isAmbiguousName('Chiemsee', places)).toBe(false);
++		expect(pickText(PLACE_ROWS.kastlTir, places)).toBe('95506 Kastl');
++		expect(pickText(PLACE_ROWS.neuUlm, places)).toBe('Neu-Ulm');
++	});
++});
++
+ describe('didYouMean', () => {
+ 	it('lists prefix matches first, then by distance, then German collation, at most 3', () => {
+ 		const rows = [
+@@ -228,6 +349,7 @@ describe('runSearch', () => {
+ 
+ 	it('returns field errors as codes', () => {
+ 		expect(runSearch({ q: 'Kiel', r: 40 }, places, centres)).toEqual({ kind: 'field_error', code: 'outside_bavaria', suggestions: [] });
++		expect(runSearch({ q: 'Kastl', r: 40 }, places, centres)).toEqual({ kind: 'field_error', code: 'several_places', suggestions: [] });
+ 		expect(runSearch({ q: 'Atlantis', r: 40 }, places, centres)).toMatchObject({ kind: 'field_error', code: 'place_not_found' });
+ 	});
+ });
+@@ -289,6 +411,48 @@ describe('the committed data files', () => {
+ 		}
+ 	});
+ 
++	it('resolve every Bavarian row\'s pick text to a row with the same name and label postcode', () => {
++		for (const row of bavarian) {
++			const text = pickText(row, placeFile.places);
++			const resolution = resolvePlace(text, placeFile.places);
++			expect(resolution.kind, text).toBe('found');
++			if (resolution.kind !== 'found') continue;
++			expect(normalizePlaceName(resolution.place.name), text).toBe(normalizePlaceName(row.name));
++			expect(labelPostcode(resolution.place), text).toBe(labelPostcode(row));
++		}
++	});
++
++	it('suggest at most 6 Bavarian rows with distinct pick texts for every 2- and 3-character prefix', () => {
++		const prefixes = new Set<string>();
++		for (const row of bavarian) {
++			prefixes.add(row.name.slice(0, 2));
++			prefixes.add(row.name.slice(0, 3));
++			for (const postcode of row.postcodes) prefixes.add(postcode.slice(0, 3));
++		}
++		for (const prefix of prefixes) {
++			const list = suggestPlaces(prefix, placeFile.places);
++			expect(list.length, prefix).toBeGreaterThan(0);
++			expect(list.length, prefix).toBeLessThanOrEqual(6);
++			expect(new Set(list.map((s) => s.pickText)).size, prefix).toBe(list.length);
++			for (const s of list) expect(s.place.state, prefix).toBe('BY');
++		}
++	});
++
++	it('report several places for every same-name Bavarian group with different label postcodes', () => {
++		const labels = new Map<string, Set<string | null>>();
++		for (const row of bavarian) {
++			const name = normalizePlaceName(row.name);
++			labels.set(name, (labels.get(name) ?? new Set()).add(labelPostcode(row)));
++		}
++		const ambiguous = [...labels].filter(([, set]) => set.size > 1);
++		expect(ambiguous.length).toBeGreaterThan(0);
++		for (const [name] of ambiguous) {
++			expect(resolvePlace(name, placeFile.places).kind, name).toBe('several');
++			const exact = suggestPlaces(name, placeFile.places).filter((s) => normalizePlaceName(s.place.name) === name);
++			expect(exact.length, name).toBeGreaterThan(1);
++		}
++	});
++
+ 	it('suggest only Bavarian names for a misspelt Bavarian town', () => {
+ 		const resolution = resolvePlace('Nurnbreg', placeFile.places);
+ 		expect(resolution.kind).toBe('not_found');
+diff --git a/tests/shell.test.tsx b/tests/shell.test.tsx
+index c18c21e..a38dc55 100644
+--- a/tests/shell.test.tsx
++++ b/tests/shell.test.tsx
+@@ -227,6 +227,37 @@ describe('no hard-coded UI text', () => {
+ 			expect(leftoverText()).toEqual([]);
+ 		});
+ 
++		it('suggestions list open, for names and postcodes', async () => {
++			stubSearchData(centres);
++			setBrowser(['de-DE']);
++			mount('search', SENTINELS);
++			await settle();
++			const field = root.querySelector<HTMLInputElement>('form[role="search"] input')!;
++			for (const [text, rows] of [
++				['Kastl', 3],
++				['Ober', 6],
++				['8923', 1],
++			] as const) {
++				act(() => {
++					field.focus();
++					field.value = text;
++					field.dispatchEvent(new Event('input', { bubbles: true }));
++				});
++				expect(root.querySelectorAll('[role="listbox"] > [role="option"]'), text).toHaveLength(rows);
++				expect(root.querySelector('[role="status"]')!.textContent).toMatch(/^\[\[search\.suggestions_count(_one)?\]\]$/);
++				// Place names and postcodes are data text.
++				const names = [...root.querySelectorAll('.place-suggestions__name')].map((n) => n.textContent ?? '');
++				expect(leftoverText([...names, '89231'])).toEqual([]);
++			}
++		});
++
++		it('several places match', async () => {
++			await searchPage('Kastl');
++			expect(root.querySelector('[role="alert"]')!.textContent).toBe('[[error.several_places]]');
++			expect(root.querySelectorAll('[role="listbox"] > [role="option"]')).toHaveLength(3);
++			expect(leftoverText(['Kastl'])).toEqual([]);
++		});
++
+ 		it('outside Bavaria', async () => {
+ 			await searchPage('Kiel');
+ 			expect(root.querySelector('[role="alert"]')!.textContent).toBe('[[error.outside_bavaria]]');
+diff --git a/web/src/i18n/de.json b/web/src/i18n/de.json
+index 179898e..22e86e2 100644
+--- a/web/src/i18n/de.json
++++ b/web/src/i18n/de.json
+@@ -55,6 +55,10 @@
+ 	"search.next_radius": "Im Umkreis von {radius} km suchen",
+ 	"error.outside_bavaria": "Fehler: Diese Seite deckt nur Bayern ab. Sie können den Test nur in Ihrem eigenen Bundesland ablegen.",
+ 	"error.did_you_mean": "Meinten Sie {name}?",
++	"error.several_places": "Mehrere Orte passen. Wählen Sie bitte einen aus.",
++	"search.suggestions_count": "{count} Vorschläge",
++	"search.suggestions_count_one": "{count} Vorschlag",
++	"search.suggestion_meta": "{postcode} · {district}",
+ 	"results.count": "{dates} Termine und {unchecked} nicht geprüfte Testzentren im Umkreis von {radius} km",
+ 	"results.count_one": "{dates} Termine und {unchecked} nicht geprüftes Testzentrum im Umkreis von {radius} km",
+ 	"results.notice_no_dates": "Keine Termine in der Nähe gefunden. Diese Testzentren haben auf ihren eigenen Seiten vielleicht trotzdem Termine.",
+diff --git a/web/src/i18n/en.json b/web/src/i18n/en.json
+index e1127b9..df98eb8 100644
+--- a/web/src/i18n/en.json
++++ b/web/src/i18n/en.json
+@@ -55,6 +55,10 @@
+ 	"search.next_radius": "Search {radius} km",
+ 	"error.outside_bavaria": "Error: This site covers Bavaria only. You can only take the test in your own state.",
+ 	"error.did_you_mean": "Did you mean {name}?",
++	"error.several_places": "Several places match. Pick one.",
++	"search.suggestions_count": "{count} suggestions",
++	"search.suggestions_count_one": "{count} suggestion",
++	"search.suggestion_meta": "{postcode} · {district}",
+ 	"results.count": "{dates} dates and {unchecked} unchecked centres within {radius} km",
+ 	"results.count_one": "{dates} dates and {unchecked} unchecked centre within {radius} km",
+ 	"results.notice_no_dates": "No dates found nearby. These centres may still have dates on their own pages.",
+diff --git a/web/src/search/search-bar.tsx b/web/src/search/search-bar.tsx
+index 2ec77b6..d718b3f 100644
+--- a/web/src/search/search-bar.tsx
++++ b/web/src/search/search-bar.tsx
+@@ -1,11 +1,17 @@
+ import type { RefObject } from 'preact';
++import { useEffect, useMemo, useState } from 'preact/hooks';
++import type { PlaceRow } from '../../../shared/places.ts';
+ import { useI18n } from '../i18n/i18n.tsx';
+-import { RADII, searchFragment, snapRadius, type FieldErrorCode, type Radius } from './search.ts';
++import { RADII, searchFragment, snapRadius, suggestPlaces, type FieldErrorCode, type PlaceSuggestion, type Radius } from './search.ts';
+ 
+ export const FIELD_ID = 'search-place';
++export const FIELD_LABEL_ID = 'search-place-label';
+ export const FIELD_MESSAGE_ID = 'search-place-message';
++export const LISTBOX_ID = 'search-place-suggestions';
+ const RADIUS_ID = 'search-radius';
+ 
++const optionId = (index: number): string => `${LISTBOX_ID}-${index}`;
++
+ export interface FieldError {
+ 	code: FieldErrorCode;
+ 	suggestions: string[];
+@@ -18,16 +24,129 @@ export interface SearchBarProps {
+ 	radius: Radius;
+ 	error: FieldError | null;
+ 	fieldRef: RefObject<HTMLInputElement | null>;
++	/** The place rows once the data is ready; null before. No suggestions until then. */
++	places: readonly PlaceRow[] | null;
++	/** True while the suggestions list is dismissed (Escape, pick, submit, blur, a fill). */
++	dismissed: boolean;
++	/** Bumped when the page reopens the list (a several-places outcome), so it is announced again. */
++	openId: number;
+ 	onText: (text: string) => void;
+ 	onRadius: (radius: Radius) => void;
+ 	onSubmit: () => void;
++	/** Closes the list. */
++	onDismiss: () => void;
++	/** Reopens a dismissed list (↓ on a closed list). */
++	onReopen: () => void;
++	/** A suggestion was picked: search for its pick text. */
++	onPick: (text: string) => void;
++	/** The list opened or its rows changed. */
++	onSuggestions: (count: number) => void;
+ }
+ 
+-const ERROR_KEYS = { place_not_found: 'error.place_not_found', outside_bavaria: 'error.outside_bavaria' } as const;
++const ERROR_KEYS = {
++	place_not_found: 'error.place_not_found',
++	outside_bavaria: 'error.outside_bavaria',
++	several_places: 'error.several_places',
++} as const;
++
++/** The highlighted row, tied to the rows it was set for so a change of rows clears it. */
++type Highlight = { token: string; index: number } | null;
++
++function SuggestionMeta({ meta }: { meta: PlaceSuggestion['meta'] }) {
++	const { t } = useI18n();
++	if (!meta) return null;
++	return (
++		<span class="place-suggestions__meta">
++			{meta.district === null ? meta.postcode : t('search.suggestion_meta', { postcode: meta.postcode, district: meta.district })}
++		</span>
++	);
++}
+ 
+-/** Place field, native radius select and the search button. Changing the select alone never searches. */
+-export function SearchBar({ text, radius, error, fieldRef, onText, onRadius, onSubmit }: SearchBarProps) {
++/**
++ * Place field (an ARIA 1.2 combobox with up to 6 place suggestions), native radius select and
++ * the search button. Changing the select alone never searches.
++ */
++export function SearchBar(props: SearchBarProps) {
++	const { text, radius, error, fieldRef, places, dismissed, openId, onText, onRadius, onSubmit, onDismiss, onReopen, onPick, onSuggestions } =
++		props;
+ 	const { lang, t } = useI18n();
++	const [focused, setFocused] = useState(false);
++	const [highlight, setHighlight] = useState<Highlight>(null);
++
++	const suggestions = useMemo(() => (places ? suggestPlaces(text, places) : []), [text, places]);
++	const rowsKey = suggestions.map((s) => s.pickText).join('\n');
++	const token = `${openId}\n${rowsKey}`;
++	const open = focused && places !== null && suggestions.length > 0 && !dismissed;
++	const active = open && highlight !== null && highlight.token === token ? highlight.index : null;
++
++	// Announce the count whenever the list opens or its rows change; closing announces nothing.
++	useEffect(() => {
++		if (!open) {
++			setHighlight(null);
++			return;
++		}
++		onSuggestions(suggestions.length);
++		// `token` covers the rows and a reopen by the page.
++	}, [open, token]);
++
++	const pick = (suggestion: PlaceSuggestion) => onPick(suggestion.pickText);
++
++	const onKeyDown = (event: KeyboardEvent) => {
++		const count = suggestions.length;
++		switch (event.key) {
++			case 'ArrowDown':
++				if (open) {
++					event.preventDefault();
++					setHighlight({ token, index: active === null ? 0 : (active + 1) % count });
++				} else if (focused && places !== null && count > 0) {
++					event.preventDefault();
++					setHighlight({ token, index: 0 });
++					onReopen();
++				}
++				return;
++			case 'ArrowUp':
++				if (open) {
++					event.preventDefault();
++					setHighlight({ token, index: active === null || active === 0 ? count - 1 : active - 1 });
++				}
++				return;
++			case 'Escape':
++				if (open) {
++					event.preventDefault();
++					onDismiss();
++				}
++				return;
++			case 'Enter':
++				if (open && active !== null) {
++					event.preventDefault();
++					pick(suggestions[active]!);
++				}
++				return;
++		}
++	};
++
++	const listbox = (
++		<ul id={LISTBOX_ID} class="place-suggestions" role="listbox" aria-labelledby={FIELD_LABEL_ID} hidden={!open}>
++			{open
++				? suggestions.map((suggestion, index) => (
++						<li
++							key={suggestion.pickText}
++							id={optionId(index)}
++							class="place-suggestions__option"
++							role="option"
++							aria-selected={index === active ? 'true' : 'false'}
++							// Keeps focus in the field, so the pick does not blur (and close) first.
++							onPointerDown={(event) => event.preventDefault()}
++							onMouseDown={(event) => event.preventDefault()}
++							onClick={() => pick(suggestion)}
++						>
++							<span class="place-suggestions__name">{suggestion.place.name}</span>
++							<SuggestionMeta meta={suggestion.meta} />
++						</li>
++					))
++				: null}
++		</ul>
++	);
+ 
+ 	return (
+ 		<form
+@@ -39,22 +158,37 @@ export function SearchBar({ text, radius, error, fieldRef, onText, onRadius, onS
+ 			}}
+ 		>
+ 			<div class="search-bar__field">
+-				<label class="search-bar__label" for={FIELD_ID}>
++				<label id={FIELD_LABEL_ID} class="search-bar__label" for={FIELD_ID}>
+ 					{t('search.place_label')}
+ 				</label>
+-				<input
+-					ref={fieldRef}
+-					id={FIELD_ID}
+-					class="search-bar__input"
+-					type="text"
+-					name="q"
+-					autocomplete="off"
+-					spellcheck={false}
+-					value={text}
+-					aria-invalid={error ? 'true' : undefined}
+-					aria-describedby={error ? FIELD_MESSAGE_ID : undefined}
+-					onInput={(event) => onText(event.currentTarget.value)}
+-				/>
++				<div class="search-bar__combobox">
++					<input
++						ref={fieldRef}
++						id={FIELD_ID}
++						class="search-bar__input"
++						type="text"
++						name="q"
++						role="combobox"
++						aria-autocomplete="list"
++						aria-expanded={open ? 'true' : 'false'}
++						aria-controls={LISTBOX_ID}
++						aria-activedescendant={active !== null ? optionId(active) : undefined}
++						autocomplete="off"
++						spellcheck={false}
++						value={text}
++						aria-invalid={error && error.code !== 'several_places' ? 'true' : undefined}
++						aria-describedby={error ? FIELD_MESSAGE_ID : undefined}
++						onInput={(event) => onText(event.currentTarget.value)}
++						onKeyDown={onKeyDown}
++						onFocus={() => setFocused(true)}
++						onBlur={() => {
++							setFocused(false);
++							onDismiss();
++						}}
++					/>
++					{/* With a field message, the list sits under it so the message stays visible. */}
++					{error ? null : listbox}
++				</div>
+ 				{error ? (
+ 					<div key={error.id} class="field-message">
+ 						<p id={FIELD_MESSAGE_ID} class="field-message__text" role="alert">
+@@ -71,6 +205,7 @@ export function SearchBar({ text, radius, error, fieldRef, onText, onRadius, onS
+ 								))}
+ 							</ul>
+ 						) : null}
++						{listbox}
+ 					</div>
+ 				) : null}
+ 			</div>
+diff --git a/web/src/search/search-page.tsx b/web/src/search/search-page.tsx
+index 6ca5dc9..ed37472 100644
+--- a/web/src/search/search-page.tsx
++++ b/web/src/search/search-page.tsx
+@@ -19,7 +19,7 @@ export interface SearchServices extends ReloadServices {
+ type DataState = { kind: 'loading' } | { kind: 'ready'; snapshot: Snapshot; places: Places } | { kind: 'failed' };
+ 
+ /** What the live region says. Stored as a description so a language switch re-renders it. */
+-type Announcement = { kind: 'loading' } | { kind: 'outcome'; outcome: Outcome };
++type Announcement = { kind: 'loading' } | { kind: 'outcome'; outcome: Outcome } | { kind: 'suggestions'; count: number };
+ 
+ const SKELETON_COUNT = 3;
+ 
+@@ -37,6 +37,10 @@ function AnnouncementText({ announcement }: { announcement: Announcement | null
+ 	const { t } = useI18n();
+ 	if (!announcement) return null;
+ 	if (announcement.kind === 'loading') return <>{t('search.loading')}</>;
++	if (announcement.kind === 'suggestions') {
++		const { count } = announcement;
++		return <>{t(count === 1 ? 'search.suggestions_count_one' : 'search.suggestions_count', { count })}</>;
++	}
+ 	const { outcome } = announcement;
+ 	if (outcome.kind === 'results') return <CountLine outcome={outcome} />;
+ 	if (outcome.kind === 'no_centres') return <>{t('results.none_in_radius', { radius: outcome.search.r })}</>;
+@@ -72,6 +76,9 @@ export function SearchPage({ services }: { services?: Partial<SearchServices> })
+ 	/** Counts shown outcomes, so a repeated field error remounts (and re-announces) its alert. */
+ 	const [outcomeId, setOutcomeId] = useState(0);
+ 	const [announcement, setAnnouncement] = useState<{ value: Announcement; id: number } | null>(null);
++	/** The suggestions list starts dismissed: only typing (or a several-places outcome) opens it. */
++	const [listDismissed, setListDismissed] = useState(true);
++	const [listOpenId, setListOpenId] = useState(0);
+ 
+ 	const fieldRef = useRef<HTMLInputElement>(null);
+ 	const lastSearch = useRef<Search | null>(null);
+@@ -93,6 +100,11 @@ export function SearchPage({ services }: { services?: Partial<SearchServices> })
+ 			const result = runSearch(search, ready.places.places, ready.snapshot.centres);
+ 			setOutcome(result);
+ 			setOutcomeId((n) => n + 1);
++			// A name several towns share keeps the list open so the user can pick one.
++			if (result.kind === 'field_error' && result.code === 'several_places') {
++				setListDismissed(false);
++				setListOpenId((n) => n + 1);
++			}
+ 			if (result.kind === 'field_error') setAnnouncement(null);
+ 			else announce({ kind: 'outcome', outcome: result });
+ 		},
+@@ -103,6 +115,7 @@ export function SearchPage({ services }: { services?: Partial<SearchServices> })
+ 	const requestSearch = useCallback(
+ 		(search: Search, options: { fill: boolean; focus: boolean }) => {
+ 			lastSearch.current = search;
++			setListDismissed(true);
+ 			if (options.fill) setText(search.q);
+ 			setRadius(search.r);
+ 			replaceHash(searchFragment(search.q, search.r, langRef.current));
+@@ -170,6 +183,16 @@ export function SearchPage({ services }: { services?: Partial<SearchServices> })
+ 		requestSearch({ q, r: radius }, { fill: false, focus: true });
+ 	};
+ 
++	const onText = (value: string) => {
++		setText(value);
++		// Typing before the data is ready opens nothing; the next keystroke after it does.
++		setListDismissed(dataRef.current.kind !== 'ready');
++	};
++
++	const pick = (pickText: string) => requestSearch({ q: pickText, r: radius }, { fill: true, focus: true });
++
++	const announceSuggestions = useCallback((count: number) => announce({ kind: 'suggestions', count }), [announce]);
++
+ 	const retry = () => {
+ 		setAttempt((n) => n + 1);
+ 		setData({ kind: 'loading' });
+@@ -235,9 +258,16 @@ export function SearchPage({ services }: { services?: Partial<SearchServices> })
+ 				radius={radius}
+ 				error={fieldError}
+ 				fieldRef={fieldRef}
+-				onText={setText}
++				places={data.kind === 'ready' ? data.places.places : null}
++				dismissed={listDismissed}
++				openId={listOpenId}
++				onText={onText}
+ 				onRadius={setRadius}
+ 				onSubmit={submit}
++				onDismiss={() => setListDismissed(true)}
++				onReopen={() => setListDismissed(false)}
++				onPick={pick}
++				onSuggestions={announceSuggestions}
+ 			/>
+ 			<p class="visually-hidden" role="status">
+ 				{announcement ? (
+diff --git a/web/src/search/search.ts b/web/src/search/search.ts
+index ebad1bc..26ba604 100644
+--- a/web/src/search/search.ts
++++ b/web/src/search/search.ts
+@@ -46,28 +46,160 @@ export function searchFragment(q: string, r: Radius, lang: string): string {
+ 	return serialiseFragment(new URLSearchParams([['q', q], ['r', String(r)], ['lang', lang]]));
+ }
+ 
+-export type Resolution = { kind: 'found'; place: PlaceRow } | { kind: 'outside_bavaria' } | { kind: 'not_found'; suggestions: string[] };
++export type Resolution =
++	| { kind: 'found'; place: PlaceRow }
++	| { kind: 'several' }
++	| { kind: 'outside_bavaria' }
++	| { kind: 'not_found'; suggestions: string[] };
+ 
+ const POSTCODE = /^\d{5}$/;
++/** `"<5 digits> <name>"`: the pick text of a town whose name several Bavarian towns share. */
++const QUALIFIED = /^(\d{5})\s+(\S.*)$/;
++const POSTCODE_PREFIX = /^\d{2,5}$/;
++
++/** At most this many place suggestions while typing (DESIGN `place-suggestions.max-items`). */
++export const MAX_PLACE_SUGGESTIONS = 6;
++/** Suggestions start at this many characters (trimmed). */
++export const MIN_SUGGESTION_CHARS = 2;
++
++interface IndexedRow {
++	row: PlaceRow;
++	/** `normalizePlaceName(row.name)`. */
++	name: string;
++	/** The row's smallest postcode; null when it has none. */
++	label: string | null;
++}
++
++interface PlaceIndex {
++	/** Bavarian rows only, in input order. */
++	bavarian: IndexedRow[];
++	/** Normalised names whose Bavarian rows have more than one distinct label postcode. */
++	ambiguous: Set<string>;
++}
++
++const indexes = new WeakMap<readonly PlaceRow[], PlaceIndex>();
++
++const smallest = (values: readonly string[]): string | null => values.reduce<string | null>((min, v) => (min === null || v < min ? v : min), null);
++
++/** Built once per rows array: normalised names, label postcodes and the ambiguous names. */
++function placeIndex(places: readonly PlaceRow[]): PlaceIndex {
++	const cached = indexes.get(places);
++	if (cached) return cached;
++	const bavarian: IndexedRow[] = [];
++	const labels = new Map<string, Set<string | null>>();
++	for (const row of places) {
++		if (row.state !== 'BY') continue;
++		const entry = { row, name: normalizePlaceName(row.name), label: smallest(row.postcodes) };
++		bavarian.push(entry);
++		const set = labels.get(entry.name) ?? new Set();
++		set.add(entry.label);
++		labels.set(entry.name, set);
++	}
++	const ambiguous = new Set([...labels].filter(([, set]) => set.size > 1).map(([name]) => name));
++	const index = { bavarian, ambiguous };
++	indexes.set(places, index);
++	return index;
++}
++
++const lowestKey = (rows: readonly PlaceRow[]): PlaceRow => rows.reduce((lowest, row) => (row.key < lowest.key ? row : lowest));
++
++/** The row's smallest postcode, or null when it has none. */
++export function labelPostcode(row: PlaceRow): string | null {
++	return smallest(row.postcodes);
++}
++
++/** True when several Bavarian towns share this name under different label postcodes. */
++export function isAmbiguousName(name: string, places: readonly PlaceRow[]): boolean {
++	return placeIndex(places).ambiguous.has(normalizePlaceName(name));
++}
++
++/** What the field shows, and searches for, when a suggestion is picked: the name, or `"<label postcode> <name>"` when ambiguous. */
++export function pickText(row: PlaceRow, places: readonly PlaceRow[]): string {
++	const label = labelPostcode(row);
++	return label !== null && isAmbiguousName(row.name, places) ? `${label} ${row.name}` : row.name;
++}
++
++export interface PlaceSuggestion {
++	place: PlaceRow;
++	/** The field text a pick writes and searches for. */
++	pickText: string;
++	/** The meta line under the name; null for none. `district` is set only for an ambiguous name. */
++	meta: { postcode: string; district: string | null } | null;
++}
+ 
+ /**
+- * Resolves typed text to a place row. A 5-digit input matches postcodes, anything else the
+- * normalised name. A Bavarian match wins (lowest key); matches only elsewhere are outside Bavaria.
++ * Up to 6 Bavarian towns for typed text (at least 2 characters, trimmed). Digits match postcode
++ * prefixes, ordered by the matched postcode; anything else matches normalised name prefixes,
++ * exact matches first. Then German collation and key. Rows with the same pick text collapse.
++ */
++export function suggestPlaces(input: string, places: readonly PlaceRow[]): PlaceSuggestion[] {
++	const text = input.trim();
++	if (text.length < MIN_SUGGESTION_CHARS) return [];
++	const index = placeIndex(places);
++	type Candidate = { entry: IndexedRow; sortKey: string; exact: boolean };
++	const candidates: Candidate[] = [];
++	const postcodeInput = POSTCODE_PREFIX.test(text);
++	if (postcodeInput) {
++		for (const entry of index.bavarian) {
++			const matched = smallest(entry.row.postcodes.filter((postcode) => postcode.startsWith(text)));
++			if (matched !== null) candidates.push({ entry, sortKey: matched, exact: false });
++		}
++	} else {
++		const wanted = normalizePlaceName(text);
++		if (!wanted) return [];
++		for (const entry of index.bavarian) {
++			if (entry.name.startsWith(wanted)) candidates.push({ entry, sortKey: '', exact: entry.name === wanted });
++		}
++	}
++	candidates.sort(
++		(a, b) =>
++			(a.sortKey < b.sortKey ? -1 : a.sortKey > b.sortKey ? 1 : 0) ||
++			Number(b.exact) - Number(a.exact) ||
++			a.entry.row.name.localeCompare(b.entry.row.name, 'de') ||
++			(a.entry.row.key < b.entry.row.key ? -1 : a.entry.row.key > b.entry.row.key ? 1 : 0),
++	);
++	const out: PlaceSuggestion[] = [];
++	const seen = new Set<string>();
++	for (const { entry, sortKey } of candidates) {
++		const ambiguous = entry.label !== null && index.ambiguous.has(entry.name);
++		const pick = ambiguous ? `${entry.label} ${entry.row.name}` : entry.row.name;
++		if (seen.has(pick)) continue;
++		seen.add(pick);
++		const district = ambiguous ? entry.row.district : null;
++		const meta = postcodeInput ? { postcode: sortKey, district } : ambiguous ? { postcode: entry.label!, district } : null;
++		out.push({ place: entry.row, pickText: pick, meta });
++		if (out.length === MAX_PLACE_SUGGESTIONS) break;
++	}
++	return out;
++}
++
++/**
++ * Resolves typed text to a place row. `"<postcode> <name>"` matches rows with both; a 5-digit
++ * input matches postcodes; anything else the normalised name. A Bavarian match wins (lowest key),
++ * except that a name shared by Bavarian towns with different label postcodes is `several`.
++ * Matches only elsewhere are outside Bavaria.
+  */
+ export function resolvePlace(input: string, places: readonly PlaceRow[]): Resolution {
+ 	const text = input.trim();
++	const qualified = QUALIFIED.exec(text);
++	if (qualified) {
++		const [, postcode, name] = qualified as unknown as [string, string, string];
++		const wanted = normalizePlaceName(name);
++		const matches = places.filter((row) => row.postcodes.includes(postcode) && normalizePlaceName(row.name) === wanted);
++		const bavarian = matches.filter((row) => row.state === 'BY');
++		if (bavarian.length > 0) return { kind: 'found', place: lowestKey(bavarian) };
++		if (matches.length > 0) return { kind: 'outside_bavaria' };
++	}
+ 	let matches: PlaceRow[];
+ 	if (POSTCODE.test(text)) {
+ 		matches = places.filter((row) => row.postcodes.includes(text));
+ 	} else {
+ 		const wanted = normalizePlaceName(text);
++		if (placeIndex(places).ambiguous.has(wanted)) return { kind: 'several' };
+ 		matches = places.filter((row) => normalizePlaceName(row.name) === wanted);
+ 	}
+ 	const bavarian = matches.filter((row) => row.state === 'BY');
+-	if (bavarian.length > 0) {
+-		const place = bavarian.reduce((lowest, row) => (row.key < lowest.key ? row : lowest));
+-		return { kind: 'found', place };
+-	}
++	if (bavarian.length > 0) return { kind: 'found', place: lowestKey(bavarian) };
+ 	if (matches.length > 0) return { kind: 'outside_bavaria' };
+ 	return { kind: 'not_found', suggestions: didYouMean(text, places) };
+ }
+@@ -140,7 +272,7 @@ export function centresInRange(centres: readonly SnapshotCentre[], origin: { lat
+ 	);
+ }
+ 
+-export type FieldErrorCode = 'place_not_found' | 'outside_bavaria';
++export type FieldErrorCode = 'place_not_found' | 'outside_bavaria' | 'several_places';
+ 
+ /** What a search shows. Field errors are codes so a language switch re-renders them. */
+ export type Outcome =
+@@ -150,6 +282,7 @@ export type Outcome =
+ 
+ export function runSearch(search: Search, places: readonly PlaceRow[], centres: readonly SnapshotCentre[]): Outcome {
+ 	const resolution = resolvePlace(search.q, places);
++	if (resolution.kind === 'several') return { kind: 'field_error', code: 'several_places', suggestions: [] };
+ 	if (resolution.kind === 'outside_bavaria') return { kind: 'field_error', code: 'outside_bavaria', suggestions: [] };
+ 	if (resolution.kind === 'not_found') return { kind: 'field_error', code: 'place_not_found', suggestions: resolution.suggestions };
+ 	const items = centresInRange(centres, resolution.place, search.r);
+diff --git a/web/src/styles/base.css b/web/src/styles/base.css
+index be6f159..77a3f16 100644
+--- a/web/src/styles/base.css
++++ b/web/src/styles/base.css
+@@ -266,10 +266,16 @@ a {
+ }
+ 
+ .search-bar__input {
+-	grid-area: place-input;
+ 	inline-size: 100%;
+ }
+ 
++/* The input and, while no field message shows, the suggestions overlay anchored under it. */
++.search-bar__combobox {
++	grid-area: place-input;
++	position: relative;
++	min-width: 0;
++}
++
+ .search-bar__input[aria-invalid='true'] {
+ 	border-color: var(--color-error);
+ }
+@@ -286,6 +292,7 @@ a {
+ /* Field message: "Error: …" plus up to three "Did you mean …?" links. */
+ .field-message {
+ 	grid-area: place-message;
++	position: relative;
+ 	min-width: 0;
+ }
+ 
+@@ -309,6 +316,53 @@ a {
+ 	overflow-wrap: anywhere;
+ }
+ 
++/* Place suggestions: the only overlay, under the field (or under its message when one shows). */
++.place-suggestions {
++	position: absolute;
++	inset-inline: 0;
++	inset-block-start: 100%;
++	z-index: 2;
++	margin: 0;
++	margin-block-start: var(--space-1);
++	padding: 0;
++	list-style: none;
++	background: var(--place-suggestions-background);
++	border: thin solid var(--place-suggestions-border);
++	border-radius: var(--place-suggestions-rounded);
++	overflow: hidden;
++}
++
++.place-suggestions[hidden] {
++	display: none;
++}
++
++.place-suggestions__option {
++	display: flex;
++	flex-direction: column;
++	justify-content: center;
++	min-height: var(--place-suggestions-item-min-height);
++	padding-block: var(--space-1);
++	padding-inline: var(--space-3);
++	font: var(--font-body);
++	color: var(--color-ink-primary);
++	cursor: pointer;
++	overflow-wrap: anywhere;
++}
++
++.place-suggestions__option + .place-suggestions__option {
++	border-block-start: thin solid var(--color-border);
++}
++
++.place-suggestions__option[aria-selected='true'],
++.place-suggestions__option:hover {
++	background: var(--place-suggestions-highlight-background);
++}
++
++.place-suggestions__meta {
++	font: var(--font-meta);
++	color: var(--color-ink-secondary);
++}
++
+ /* Results */
+ .search__results > p {
+ 	margin-block: var(--space-2);

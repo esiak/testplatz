@@ -19,7 +19,7 @@ export interface SearchServices extends ReloadServices {
 type DataState = { kind: 'loading' } | { kind: 'ready'; snapshot: Snapshot; places: Places } | { kind: 'failed' };
 
 /** What the live region says. Stored as a description so a language switch re-renders it. */
-type Announcement = { kind: 'loading' } | { kind: 'outcome'; outcome: Outcome };
+type Announcement = { kind: 'loading' } | { kind: 'outcome'; outcome: Outcome } | { kind: 'suggestions'; count: number };
 
 const SKELETON_COUNT = 3;
 
@@ -37,6 +37,10 @@ function AnnouncementText({ announcement }: { announcement: Announcement | null 
 	const { t } = useI18n();
 	if (!announcement) return null;
 	if (announcement.kind === 'loading') return <>{t('search.loading')}</>;
+	if (announcement.kind === 'suggestions') {
+		const { count } = announcement;
+		return <>{t(count === 1 ? 'search.suggestions_count_one' : 'search.suggestions_count', { count })}</>;
+	}
 	const { outcome } = announcement;
 	if (outcome.kind === 'results') return <CountLine outcome={outcome} />;
 	if (outcome.kind === 'no_centres') return <>{t('results.none_in_radius', { radius: outcome.search.r })}</>;
@@ -72,6 +76,9 @@ export function SearchPage({ services }: { services?: Partial<SearchServices> })
 	/** Counts shown outcomes, so a repeated field error remounts (and re-announces) its alert. */
 	const [outcomeId, setOutcomeId] = useState(0);
 	const [announcement, setAnnouncement] = useState<{ value: Announcement; id: number } | null>(null);
+	/** The suggestions list starts dismissed: only typing (or a several-places outcome) opens it. */
+	const [listDismissed, setListDismissed] = useState(true);
+	const [listOpenId, setListOpenId] = useState(0);
 
 	const fieldRef = useRef<HTMLInputElement>(null);
 	const lastSearch = useRef<Search | null>(null);
@@ -91,18 +98,30 @@ export function SearchPage({ services }: { services?: Partial<SearchServices> })
 	const show = useCallback(
 		(search: Search, ready: Extract<DataState, { kind: 'ready' }>) => {
 			const result = runSearch(search, ready.places.places, ready.snapshot.centres);
+			// A single suggestion was searched: the field and the fragment take its pick text.
+			if ((result.kind === 'results' || result.kind === 'no_centres') && result.search.q !== search.q) {
+				lastSearch.current = result.search;
+				setText(result.search.q);
+				replaceHash(searchFragment(result.search.q, result.search.r, langRef.current));
+			}
 			setOutcome(result);
 			setOutcomeId((n) => n + 1);
+			// A name several towns share keeps the list open so the user can pick one.
+			if (result.kind === 'field_error' && result.code === 'several_places') {
+				setListDismissed(false);
+				setListOpenId((n) => n + 1);
+			}
 			if (result.kind === 'field_error') setAnnouncement(null);
 			else announce({ kind: 'outcome', outcome: result });
 		},
-		[announce],
+		[announce, replaceHash],
 	);
 
 	/** Writes the fragment, then runs the search now or once the data has arrived. */
 	const requestSearch = useCallback(
 		(search: Search, options: { fill: boolean; focus: boolean }) => {
 			lastSearch.current = search;
+			setListDismissed(true);
 			if (options.fill) setText(search.q);
 			setRadius(search.r);
 			replaceHash(searchFragment(search.q, search.r, langRef.current));
@@ -170,6 +189,16 @@ export function SearchPage({ services }: { services?: Partial<SearchServices> })
 		requestSearch({ q, r: radius }, { fill: false, focus: true });
 	};
 
+	const onText = (value: string) => {
+		setText(value);
+		// Typing before the data is ready opens nothing; the next keystroke after it does.
+		setListDismissed(dataRef.current.kind !== 'ready');
+	};
+
+	const pick = (pickText: string) => requestSearch({ q: pickText, r: radius }, { fill: true, focus: true });
+
+	const announceSuggestions = useCallback((count: number) => announce({ kind: 'suggestions', count }), [announce]);
+
 	const retry = () => {
 		setAttempt((n) => n + 1);
 		setData({ kind: 'loading' });
@@ -235,9 +264,16 @@ export function SearchPage({ services }: { services?: Partial<SearchServices> })
 				radius={radius}
 				error={fieldError}
 				fieldRef={fieldRef}
-				onText={setText}
+				places={data.kind === 'ready' ? data.places.places : null}
+				dismissed={listDismissed}
+				openId={listOpenId}
+				onText={onText}
 				onRadius={setRadius}
 				onSubmit={submit}
+				onDismiss={() => setListDismissed(true)}
+				onReopen={() => setListDismissed(false)}
+				onPick={pick}
+				onSuggestions={announceSuggestions}
 			/>
 			<p class="visually-hidden" role="status">
 				{announcement ? (

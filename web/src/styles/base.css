@@ -266,8 +266,14 @@ a {
 }
 
 .search-bar__input {
-	grid-area: place-input;
 	inline-size: 100%;
+}
+
+/* The input and, while no field message shows, the suggestions overlay anchored under it. */
+.search-bar__combobox {
+	grid-area: place-input;
+	position: relative;
+	min-width: 0;
 }
 
 .search-bar__input[aria-invalid='true'] {
@@ -286,6 +292,7 @@ a {
 /* Field message: "Error: …" plus up to three "Did you mean …?" links. */
 .field-message {
 	grid-area: place-message;
+	position: relative;
 	min-width: 0;
 }
 
@@ -307,6 +314,61 @@ a {
 	max-width: 100%;
 	min-height: var(--space-target-min);
 	overflow-wrap: anywhere;
+}
+
+/* Place suggestions: the only overlay, under the field (or under its message when one shows). */
+.place-suggestions {
+	position: absolute;
+	inset-inline: 0;
+	inset-block-start: 100%;
+	z-index: 2;
+	margin: 0;
+	margin-block-start: var(--space-1);
+	padding: 0;
+	list-style: none;
+	background: var(--place-suggestions-background);
+	border: thin solid var(--place-suggestions-border);
+	border-radius: var(--place-suggestions-rounded);
+	overflow: hidden;
+}
+
+.place-suggestions[hidden] {
+	display: none;
+}
+
+.place-suggestions__option {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	min-height: var(--place-suggestions-item-min-height);
+	padding-block: var(--space-1);
+	padding-inline: var(--space-3);
+	font: var(--font-body);
+	color: var(--color-ink-primary);
+	cursor: pointer;
+	overflow-wrap: anywhere;
+}
+
+.place-suggestions__option + .place-suggestions__option {
+	border-block-start: thin solid var(--color-border);
+}
+
+.place-suggestions__option[aria-selected='true'],
+.place-suggestions__option:hover {
+	background: var(--place-suggestions-highlight-background);
+}
+
+/* Forced colours drop backgrounds, so the highlighted row also gets a system-colour outline. */
+@media (forced-colors: active) {
+	.place-suggestions__option[aria-selected='true'] {
+		outline: var(--focus-ring-width) solid Highlight;
+		outline-offset: calc(var(--focus-ring-width) * -1);
+	}
+}
+
+.place-suggestions__meta {
+	font: var(--font-meta);
+	color: var(--color-ink-secondary);
 }
 
 /* Results */

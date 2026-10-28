@@ -10,15 +10,21 @@ import {
 	destinationDomain,
 	didYouMean,
 	formatAddress,
+	isAmbiguousName,
+	labelPostcode,
 	levenshtein,
+	MAX_PLACE_SUGGESTIONS,
 	mapsUrl,
 	nextRadius,
 	parseSearchFragment,
+	pickText,
 	RADII,
+	resolveSearch,
 	resolvePlace,
 	runSearch,
 	searchFragment,
 	snapRadius,
+	suggestPlaces,
 } from '../web/src/search/search.ts';
 import { PLACE_ROWS, placeRow, smallPlaces } from './fixtures/places.ts';
 import { snapshotCentre } from './fixtures/snapshot.ts';
@@ -90,8 +96,39 @@ describe('resolvePlace', () => {
 		expect(resolvePlace('90443', places)).toEqual({ kind: 'found', place: PLACE_ROWS.nuernberg });
 	});
 
-	it('uses the lowest-key Bavarian row when a name exists in BY and another state', () => {
-		expect(resolvePlace('Neustadt', places)).toEqual({ kind: 'found', place: PLACE_ROWS.neustadtBy1 });
+	it('uses the Bavarian row when a name exists in BY and another state', () => {
+		const rows = [placeRow('01000001', 'Wald', { postcodes: ['24000'] }), placeRow('09000002', 'Wald', { postcodes: ['93000'] })];
+		expect(resolvePlace('Wald', rows)).toEqual({ kind: 'found', place: rows[1] });
+	});
+
+	it('reports several places for a name Bavarian towns share under different postcodes', () => {
+		for (const input of ['Kastl', ' kastl ', 'Neustadt']) expect(resolvePlace(input, places), input).toEqual({ kind: 'several' });
+	});
+
+	it('uses the lowest-key row for a name whose Bavarian rows share one label postcode', () => {
+		expect(resolvePlace('Chiemsee', places)).toEqual({ kind: 'found', place: PLACE_ROWS.chiemsee });
+	});
+
+	it('resolves the qualified form "<postcode> <name>" to that row, Bavarian rows first', () => {
+		expect(resolvePlace('92280 Kastl', places)).toEqual({ kind: 'found', place: PLACE_ROWS.kastlAs });
+		expect(resolvePlace('84556  kastl', places)).toEqual({ kind: 'found', place: PLACE_ROWS.kastlAoe });
+		expect(resolvePlace('95506 Kastl', places)).toEqual({ kind: 'found', place: PLACE_ROWS.kastlTir });
+		expect(resolvePlace('91413 Neustadt', places)).toEqual({ kind: 'found', place: PLACE_ROWS.neustadtBy2 });
+		expect(resolvePlace('83209 Chiemsee', places)).toEqual({ kind: 'found', place: PLACE_ROWS.chiemsee });
+	});
+
+	it('reports a qualified form matching only outside Bavaria as outside Bavaria', () => {
+		expect(resolvePlace('24999 Kastl', places)).toEqual({ kind: 'outside_bavaria' });
+	});
+
+	it('handles a qualified form that matches no row as plain text', () => {
+		expect(resolvePlace('99999 Kastl', places)).toEqual({ kind: 'not_found', suggestions: [] });
+		expect(resolvePlace('90402 München', places)).toEqual({ kind: 'not_found', suggestions: [] });
+	});
+
+	it('keeps a 5-digit postcode on the lowest-key Bavarian row', () => {
+		expect(resolvePlace('89231', places)).toEqual({ kind: 'found', place: PLACE_ROWS.neuUlm });
+		expect(resolvePlace('92280', places)).toEqual({ kind: 'found', place: PLACE_ROWS.kastlAs });
 	});
 
 	it('uses the lowest-key Bavarian row among several postcode matches', () => {
@@ -116,6 +153,122 @@ describe('resolvePlace', () => {
 
 	it('matches a 4- or 6-digit input against names, not postcodes', () => {
 		expect(resolvePlace('9044', places).kind).toBe('not_found');
+	});
+});
+
+describe('suggestPlaces', () => {
+	const picks = (input: string) => suggestPlaces(input, places).map((s) => s.pickText);
+
+	it('suggests nothing below 2 characters (trimmed)', () => {
+		for (const input of ['', 'M', ' M ', '8', '  ']) expect(suggestPlaces(input, places), input).toEqual([]);
+	});
+
+	it('matches name prefixes ignoring case and umlaut spelling', () => {
+		for (const input of ['nü', 'nue', 'NU', 'Nürnb', ' nurnberg ']) expect(picks(input), input).toEqual(['Nürnberg']);
+		expect(picks('Mün')).toEqual(['München']);
+		expect(picks('Fu')).toEqual(['Fürth']);
+	});
+
+	it('suggests only Bavarian rows', () => {
+		expect(picks('Kiel')).toEqual([]);
+		for (const s of suggestPlaces('Kastl', places)) expect(s.place.state).toBe('BY');
+	});
+
+	it('qualifies same-name towns with their label postcode, with postcode and district meta', () => {
+		expect(suggestPlaces('Kastl', places)).toEqual([
+			{ place: PLACE_ROWS.kastlAoe, pickText: '84556 Kastl', meta: { postcode: '84556', district: 'Landkreis Altötting' } },
+			{ place: PLACE_ROWS.kastlAs, pickText: '92280 Kastl', meta: { postcode: '92280', district: 'Landkreis Amberg-Sulzbach' } },
+			{ place: PLACE_ROWS.kastlTir, pickText: '95506 Kastl', meta: { postcode: '95506', district: 'Landkreis Tirschenreuth' } },
+		]);
+	});
+
+	it('gives unique names no meta line', () => {
+		expect(suggestPlaces('Augs', places)).toEqual([{ place: PLACE_ROWS.augsburg, pickText: 'Augsburg', meta: null }]);
+	});
+
+	it('puts exact matches first, then German collation, then key', () => {
+		const rows = [
+			placeRow('09000001', 'Aub'),
+			placeRow('09000002', 'Aubstadt'),
+			placeRow('09000003', 'Au', { postcodes: ['84000'] }),
+			placeRow('09000004', 'Äu'),
+		];
+		// "Äu" normalises like "Au", so both are exact matches and come first, in German collation.
+		expect(suggestPlaces('Au', rows).map((s) => s.place.key)).toEqual(['09000003', '09000004', '09000001', '09000002']);
+		const ties = [placeRow('09000009', 'Zell', { postcodes: ['97000'] }), placeRow('09000008', 'Zell', { postcodes: ['97000'] })];
+		expect(suggestPlaces('Zel', ties).map((s) => s.place.key)).toEqual(['09000008']);
+	});
+
+	it('collapses rows with the same name and label postcode into the lowest-key row', () => {
+		expect(suggestPlaces('Chiemsee', places)).toEqual([{ place: PLACE_ROWS.chiemsee, pickText: 'Chiemsee', meta: null }]);
+	});
+
+	it('matches postcode prefixes for 2–5 digits, with the smallest matched postcode as meta', () => {
+		expect(suggestPlaces('8923', places)).toEqual([{ place: PLACE_ROWS.neuUlm, pickText: 'Neu-Ulm', meta: { postcode: '89231', district: null } }]);
+		expect(suggestPlaces('89233', places)).toEqual([{ place: PLACE_ROWS.neuUlm, pickText: 'Neu-Ulm', meta: { postcode: '89233', district: null } }]);
+		expect(suggestPlaces('892330', places)).toEqual([]);
+		expect(suggestPlaces('24', places)).toEqual([]); // Kiel and the SH Kastl are not Bavarian
+	});
+
+	it('orders postcode matches by the matched postcode, then name', () => {
+		expect(picks('9')).toEqual([]);
+		expect(suggestPlaces('9', places)).toEqual([]);
+		expect(suggestPlaces('90', places).map((s) => [s.pickText, s.meta?.postcode])).toEqual([
+			['Nürnberg', '90402'],
+			['Fürth', '90762'],
+		]);
+	});
+
+	it('adds the district to postcode meta for an ambiguous name', () => {
+		expect(suggestPlaces('92', places)).toEqual([
+			{ place: PLACE_ROWS.kastlAs, pickText: '92280 Kastl', meta: { postcode: '92280', district: 'Landkreis Amberg-Sulzbach' } },
+			{ place: PLACE_ROWS.neustadtBy1, pickText: '92660 Neustadt', meta: { postcode: '92660', district: 'Neustadt' } },
+		]);
+	});
+
+	it('caps the list at 6 rows', () => {
+		expect(MAX_PLACE_SUGGESTIONS).toBe(6);
+		expect(picks('Ober')).toEqual(['Oberammergau', 'Oberasbach', 'Oberau', 'Oberaudorf', 'Oberaurach', 'Oberbergkirchen']);
+	});
+
+	it('names the pick text and label postcode', () => {
+		expect(labelPostcode(PLACE_ROWS.neuUlm)).toBe('89231');
+		expect(labelPostcode(PLACE_ROWS.oberau)).toBeNull();
+		expect(isAmbiguousName('KASTL', places)).toBe(true);
+		expect(isAmbiguousName('Chiemsee', places)).toBe(false);
+		expect(pickText(PLACE_ROWS.kastlTir, places)).toBe('95506 Kastl');
+		expect(pickText(PLACE_ROWS.neuUlm, places)).toBe('Neu-Ulm');
+	});
+});
+
+describe('resolveSearch', () => {
+	it('lets an exact result decide: found, several or outside Bavaria', () => {
+		expect(resolveSearch('Augsburg', places)).toEqual({ kind: 'found', place: PLACE_ROWS.augsburg });
+		expect(resolveSearch('Au', places)).toEqual({ kind: 'found', place: PLACE_ROWS.au });
+		expect(resolveSearch('Kastl', places)).toEqual({ kind: 'several' });
+		expect(resolveSearch('Kiel', places)).toEqual({ kind: 'outside_bavaria' });
+		expect(resolveSearch('92280 Kastl', places)).toEqual({ kind: 'found', place: PLACE_ROWS.kastlAs });
+		expect(resolveSearch('89231', places)).toEqual({ kind: 'found', place: PLACE_ROWS.neuUlm });
+	});
+
+	it('searches the only suggestion under its pick text', () => {
+		expect(resolveSearch('Augs', places)).toEqual({ kind: 'suggested', place: PLACE_ROWS.augsburg, text: 'Augsburg' });
+		expect(resolveSearch(' nurnb ', places)).toEqual({ kind: 'suggested', place: PLACE_ROWS.nuernberg, text: 'Nürnberg' });
+		expect(resolveSearch('8923', places)).toEqual({ kind: 'suggested', place: PLACE_ROWS.neuUlm, text: 'Neu-Ulm' });
+		expect(resolveSearch('Kas', places)).toEqual({ kind: 'several' });
+		expect(resolveSearch('Chiem', places)).toEqual({ kind: 'suggested', place: PLACE_ROWS.chiemsee, text: 'Chiemsee' });
+	});
+
+	it('reports several when two or more suggestions match, even beyond the cap of 6', () => {
+		expect(resolveSearch('Ober', places)).toEqual({ kind: 'several' });
+		expect(resolveSearch('Neu', places)).toEqual({ kind: 'several' });
+		expect(resolveSearch('90', places)).toEqual({ kind: 'several' });
+	});
+
+	it('reports place-not-found with did-you-mean when nothing is suggested', () => {
+		expect(resolveSearch('Nurnbreg', places)).toEqual({ kind: 'not_found', suggestions: ['Nürnberg'] });
+		expect(resolveSearch('M', places)).toMatchObject({ kind: 'not_found' });
+		expect(resolveSearch('99999', places)).toEqual({ kind: 'not_found', suggestions: [] });
 	});
 });
 
@@ -226,8 +379,15 @@ describe('runSearch', () => {
 		expect(runSearch({ q: 'Augsburg', r: 10 }, places, centres)).toEqual({ kind: 'no_centres', search: { q: 'Augsburg', r: 10 } });
 	});
 
+	it('searches a single suggestion and reports its pick text as the search', () => {
+		expect(runSearch({ q: 'Nürnb', r: 20 }, places, centres)).toMatchObject({ kind: 'results', search: { q: 'Nürnberg', r: 20 } });
+		expect(runSearch({ q: 'Augs', r: 10 }, places, centres)).toEqual({ kind: 'no_centres', search: { q: 'Augsburg', r: 10 } });
+		expect(runSearch({ q: 'Ober', r: 40 }, places, centres)).toEqual({ kind: 'field_error', code: 'several_places', suggestions: [] });
+	});
+
 	it('returns field errors as codes', () => {
 		expect(runSearch({ q: 'Kiel', r: 40 }, places, centres)).toEqual({ kind: 'field_error', code: 'outside_bavaria', suggestions: [] });
+		expect(runSearch({ q: 'Kastl', r: 40 }, places, centres)).toEqual({ kind: 'field_error', code: 'several_places', suggestions: [] });
 		expect(runSearch({ q: 'Atlantis', r: 40 }, places, centres)).toMatchObject({ kind: 'field_error', code: 'place_not_found' });
 	});
 });
@@ -286,6 +446,75 @@ describe('the committed data files', () => {
 			const resolution = resolvePlace(postcode, placeFile.places);
 			expect(resolution.kind, postcode).toBe('found');
 			if (resolution.kind === 'found') expect(resolution.place.postcodes).toContain(postcode);
+		}
+	});
+
+	it('resolve every Bavarian row\'s pick text to a row with the same name and label postcode', () => {
+		for (const row of bavarian) {
+			const text = pickText(row, placeFile.places);
+			const resolution = resolvePlace(text, placeFile.places);
+			expect(resolution.kind, text).toBe('found');
+			if (resolution.kind !== 'found') continue;
+			expect(normalizePlaceName(resolution.place.name), text).toBe(normalizePlaceName(row.name));
+			expect(labelPostcode(resolution.place), text).toBe(labelPostcode(row));
+		}
+	});
+
+	it('suggest at most 6 Bavarian rows with distinct pick texts for every 2- and 3-character prefix', () => {
+		const prefixes = new Set<string>();
+		for (const row of bavarian) {
+			prefixes.add(row.name.slice(0, 2));
+			prefixes.add(row.name.slice(0, 3));
+			for (const postcode of row.postcodes) prefixes.add(postcode.slice(0, 3));
+		}
+		for (const prefix of prefixes) {
+			const list = suggestPlaces(prefix, placeFile.places);
+			expect(list.length, prefix).toBeGreaterThan(0);
+			expect(list.length, prefix).toBeLessThanOrEqual(6);
+			expect(new Set(list.map((s) => s.pickText)).size, prefix).toBe(list.length);
+			for (const s of list) expect(s.place.state, prefix).toBe('BY');
+		}
+	});
+
+	it('resolve every postcode-input suggestion\'s pick text to the row it showed', () => {
+		const postcodes = new Set(bavarian.flatMap((row) => row.postcodes));
+		for (const postcode of postcodes) {
+			for (const suggestion of suggestPlaces(postcode, placeFile.places)) {
+				const resolution = resolveSearch(suggestion.pickText, placeFile.places);
+				expect(resolution.kind, `${postcode} → ${suggestion.pickText}`).toBe('found');
+				if (resolution.kind === 'found') expect(resolution.place.key, `${postcode} → ${suggestion.pickText}`).toBe(suggestion.place.key);
+			}
+		}
+	});
+
+	it('follow the suggestions shown when no exact match decides', () => {
+		for (const text of ['Augs', 'Ober', 'Mün', 'Hof', 'Gunz', '8923']) {
+			const exact = resolvePlace(text, placeFile.places);
+			const shown = suggestPlaces(text, placeFile.places, Number.POSITIVE_INFINITY);
+			const resolution = resolveSearch(text, placeFile.places);
+			if (exact.kind !== 'not_found') expect(resolution, text).toEqual(exact);
+			else if (shown.length === 1) expect(resolution, text).toEqual({ kind: 'suggested', place: shown[0]!.place, text: shown[0]!.pickText });
+			else if (shown.length > 1) expect(resolution, text).toEqual({ kind: 'several' });
+			else expect(resolution, text).toEqual(exact);
+		}
+		expect(resolveSearch('Ober', placeFile.places).kind).toBe('several');
+		expect(resolveSearch('Mün', placeFile.places).kind).toBe('several');
+		expect(resolveSearch('Hof', placeFile.places).kind).toBe('found');
+		expect(resolveSearch('Augs', placeFile.places)).toMatchObject({ kind: 'suggested', text: 'Augsburg' });
+	});
+
+	it('report several places for every same-name Bavarian group with different label postcodes', () => {
+		const labels = new Map<string, Set<string | null>>();
+		for (const row of bavarian) {
+			const name = normalizePlaceName(row.name);
+			labels.set(name, (labels.get(name) ?? new Set()).add(labelPostcode(row)));
+		}
+		const ambiguous = [...labels].filter(([, set]) => set.size > 1);
+		expect(ambiguous.length).toBeGreaterThan(0);
+		for (const [name] of ambiguous) {
+			expect(resolvePlace(name, placeFile.places).kind, name).toBe('several');
+			const exact = suggestPlaces(name, placeFile.places).filter((s) => normalizePlaceName(s.place.name) === name);
+			expect(exact.length, name).toBeGreaterThan(1);
 		}
 	});
 
