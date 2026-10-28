@@ -382,3 +382,53 @@ describe('createFetchClient robotsExempt', () => {
 		expect(net.calls.map((c) => c.url)).toEqual([`${NOMI}/robots.txt`]);
 	});
 });
+
+describe('createFetchClient isHostBlocked', () => {
+	const blocked = (host: string) => host === 'blocked.de';
+
+	it('sends nothing to a blocked host and returns host-blocked', async () => {
+		const net = fakeNetwork({ 'https://blocked.de/robots.txt': status(404), 'https://blocked.de/p': html('p') });
+		const client = createFetchClient({ fetchImpl: net.fetchImpl, delayMs: 0, isHostBlocked: blocked });
+		expect(await client.get('https://blocked.de/p')).toEqual({
+			ok: false,
+			reason: 'host-blocked',
+			url: 'https://blocked.de/p',
+			status: null,
+		});
+		expect(net.calls).toEqual([]);
+		expect(client.stats().rawRequests).toEqual({});
+	});
+
+	it('returns host-blocked for a page redirecting to a blocked host, without contacting it', async () => {
+		const net = fakeNetwork({
+			'https://a.de/robots.txt': status(404),
+			'https://a.de/p': redirect('https://blocked.de/q'),
+			'https://blocked.de/robots.txt': status(404),
+			'https://blocked.de/q': html('q'),
+		});
+		const client = createFetchClient({ fetchImpl: net.fetchImpl, delayMs: 0, isHostBlocked: blocked });
+		expect(await client.get('https://a.de/p')).toEqual({ ok: false, reason: 'host-blocked', url: 'https://blocked.de/q', status: null });
+		expect(net.calls.map((c) => c.url)).toEqual(['https://a.de/robots.txt', 'https://a.de/p']);
+		expect(Object.keys(client.stats().rawRequests)).toEqual(['a.de']);
+	});
+
+	it('returns host-blocked when the robots.txt chain redirects to a blocked host', async () => {
+		const net = fakeNetwork({
+			'https://a.de/robots.txt': redirect('https://blocked.de/robots.txt'),
+			'https://blocked.de/robots.txt': status(404),
+			'https://a.de/p': html('p'),
+		});
+		const client = createFetchClient({ fetchImpl: net.fetchImpl, delayMs: 0, isHostBlocked: blocked });
+		expect(await client.get('https://a.de/p')).toMatchObject({ ok: false, reason: 'host-blocked', status: null });
+		expect(await client.get('https://a.de/other')).toMatchObject({ ok: false, reason: 'host-blocked' });
+		expect(net.calls.map((c) => c.url)).toEqual(['https://a.de/robots.txt']);
+		expect(client.stats().rawRequests).toEqual({ 'a.de': 1 });
+	});
+
+	it('leaves unblocked hosts unchanged', async () => {
+		const net = fakeNetwork({ 'https://a.de/robots.txt': status(404), 'https://a.de/p': redirect('/q'), 'https://a.de/q': html('q') });
+		const client = createFetchClient({ fetchImpl: net.fetchImpl, delayMs: 0, isHostBlocked: blocked });
+		expect(await client.get('https://a.de/p')).toMatchObject({ ok: true, url: 'https://a.de/q', text: 'q' });
+		expect(net.calls.map((c) => c.url)).toEqual(['https://a.de/robots.txt', 'https://a.de/p', 'https://a.de/q']);
+	});
+});

@@ -42,3 +42,9 @@ export const OVERPASS_TIMEOUT_MS = 900_000;
  * disallows `/api/` for all bots. Passed only by tools/build-places.
  */
 export const OVERPASS_ROBOTS_EXEMPT = { origin: 'https://overpass-api.de', path: '/api/interpreter' } as const;
+
+/** Politeness budget (NFR3): at most this many visits per host in any rolling `VISIT_WINDOW_MS`. */
+export const VISIT_LIMIT_PER_HOST = 4;
+
+/** The rolling window of the visit budget: 24 h. */
+export const VISIT_WINDOW_MS = 24 * 60 * 60 * 1000;

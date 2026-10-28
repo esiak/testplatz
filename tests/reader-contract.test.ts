@@ -118,7 +118,7 @@ describe('parseCentre', () => {
 
 	it('hands pages and ctx to the reader', () => {
 		const parse = vi.fn<Reader['parse']>(() => ({ kind: 'ok', listings: [] }));
-		const pages: FetchedPage[] = [{ url: 'https://example.de/kurse', role: 'list', status: 200, html: '<p></p>' }];
+		const pages: FetchedPage[] = [{ url: 'https://example.de/kurse', role: 'list', status: 200, html: '<p></p>', finalUrl: 'https://example.de/kurse' }];
 		const c = centre('a');
 		parseCentre(stubReader(parse), c, pages, CTX);
 		expect(parse).toHaveBeenCalledWith(pages, c, CTX);
@@ -210,11 +210,33 @@ describe('runReaderOnFixtures', () => {
 		const seen: { pages?: readonly FetchedPage[]; ctx?: ParseContext } = {};
 		const fixtures: Fixtures = { [LIST_URL]: { file: null, status: null } };
 		const result = runReaderOnFixtures(linkReader(2, seen), centre('a'), fixtures, CTX, FIXTURES_DIR);
-		expect(seen.pages).toEqual([{ url: LIST_URL, role: 'list', status: null, html: null }]);
+		expect(seen.pages).toEqual([{ url: LIST_URL, role: 'list', status: null, html: null, finalUrl: null }]);
 		expect(result).toEqual({ kind: 'ok', listings: [] });
 		const noBody = runReaderOnFixtures(linkReader(2, seen), centre('a'), { [LIST_URL]: { file: null, status: 500 } }, CTX, FIXTURES_DIR);
 		expect(noBody.kind).toBe('ok');
-		expect(seen.pages).toEqual([{ url: LIST_URL, role: 'list', status: 500, html: null }]);
+		expect(seen.pages).toEqual([{ url: LIST_URL, role: 'list', status: 500, html: null, finalUrl: null }]);
+	});
+
+	it('sets finalUrl to the fixture URL by default, or to the fixture finalUrl after a redirect', () => {
+		const seen: { pages?: readonly FetchedPage[]; ctx?: ParseContext } = {};
+		const fixtures: Fixtures = { ...FIXTURES, 'https://example.de/kurs/1': { file: 'detail-1.html', finalUrl: 'https://example.de/kurs/1?moved' } };
+		runReaderOnFixtures(linkReader(2, seen), centre('a'), fixtures, CTX, FIXTURES_DIR);
+		expect(seen.pages!.map((p) => p.finalUrl)).toEqual([LIST_URL, 'https://example.de/kurs/1?moved', 'https://example.de/kurs/2']);
+	});
+
+	it('passes an unfetchable detail URL to parse unrequested, like fetch, instead of throwing', () => {
+		const seen: { pages?: readonly FetchedPage[]; ctx?: ParseContext } = {};
+		const base = linkReader(3, seen);
+		const reader: Reader = {
+			...base,
+			plan: (c) => ({ ...base.plan(c), selectDetailUrls: () => ['/kurs/relative', 'mailto:info@example.de', 'https://example.de/kurs/1'] }),
+		};
+		runReaderOnFixtures(reader, centre('a'), FIXTURES, CTX, FIXTURES_DIR);
+		expect(seen.pages!.filter((p) => p.role === 'detail')).toEqual([
+			{ url: '/kurs/relative', role: 'detail', status: null, html: null, finalUrl: null },
+			{ url: 'mailto:info@example.de', role: 'detail', status: null, html: null, finalUrl: null },
+			expect.objectContaining({ url: 'https://example.de/kurs/1', status: 200, finalUrl: 'https://example.de/kurs/1' }),
+		]);
 	});
 
 	it('throws for a URL without a fixture instead of fetching it', () => {

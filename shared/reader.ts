@@ -15,15 +15,49 @@ export interface FetchedPage {
 	status: number | null;
 	/** Decoded body; `null` when nothing was received. */
 	html: string | null;
+	/** The URL after redirects (resolve relative links against it); `null` when nothing was received. */
+	finalUrl: string | null;
 }
 
 /** What to fetch for one centre. */
 export interface ReaderPlan {
 	listUrls: string[];
-	/** Pure: picks detail-page URLs from the fetched list pages. */
+	/**
+	 * Pure: picks detail-page URLs from the fetched list pages. Must return absolute http(s) URLs,
+	 * resolving relative links against each list page's `finalUrl`.
+	 */
 	selectDetailUrls: (listPages: readonly FetchedPage[]) => string[];
 	/** Per-centre cap on detail pages. */
 	maxDetailPages: number;
+}
+
+/** Whether fetch will request `url`: a parseable http(s) URL. Others are passed to parse unrequested. */
+export function isFetchableUrl(url: string): boolean {
+	if (!URL.canParse(url)) return false;
+	const { protocol } = new URL(url);
+	return protocol === 'http:' || protocol === 'https:';
+}
+
+/** `urls` without repeats, first-seen order; URLs differing only by `#fragment` are the same page. */
+export function dedupeUrls(urls: readonly string[]): string[] {
+	const seen = new Set<string>();
+	return urls.filter((url) => {
+		const key = URL.canParse(url) ? new URL(url).href.replace(/#.*$/, '') : url;
+		if (seen.has(key)) return false;
+		seen.add(key);
+		return true;
+	});
+}
+
+/**
+ * The detail URLs to fetch for a plan: `plan.selectDetailUrls(listPages)` de-duplicated in
+ * first-seen order (ignoring `#fragment`, which fetch strips; the first-seen string is kept),
+ * capped at `Math.floor(maxDetailPages)` (negative or non-finite → 0). The one rule shared by
+ * fetch and the fixture runner. A throwing `selectDetailUrls` propagates.
+ */
+export function selectDetailUrls(plan: ReaderPlan, listPages: readonly FetchedPage[]): string[] {
+	const cap = Number.isFinite(plan.maxDetailPages) ? Math.max(0, Math.floor(plan.maxDetailPages)) : 0;
+	return dedupeUrls(plan.selectDetailUrls(listPages)).slice(0, cap);
 }
 
 /** The parse context. `runAt` is the reader's only clock. */

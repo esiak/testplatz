@@ -8,7 +8,13 @@ import { ALLOW_ALL, DISALLOW_ALL, parseRobots, type RobotsRules } from './robots
  * between them, and redirects are followed here so every hop gets the same rules.
  */
 
-export type FetchFailureReason = 'robots-disallowed' | 'timeout' | 'network-error' | 'http-error' | 'too-many-redirects';
+export type FetchFailureReason =
+	| 'robots-disallowed'
+	| 'host-blocked'
+	| 'timeout'
+	| 'network-error'
+	| 'http-error'
+	| 'too-many-redirects';
 
 export interface FetchSuccess {
 	ok: true;
@@ -42,6 +48,12 @@ export interface FetchClientOptions {
 	 * `/api/interpreter` (AD-5); each passes only its own entry.
 	 */
 	robotsExempt?: readonly RobotsExemption[];
+	/**
+	 * Hosts that must not be contacted at all (the visit budget, Story 2.2). Checked before every
+	 * request: robots.txt, pages and every redirect hop. A `get` that would need a blocked host,
+	 * directly or via its robots.txt chain, returns `host-blocked` and sends nothing to it.
+	 */
+	isHostBlocked?: (host: string) => boolean;
 }
 
 export interface RobotsExemption {
@@ -86,6 +98,8 @@ interface RobotsOutcome {
 	rules: RobotsRules;
 	/** Why robots.txt was unusable (so the whole origin is disallowed), or null. */
 	unavailable: string | null;
+	/** The robots.txt chain reached a blocked host, so pages on this origin are `host-blocked`. */
+	blocked: boolean;
 }
 
 export function createFetchClient(options: FetchClientOptions = {}): FetchClient {
@@ -96,6 +110,7 @@ export function createFetchClient(options: FetchClientOptions = {}): FetchClient
 	const sleep = options.sleep ?? defaultSleep;
 	const robotsExempt = [...(options.robotsExempt ?? [])];
 	const isExempt = (url: URL): boolean => robotsExempt.some((e) => e.origin === url.origin && e.path === url.pathname);
+	const isHostBlocked = options.isHostBlocked ?? (() => false);
 
 	/** Per host: the tail of its request chain and whether it has been contacted yet. */
 	const queues = new Map<string, { tail: Promise<unknown>; used: boolean }>();
@@ -190,13 +205,14 @@ export function createFetchClient(options: FetchClientOptions = {}): FetchClient
 	async function resolveRobots(origin: string): Promise<RobotsOutcome> {
 		const unavailable = (reason: string): RobotsOutcome => {
 			counts.robotsUnavailable[origin] = reason;
-			return { rules: DISALLOW_ALL, unavailable: reason };
+			return { rules: DISALLOW_ALL, unavailable: reason, blocked: false };
 		};
 		let target = new URL('/robots.txt', origin);
 		const visited = new Set<string>();
 		for (let hops = 0; ; hops++) {
 			if (visited.has(target.href)) return unavailable('redirect loop');
 			visited.add(target.href);
+			if (isHostBlocked(target.host)) return { rules: DISALLOW_ALL, unavailable: null, blocked: true };
 			const raw = await robotsAt(target);
 			if (raw.kind === 'error') return unavailable(raw.reason);
 			if (isRedirect(raw.status) && raw.location !== null) {
@@ -209,9 +225,9 @@ export function createFetchClient(options: FetchClientOptions = {}): FetchClient
 				continue;
 			}
 			if (raw.status >= 200 && raw.status < 300) {
-				return { rules: parseRobots(decodeBody(raw.bytes, raw.contentType)), unavailable: null };
+				return { rules: parseRobots(decodeBody(raw.bytes, raw.contentType)), unavailable: null, blocked: false };
 			}
-			if (raw.status >= 400 && raw.status < 500) return { rules: ALLOW_ALL, unavailable: null };
+			if (raw.status >= 400 && raw.status < 500) return { rules: ALLOW_ALL, unavailable: null, blocked: false };
 			return unavailable(`HTTP ${raw.status}`);
 		}
 	}
@@ -235,8 +251,12 @@ export function createFetchClient(options: FetchClientOptions = {}): FetchClient
 			if (current.protocol !== 'http:' && current.protocol !== 'https:') {
 				return { ok: false, reason: 'network-error', url: current.href, status: null };
 			}
+			if (isHostBlocked(current.host)) {
+				return { ok: false, reason: 'host-blocked', url: current.href, status: null };
+			}
 			if (!isExempt(current)) {
-				const { rules } = await robotsFor(current.origin);
+				const { rules, blocked } = await robotsFor(current.origin);
+				if (blocked) return { ok: false, reason: 'host-blocked', url: current.href, status: null };
 				if (!rules.isAllowed(current.pathname + current.search)) {
 					return { ok: false, reason: 'robots-disallowed', url: current.href, status: null };
 				}
