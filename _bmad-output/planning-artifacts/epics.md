@@ -53,13 +53,14 @@ FR31: Search and result states per EXPERIENCE.md: place not found (with up to 3 
 FR32: Results never re-sort or refresh while the page is open; reloading fetches new data.
 FR33: The About the data page has six sections: how it works; booking systems status; centres not checked automatically (`#not-checked`, including why: unreadable system, opt-out, or failed check); sources; attribution (OSM/ODbL, Nominatim); contact for centres to be removed.
 FR34: Impressum and Privacy pages exist before public launch, linked from the footer; in private beta the links are hidden.
+FR35: Each test date from a covered centre shows who may register (e.g. MVHS: Munich residents only), extracted by the reader verbatim in German from the date page, else the centre's test page; when none is found the card reads "Who may register: not stated, check the provider page", never "open to all". Display text only: never matched against the searched place, never hides or flags a centre. Documents, fees and payment rules are out of scope. (CAP-11)
 
 ### NonFunctional Requirements
 
 NFR1: Cost: €0/month running cost; no paid APIs; no always-on infrastructure; no monetisation.
 NFR2: Privacy: the user's typed place and location never leave the browser; no analytics, cookies, tracking or third-party requests at page load; referrer policy no-referrer.
 NFR3: Polite collection: identified bot user agent, robots.txt respected, at most 4 visits per site per rolling 24 h (including manual reruns), serial requests per host with delay and timeout.
-NFR4: Data minimisation: only date, time, place, status, deadline, registration method and link are stored; no personal data (e.g. instructor names).
+NFR4: Data minimisation: only date, time, place, status, deadline, registration method, eligibility text and link are stored; no personal data (e.g. instructor names).
 NFR5: Honesty: a gap in data must never read as "nothing available".
 NFR6: Freshness: covered centres' data ≤ 12 h old under normal operation.
 NFR7: Scope: Bavaria only; search only (no booking, no provider accounts, no form submission on provider sites).
@@ -164,6 +165,7 @@ FR31: Epic 1 (search, loading, no-centres, load-fail states) + Epic 2 (date-rela
 FR32: Epic 1 - No live refresh while open
 FR33: Epic 1 (About page sections) + Epic 3 (system status section)
 FR34: Epic 4 - Impressum and Privacy
+FR35: Epic 2 - Eligibility (who may register) on result cards
 
 ## Epic List
 
@@ -173,8 +175,8 @@ A user enters a Bavarian town, postcode or their location, picks a radius, and s
 **Notes:** Story 1 is the `npm create preact` scaffold, repo layout, shared schemas and the GitHub Pages deploy. Builds the places table, directory, snapshot publish (centres only), and the uncovered card. Story 1.11 completes the place table that Story 1.5 shipped partially; it must land before 1.8's "Bavaria only" error and 1.10. **Deferred 2026-10-28 (operator decision):** Stories 1.10 and 1.11 are taken out of Epic 1 and left for later, because the public Overpass run behind 1.11 is very slow and fails; 1.10 needs 1.11's Bavaria boundary. Epic 1 closes with Stories 1.1–1.9 plus Story 1.12, which fixes the search bugs the retrospective found; see `implementation-artifacts/deferred-work.md` and the Epic 1 retrospective. Covers UX-DR1–7, 10, 11, 12 (Distance), 17, 18–22, 24–27, 29.
 
 ### Epic 2: See current test dates from KuferWeb and ITEM KG centres
-About 55 centres switch from "not checked" to real dates with status, deadline, registration method and a deep link, refreshed 4 times a day and honest about freshness and failures.
-**FRs covered:** FR2 (result and no-dates cards), FR3, FR5, FR6, FR7, FR8, FR9, FR10, FR12, FR13, FR14, FR22 (fetch skips), FR24, FR30 (date count), FR31 (date notices)
+About 55 centres switch from "not checked" to real dates with status, deadline, registration method, who may register and a deep link, refreshed 4 times a day and honest about freshness and failures.
+**FRs covered:** FR2 (result and no-dates cards), FR3, FR5, FR6, FR7, FR8, FR9, FR10, FR12, FR13, FR14, FR22 (fetch skips), FR24, FR30 (date count), FR31 (date notices), FR35
 **Notes:** Polite fetch, the reader contract, normalise and merge with history, then the scheduled run that commits and deploys, built with the KuferWeb reader first, end to end. The ITEM KG reader follows as its own story. Result card, no-dates card, freshness line, status chip, key-facts row. Covers UX-DR9, 12–13, 15, 16, 23.
 
 ### Epic 3: Spot new chances fast, and keep the data trustworthy
@@ -562,7 +564,7 @@ The cached Overpass `index` (`data/places/cache/index.json`, from Story 1.5) alr
 
 ## Epic 2: See current test dates from KuferWeb and ITEM KG centres
 
-About 55 centres switch from "not checked" to real dates with status, deadline, registration method and a deep link, refreshed 4 times a day and honest about freshness and failures.
+About 55 centres switch from "not checked" to real dates with status, deadline, registration method, who may register and a deep link, refreshed 4 times a day and honest about freshness and failures.
 
 ### Story 2.1: Shared listing shape and reader contract
 
@@ -574,7 +576,7 @@ So that every reader produces data the rest of the pipeline accepts without spec
 
 **Given** `shared/`
 **When** the contract is defined
-**Then** `RawListing` is a zod schema with local wall-clock date and time, place, address, status code, deadline (local date), registration method code, source URL, and `null` for every absent field; it has no field for personal data (AD-3, NFR4)
+**Then** `RawListing` is a zod schema with local wall-clock date and time, place, address, status code, deadline (local date), registration method code, eligibility text, source URL, and `null` for every absent field; it has no field for personal data (AD-3, NFR4, FR35)
 **And** status codes are `free`, `booked_out`, `waitlist`, `unknown`; registration codes are `online`, `email`, `post`, `in_person`
 
 **Given** the shared `mapStatus`
@@ -625,7 +627,12 @@ So that I see them without visiting the site.
 
 **Given** saved test pages from at least three KuferWeb centres (committed under `pipeline/readers/kuferweb/fixtures/`)
 **When** the reader parses them
-**Then** each Einbürgerungstest date yields a `RawListing` with date, time, place, address, status, deadline, registration method and source URL, matching the page by hand-check (FR6)
+**Then** each Einbürgerungstest date yields a `RawListing` with date, time, place, address, status, deadline, registration method, eligibility and source URL, matching the page by hand-check (FR6)
+
+**Given** a page stating who may register (keywords such as "Wohnsitz", "wohnhaft", "Hauptwohnsitz", "nur für", "Teilnehmende")
+**When** parsed
+**Then** `eligibility` holds that paragraph verbatim, length-capped, from the date page or else the centre's test page; a page with no such rule gives `null`, never a guess
+**And** the fixtures include at least one page with a rule and one without (FR35)
 
 **Given** KuferWeb status signals
 **When** they are mapped
@@ -655,6 +662,11 @@ So that these centres show real dates too.
 **Given** saved test pages from at least three ITEM KG centres (`pipeline/readers/itemkg/fixtures/`)
 **When** the reader parses them
 **Then** each test date yields a valid `RawListing`, matching the page by hand-check (FR6)
+
+**Given** a page stating who may register (e.g. MVHS: Munich residents only)
+**When** parsed
+**Then** `eligibility` holds that paragraph verbatim, length-capped, from the detail page or else the centre's test page; no rule gives `null`
+**And** the fixtures include the MVHS residence rule and at least one page without a rule (FR35)
 
 **Given** ITEM KG flags
 **When** they are mapped
@@ -737,7 +749,12 @@ So that I can decide and book in one tap.
 
 **Given** a snapshot with listings
 **When** I search
-**Then** each current date is one result card: date and time (card-date), status chip, centre name, address line with "Map ↗", key facts Distance / Status / Deadline / Registration as a `dl`, optional registration note, destination domain and freshness line (FR6, UX-DR9, UX-DR12, UX-DR13)
+**Then** each current date is one result card: date and time (card-date), status chip, centre name, address line with "Map ↗", key facts Distance / Status / Deadline / Registration as a `dl`, optional registration note, eligibility line, destination domain and freshness line (FR6, UX-DR9, UX-DR12, UX-DR13)
+
+**Given** a listing's `eligibility`
+**When** the card renders
+**Then** a rule shows as "Who may register: <provider text>" as published, marked `lang="de"` in the English UI and selectable above the link layer like the registration note; `null` reads "Who may register: not stated, check the provider page"
+**And** the rule never hides, reorders or flags a card based on the searched place (FR35, UX-DR21)
 
 **Given** field values
 **When** they render

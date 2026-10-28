@@ -23,9 +23,17 @@ Counts come from homepage fingerprints (2026-10-25), not from each site's test p
 | registration_method | no | `online` / `email` / `post` / `in_person` (e.g. Bad Kissingen: in person, cash only) |
 | source_url | yes | provider page for the date |
 | link_ok | yes | whether `source_url` was reachable at the last check; if false, UI links to the centre's `test_page_url` |
+| eligibility | no | who may register, verbatim German provider text, length-capped; from the date page, else the centre's test page; `null` if not found (shown as "not stated, check the provider page") (CAP-11) |
 | first_seen_at | yes | set once, never overwritten (CAP-6) |
 
 Absent optional fields are `null`, never guessed. Freshness is not stored per date; it comes from the centre's check fields below.
+
+## Eligibility extraction
+
+- Scope: who may register (residence area, own-course participants only, age). Not documents, fees, or payment.
+- Readers take the paragraph that states the rule, matched by keywords such as "Wohnsitz", "wohnhaft", "Hauptwohnsitz", "nur für", "Teilnehmende". Known example: MVHS (München) accepts Munich residents only.
+- Shown as published, not translated (provider free text, CAP-9). Not matched against the searched place.
+- Each reader's fixtures include at least one page with a rule and one without.
 
 ## Centre check fields
 

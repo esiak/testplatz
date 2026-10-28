@@ -50,6 +50,9 @@ Pain to solve. People in Bavaria applying for citizenship must pass the Einbürg
 - **CAP-10**
   - **intent:** A covered centre within the radius whose last check succeeded but found no test dates still appears in results, marked "No dates listed".
   - **success:** A search covering such a centre lists it with that marker, its last successful check time, and a link to its test page; it is never omitted. A centre whose last check failed or never ran is not shown with this marker (see CAP-4).
+- **CAP-11**
+  - **intent:** Each test date from a covered centre shows the centre's published prerequisites for who may register (e.g. VHS München: residents of Munich only).
+  - **success:** For a sample of covered centres, the shown rule matches the provider page at the last check, verbatim; where no rule was found the card says "not stated, check the provider page", never "open to all". The rule is display text only: no centre is hidden or flagged based on the searched place.
 
 ## Constraints
 
@@ -57,7 +60,7 @@ Pain to solve. People in Bavaria applying for citizenship must pass the Einbürg
 - Search only: no booking, no user accounts at providers, no submitting forms on their sites.
 - Near-zero running cost, no monetisation: rules out paid APIs and always-on heavy infrastructure.
 - Polite collection: identified bot user agent, robots.txt respected, at most 4 checks per site per day.
-- Store only date, time, place, status, deadline, registration method, and link; no personal data from provider pages (e.g. instructor names).
+- Store only date, time, place, status, deadline, registration method, eligibility text, and link; no personal data from provider pages (e.g. instructor names).
 - A gap in data must never read as "nothing available".
 - The user's location never leaves the browser: search matches against a built-in postcode/town table and distance is computed client-side (see `data-sources.md`). Shareable search state lives in the URL fragment (`#q=…`), never the query string, so the place never reaches the server.
 - Public launch requires an Impressum (named operator, deliverable postal address) and a privacy policy; a private beta may run without. Operator choice is deferred.
@@ -72,6 +75,9 @@ Pain to solve. People in Bavaria applying for citizenship must pass the Einbürg
 - Street-level address search (v2; needs a runtime geocoder, weigh cost and privacy then).
 - Ads, paid tiers, or any monetisation.
 - A "registration opens at" field: Bavarian sites do not publish it.
+- Checking the user's eligibility, or filtering centres by it; prerequisites are shown as the provider states them.
+- Documents, fees, and payment rules as prerequisites (only who may register is in scope).
+- Prerequisites for centres without an automatic reader (their card links the website).
 - 100% automatic coverage in v1.
 
 ## Success signal
@@ -82,6 +88,8 @@ Pain to solve. People in Bavaria applying for citizenship must pass the Einbürg
 
 - About 30 of 78 Bavarian VHS run KuferWeb and about 25 run ITEM KG, based on homepage fingerprints only; per-site test pages not yet verified.
 - The rtpartner.de republication of BAMF data is complete and accurate enough to seed the v1 directory once each entry is checked against the centre's own site.
+
+- Covered centres state their eligibility rules in findable text on their test or date pages; only the MVHS residence rule is known so far.
 
 ## Open Questions
 
