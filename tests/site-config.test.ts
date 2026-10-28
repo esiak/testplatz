@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { posix, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { ABOUT_URL, SITE_URL, USER_AGENT } from '../pipeline/config.ts';
 import { PUBLIC_DIR } from '../pipeline/stages/paths.ts';
 import pkg from '../package.json' with { type: 'json' };
@@ -35,6 +35,20 @@ describe('site config', () => {
 		const aboutPath = new URL(ABOUT_URL).pathname.slice(new URL(SITE_URL).pathname.length);
 		expect(pageDir).toBe('about/');
 		expect(aboutPath).toBe(pageDir);
+	});
+});
+
+describe('snapshot URL', () => {
+	it('fetches the snapshot under the production base', async () => {
+		vi.stubEnv('BASE_URL', viteConfig.base ?? '');
+		vi.resetModules();
+		try {
+			const { SNAPSHOT_URL } = await import('../web/src/data/snapshot.ts');
+			expect(SNAPSHOT_URL).toBe('/testplatz/snapshot.json');
+		} finally {
+			vi.unstubAllEnvs();
+			vi.resetModules();
+		}
 	});
 });
 

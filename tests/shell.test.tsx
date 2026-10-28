@@ -7,6 +7,7 @@ import { App } from '../web/src/app.tsx';
 import en from '../web/src/i18n/en.json' with { type: 'json' };
 import de from '../web/src/i18n/de.json' with { type: 'json' };
 import type { Catalogue, Catalogues } from '../web/src/i18n/i18n.tsx';
+import { coveredCentre, jsonResponse, snapshotCentre, snapshotOf } from './fixtures/snapshot.ts';
 
 /**
  * Renders each page and checks the shell. Later stories add their surfaces and states to the
@@ -38,13 +39,32 @@ function mount(page: PageName, catalogues?: Catalogues): void {
 const langLink = (code: 'de' | 'en'): HTMLAnchorElement => root.querySelector<HTMLAnchorElement>(`nav a[hreflang="${code}"]`)!;
 const h1Text = (): string => root.querySelector('h1')!.textContent ?? '';
 
-/** Text nodes and label attributes that are left once sentinels are removed. */
-function leftoverText(): string[] {
+/** Never settles: the About page stays in its loading state. */
+const pendingFetch = () => new Promise<Response>(() => {});
+
+function stubFetch(impl: () => Promise<Response>): void {
+	vi.stubGlobal('fetch', vi.fn<typeof fetch>(impl));
+}
+
+/** Lets pending fetches and their state updates finish. */
+async function settle(): Promise<void> {
+	for (let i = 0; i < 5; i++) {
+		await act(async () => {
+			await new Promise((resolve) => setTimeout(resolve, 0));
+		});
+	}
+}
+
+/**
+ * Text nodes and label attributes that are left once sentinels are removed. `allowed` lists data
+ * text (centre names) that may appear as a whole text node.
+ */
+function leftoverText(allowed: readonly string[] = []): string[] {
 	const leftovers: string[] = [];
 	const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
 	for (let node = walker.nextNode(); node; node = walker.nextNode()) {
 		const rest = (node.textContent ?? '').replace(SENTINEL, '').trim();
-		if (rest) leftovers.push(`text: ${rest}`);
+		if (rest && !allowed.includes(rest)) leftovers.push(`text: ${rest}`);
 	}
 	for (const el of root.querySelectorAll('*')) {
 		for (const attr of LABEL_ATTRIBUTES) {
@@ -62,6 +82,7 @@ function leftoverText(): string[] {
 beforeEach(() => {
 	root = document.createElement('div');
 	document.body.append(root);
+	stubFetch(pendingFetch);
 });
 
 afterEach(() => {
@@ -70,6 +91,7 @@ afterEach(() => {
 	document.title = '';
 	document.documentElement.removeAttribute('lang');
 	vi.restoreAllMocks();
+	vi.unstubAllGlobals();
 });
 
 describe('no hard-coded UI text', () => {
@@ -81,6 +103,46 @@ describe('no hard-coded UI text', () => {
 			expect(leftoverText()).toEqual([]);
 		});
 	}
+
+	it('the About page loading state renders only catalogue text', () => {
+		setBrowser(['de-DE'], '', '/testplatz/about/');
+		mount('about', SENTINELS);
+		expect(root.querySelector('[aria-busy="true"]')).not.toBeNull();
+		expect(leftoverText()).toEqual([]);
+	});
+
+	it('the About page loaded state renders only catalogue text and centre names', async () => {
+		const centres = [
+			snapshotCentre('a', { name: 'Alpha Sprachschule' }),
+			snapshotCentre('b', { name: 'Bravo Akademie', test_page_url: null, website: null }),
+			coveredCentre('c', 'failed', { name: 'Charlie vhs' }),
+		];
+		stubFetch(() => Promise.resolve(jsonResponse(snapshotOf(centres))));
+		setBrowser(['de-DE'], '', '/testplatz/about/');
+		mount('about', SENTINELS);
+		await settle();
+		expect(root.querySelectorAll('.about__centre-list > li')).toHaveLength(3);
+		expect(leftoverText(centres.map((c) => c.name))).toEqual([]);
+	});
+
+	it('the About page empty state renders only catalogue text', async () => {
+		stubFetch(() => Promise.resolve(jsonResponse(snapshotOf([coveredCentre('a', 'ok')]))));
+		setBrowser(['de-DE'], '', '/testplatz/about/');
+		mount('about', SENTINELS);
+		await settle();
+		expect(root.textContent).toContain('[[about.not_checked.none]]');
+		expect(leftoverText()).toEqual([]);
+	});
+
+	it('the About page error state renders only catalogue text', async () => {
+		stubFetch(() => Promise.reject(new TypeError('offline')));
+		setBrowser(['de-DE'], '', '/testplatz/about/');
+		mount('about', SENTINELS);
+		await settle();
+		expect(root.querySelector('[role="alert"]')).not.toBeNull();
+		expect(root.querySelector('button')).not.toBeNull();
+		expect(leftoverText()).toEqual([]);
+	});
 
 	it('the check catches a literal string', () => {
 		setBrowser(['de-DE']);

@@ -1,0 +1,29 @@
+name: Opt-out request
+description: Ask us to stop checking your test centre's website. / Bitten Sie uns, die Website Ihres Testzentrums nicht mehr zu prüfen.
+title: "Opt-out request: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please tell us which test centre this is about and how we can reach you to confirm the request.
+        Bitte nennen Sie uns das Testzentrum und wie wir Sie zur Bestätigung erreichen können.
+  - type: input
+    id: centre_name
+    attributes:
+      label: Centre name / Name des Testzentrums
+    validations:
+      required: true
+  - type: input
+    id: website
+    attributes:
+      label: Centre website / Website des Testzentrums
+      placeholder: https://
+    validations:
+      required: true
+  - type: input
+    id: contact
+    attributes:
+      label: Contact (email or phone) / Kontakt (E-Mail oder Telefon)
+      description: We use this only to confirm the request. This issue is public. / Wir nutzen dies nur zur Bestätigung. Dieses Issue ist öffentlich.
+    validations:
+      required: true

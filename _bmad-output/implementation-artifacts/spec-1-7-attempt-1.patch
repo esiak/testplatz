@@ -1,0 +1,984 @@
+diff --git a/.github/ISSUE_TEMPLATE/opt-out-request.yml b/.github/ISSUE_TEMPLATE/opt-out-request.yml
+new file mode 100644
+index 0000000..1d2fd69
+--- /dev/null
++++ b/.github/ISSUE_TEMPLATE/opt-out-request.yml
+@@ -0,0 +1,29 @@
++name: Opt-out request
++description: Ask us to stop checking your test centre's website and remove it from the list. / Bitten Sie uns, die Website Ihres Testzentrums nicht mehr zu prüfen und es aus der Liste zu entfernen.
++title: "Opt-out request: "
++body:
++  - type: markdown
++    attributes:
++      value: |
++        Please tell us which test centre this is about and how we can reach you to confirm the request.
++        Bitte nennen Sie uns das Testzentrum und wie wir Sie zur Bestätigung erreichen können.
++  - type: input
++    id: centre_name
++    attributes:
++      label: Centre name / Name des Testzentrums
++    validations:
++      required: true
++  - type: input
++    id: website
++    attributes:
++      label: Centre website / Website des Testzentrums
++      placeholder: https://
++    validations:
++      required: true
++  - type: input
++    id: contact
++    attributes:
++      label: Contact (email or phone) / Kontakt (E-Mail oder Telefon)
++      description: We use this only to confirm the request. This issue is public. / Wir nutzen dies nur zur Bestätigung. Dieses Issue ist öffentlich.
++    validations:
++      required: true
+diff --git a/tests/about.test.tsx b/tests/about.test.tsx
+new file mode 100644
+index 0000000..9240922
+--- /dev/null
++++ b/tests/about.test.tsx
+@@ -0,0 +1,317 @@
++// @vitest-environment happy-dom
++import { render } from 'preact';
++import { act } from 'preact/test-utils';
++import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
++import type { SnapshotCentre } from '../shared/snapshot.ts';
++import { AboutPage, OPT_OUT_URL } from '../web/src/about-page.tsx';
++import { SNAPSHOT_URL } from '../web/src/data/snapshot.ts';
++import epicSnapshot from '../data/public/snapshot.json' with { type: 'json' };
++import de from '../web/src/i18n/de.json' with { type: 'json' };
++import en from '../web/src/i18n/en.json' with { type: 'json' };
++import { coveredCentre, jsonResponse, snapshotCentre, snapshotOf } from './fixtures/snapshot.ts';
++
++const catalogues = { de, en } as const;
++type Lang = keyof typeof catalogues;
++
++let root: HTMLElement;
++let fetchMock: ReturnType<typeof vi.fn<typeof fetch>>;
++
++function setBrowser(languages: string[], hash = ''): void {
++	vi.spyOn(navigator, 'languages', 'get').mockReturnValue(languages);
++	history.replaceState(null, '', `/testplatz/about/${hash}`);
++}
++
++function stubFetch(...responses: Array<() => Promise<Response>>): void {
++	let call = 0;
++	fetchMock = vi.fn<typeof fetch>(() => {
++		const next = responses[Math.min(call, responses.length - 1)]!;
++		call += 1;
++		return next();
++	});
++	vi.stubGlobal('fetch', fetchMock);
++}
++
++const respond = (centres: SnapshotCentre[]) => () => Promise.resolve(jsonResponse(snapshotOf(centres)));
++
++function mount(): void {
++	act(() => {
++		render(<AboutPage />, root);
++	});
++}
++
++/** Lets pending fetches and their state updates finish. */
++async function settle(): Promise<void> {
++	for (let i = 0; i < 5; i++) {
++		await act(async () => {
++			await new Promise((resolve) => setTimeout(resolve, 0));
++		});
++	}
++}
++
++const section = () => root.querySelector<HTMLElement>('#not-checked')!;
++const centreList = () => section().querySelector('.about__centre-list');
++const centreItems = () => [...section().querySelectorAll<HTMLLIElement>('.about__centre-list > li')];
++const sectionText = () => section().textContent ?? '';
++
++beforeEach(() => {
++	root = document.createElement('div');
++	document.body.append(root);
++});
++
++afterEach(() => {
++	act(() => render(null, root));
++	root.remove();
++	vi.restoreAllMocks();
++	vi.unstubAllGlobals();
++});
++
++describe('About page structure', () => {
++	for (const [lang, browser] of [
++		['de', 'de-DE'],
++		['en', 'en-GB'],
++	] as const) {
++		it(`has one h1 and the five h2 sections in order (${lang})`, () => {
++			const t = catalogues[lang as Lang];
++			stubFetch(respond([]));
++			setBrowser([browser]);
++			mount();
++			const h1s = [...root.querySelectorAll('h1')];
++			expect(h1s.map((h) => h.textContent)).toEqual([t['about.heading']]);
++			expect([...root.querySelectorAll('main h2')].map((h) => h.textContent)).toEqual([
++				t['about.how.heading'],
++				t['about.not_checked.heading'],
++				t['about.sources.heading'],
++				t['about.attribution.heading'],
++				t['about.opt_out.heading'],
++			]);
++			expect(section().tagName).toBe('SECTION');
++			expect(section().querySelector('h2')!.textContent).toBe(t['about.not_checked.heading']);
++			const reasons = [...section().querySelectorAll('ul:not(.about__centre-list) > li')].map((li) => li.textContent);
++			expect(reasons).toEqual([
++				t['about.not_checked.reason_system'],
++				t['about.not_checked.reason_opted_out'],
++				t['about.not_checked.reason_failed'],
++			]);
++			expect(root.textContent).toContain(t['about.how.body']);
++			expect(root.textContent).toContain(t['about.sources.directory']);
++			expect(root.textContent).toContain(t['about.sources.websites']);
++			expect(root.textContent).toContain(t['about.opt_out.body']);
++		});
++	}
++
++	it('uses the specified English copy', () => {
++		expect(en['about.how.body']).toBe("We read the centres' websites several times a day. Always check the centre's page before you register.");
++		expect(en['about.attribution.osm']).toBe('Place data © OpenStreetMap contributors (ODbL)');
++		expect(en['about.attribution.nominatim']).toBe('Centre locations found with Nominatim');
++		expect(en['about.opt_out.link']).toBe('Ask to be removed');
++		expect(en['about.sources.directory']).toContain('rtpartner.de');
++		expect(en['about.sources.directory']).toContain('BAMF');
++	});
++});
++
++describe('external links', () => {
++	const linkByHref = (href: string) => root.querySelector<HTMLAnchorElement>(`a[href="${href}"]`)!;
++
++	function expectExternal(link: HTMLAnchorElement, label: string, lang: Lang): void {
++		expect(link.getAttribute('target')).toBe('_blank');
++		expect(link.getAttribute('rel')).toBe('noopener noreferrer');
++		const arrow = link.querySelector('[aria-hidden="true"]')!;
++		expect(arrow.textContent).toBe('↗');
++		expect(link.getAttribute('aria-label')).toBe(catalogues[lang]['link.new_tab'].replace('{label}', label));
++		expect(link.textContent!.replace('↗', '').trim()).toBe(label);
++	}
++
++	it('marks attribution and opt-out links as new-tab links (en)', async () => {
++		stubFetch(respond([snapshotCentre('a', { name: 'vhs Günzburg' })]));
++		setBrowser(['en-GB']);
++		mount();
++		expectExternal(linkByHref('https://www.openstreetmap.org/copyright'), en['about.attribution.osm'], 'en');
++		expectExternal(linkByHref('https://nominatim.org/'), en['about.attribution.nominatim'], 'en');
++		const optOut = linkByHref('https://github.com/esiak/testplatz/issues/new?template=opt-out-request.yml');
++		expect(optOut.getAttribute('href')).toBe(OPT_OUT_URL);
++		expectExternal(optOut, 'Ask to be removed', 'en');
++		expect(optOut.getAttribute('aria-label')).toBe('Ask to be removed (opens in a new tab)');
++
++		await settle();
++		const centreLink = centreItems()[0]!.querySelector('a')!;
++		expectExternal(centreLink, 'vhs Günzburg', 'en');
++		expect(centreLink.getAttribute('aria-label')).toBe('vhs Günzburg (opens in a new tab)');
++	});
++
++	it('uses the German new-tab label', async () => {
++		stubFetch(respond([snapshotCentre('a', { name: 'vhs Günzburg' })]));
++		setBrowser(['de-DE']);
++		mount();
++		expectExternal(linkByHref(OPT_OUT_URL), de['about.opt_out.link'], 'de');
++		await settle();
++		expect(centreItems()[0]!.querySelector('a')!.getAttribute('aria-label')).toBe('vhs Günzburg (öffnet in einem neuen Tab)');
++	});
++});
++
++describe('not-checked list', () => {
++	it('shows a busy loading state until the snapshot arrives, with the other sections rendered', () => {
++		stubFetch(() => new Promise<Response>(() => {}));
++		setBrowser(['en-GB']);
++		mount();
++		const busy = section().querySelector('[aria-busy="true"]')!;
++		expect(busy.textContent).toBe('Loading centres…');
++		expect(root.querySelectorAll('main h2')).toHaveLength(5);
++		expect(fetchMock).toHaveBeenCalledTimes(1);
++		expect(fetchMock).toHaveBeenCalledWith(SNAPSHOT_URL);
++	});
++
++	it('lists every centre of the committed Epic 1 snapshot (119, 114 links, 5 plain), sorted by name', async () => {
++		stubFetch(() => Promise.resolve(jsonResponse(epicSnapshot)));
++		setBrowser(['en-GB']);
++		mount();
++		await settle();
++		expect(section().querySelector('[aria-busy]')).toBeNull();
++		expect(sectionText()).toContain('119 centres are not checked automatically.');
++		const items = centreItems();
++		expect(items).toHaveLength(119);
++		expect(items.filter((li) => li.querySelector('a'))).toHaveLength(114);
++		expect(items.filter((li) => !li.querySelector('a'))).toHaveLength(5);
++		const names = items.map((li) => li.querySelector('[lang="de"]')!.textContent!);
++		expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b, 'de')));
++	});
++
++	it('links to test_page_url, falls back to website, and shows a plain name without either', async () => {
++		stubFetch(
++			respond([
++				snapshotCentre('c', { name: 'Charlie', test_page_url: null, website: null }),
++				snapshotCentre('b', { name: 'Bravo', test_page_url: null, website: 'https://bravo.example.de/' }),
++				snapshotCentre('a', { name: 'Alpha', test_page_url: 'https://alpha.example.de/test', website: 'https://alpha.example.de/' }),
++			]),
++		);
++		setBrowser(['en-GB']);
++		mount();
++		await settle();
++		const [alpha, bravo, charlie] = centreItems();
++		expect(alpha!.querySelector('a')!.getAttribute('href')).toBe('https://alpha.example.de/test');
++		expect(bravo!.querySelector('a')!.getAttribute('href')).toBe('https://bravo.example.de/');
++		expect(charlie!.querySelector('a')).toBeNull();
++		for (const [item, name] of [
++			[alpha, 'Alpha'],
++			[bravo, 'Bravo'],
++			[charlie, 'Charlie'],
++		] as const) {
++			const named = item!.querySelector('[lang="de"]')!;
++			expect(named.textContent).toBe(name);
++		}
++		expect(charlie!.textContent).toBe('Charlie');
++	});
++
++	it('leaves out covered centres whose last check is ok, keeps failed and never-run ones', async () => {
++		stubFetch(
++			respond([
++				coveredCentre('ok', 'ok', { name: 'Covered OK' }),
++				coveredCentre('failed', 'failed', { name: 'Covered failed' }),
++				coveredCentre('never', null, { name: 'Covered never' }),
++			]),
++		);
++		setBrowser(['en-GB']);
++		mount();
++		await settle();
++		expect(centreItems().map((li) => li.textContent!.replace('↗', '').trim())).toEqual(['Covered failed', 'Covered never']);
++		expect(sectionText()).toContain('2 centres are not checked automatically.');
++	});
++
++	it('says every centre is checked when none match, with no list', async () => {
++		stubFetch(respond([coveredCentre('ok', 'ok')]));
++		setBrowser(['en-GB']);
++		mount();
++		await settle();
++		expect(sectionText()).toContain('Every centre is checked automatically right now.');
++		expect(centreList()).toBeNull();
++		expect(sectionText()).not.toContain('centres are not checked automatically.');
++	});
++
++	const failures: Array<[string, () => Promise<Response>]> = [
++		['a network error', () => Promise.reject(new TypeError('offline'))],
++		['HTTP 500', () => Promise.resolve(jsonResponse(snapshotOf([]), 500))],
++		['invalid JSON', () => Promise.resolve(jsonResponse('{oops'))],
++		['schemaVersion 2', () => Promise.resolve(jsonResponse({ ...snapshotOf([]), schemaVersion: 2 }))],
++	];
++
++	for (const [name, failure] of failures) {
++		it(`shows an alert and Try again on ${name}, keeping the other sections`, async () => {
++			stubFetch(failure);
++			setBrowser(['en-GB']);
++			mount();
++			await settle();
++			const alert = section().querySelector('[role="alert"]')!;
++			expect(alert.textContent).toBe("We couldn't load the list of centres.");
++			const button = section().querySelector('button')!;
++			expect(button.textContent).toBe('Try again');
++			expect(button.getAttribute('type')).toBe('button');
++			expect(root.querySelectorAll('main h2')).toHaveLength(5);
++			expect(centreList()).toBeNull();
++		});
++	}
++
++	it('re-fetches on Try again and replaces the alert with the list', async () => {
++		stubFetch(() => Promise.resolve(jsonResponse(snapshotOf([]), 500)), respond([snapshotCentre('a', { name: 'Alpha' })]));
++		setBrowser(['en-GB']);
++		mount();
++		await settle();
++		act(() => section().querySelector('button')!.click());
++		expect(section().querySelector('[aria-busy="true"]')).not.toBeNull();
++		await settle();
++		expect(fetchMock).toHaveBeenCalledTimes(2);
++		expect(section().querySelector('[role="alert"]')).toBeNull();
++		expect(section().querySelector('button')).toBeNull();
++		expect(centreItems()).toHaveLength(1);
++		expect(sectionText()).toContain('1 centres are not checked automatically.');
++	});
++});
++
++describe('fragment targeting', () => {
++	let scrolled: HTMLElement[];
++
++	beforeEach(() => {
++		scrolled = [];
++		vi.spyOn(Element.prototype, 'scrollIntoView').mockImplementation(function (this: Element) {
++			scrolled.push(this as HTMLElement);
++		});
++	});
++
++	it('scrolls the section into view for #not-checked', () => {
++		stubFetch(respond([]));
++		setBrowser(['en-GB'], '#not-checked');
++		mount();
++		expect(scrolled).toEqual([section()]);
++		expect(document.documentElement.lang).toBe('en');
++	});
++
++	it('scrolls for #not-checked=&lang=en and keeps the fragment language', () => {
++		stubFetch(respond([]));
++		setBrowser(['de-DE'], '#not-checked=&lang=en');
++		mount();
++		expect(scrolled).toEqual([section()]);
++		expect(document.documentElement.lang).toBe('en');
++		expect(root.querySelector('h1')!.textContent).toBe(en['about.heading']);
++	});
++
++	it('does not scroll without the key, and scrolls on a later hashchange', () => {
++		stubFetch(respond([]));
++		setBrowser(['de-DE'], '#lang=de');
++		mount();
++		expect(scrolled).toEqual([]);
++		act(() => {
++			history.replaceState(null, '', '/testplatz/about/#not-checked');
++			window.dispatchEvent(new HashChangeEvent('hashchange'));
++		});
++		expect(scrolled).toEqual([section()]);
++	});
++
++	it('keeps the language switch working on a deep link', () => {
++		stubFetch(respond([]));
++		setBrowser(['de-DE'], '#not-checked');
++		mount();
++		const enLink = root.querySelector<HTMLAnchorElement>('nav a[hreflang="en"]')!;
++		expect(enLink.getAttribute('href')).toBe('#not-checked=&lang=en');
++		act(() => enLink.click());
++		expect(location.hash).toBe('#not-checked=&lang=en');
++		expect(root.querySelector('h1')!.textContent).toBe(en['about.heading']);
++	});
++});
+diff --git a/tests/fixtures/snapshot.ts b/tests/fixtures/snapshot.ts
+new file mode 100644
+index 0000000..12ca6c7
+--- /dev/null
++++ b/tests/fixtures/snapshot.ts
+@@ -0,0 +1,44 @@
++import { SNAPSHOT_SCHEMA_VERSION, type Snapshot, type SnapshotCentre } from '../../shared/snapshot.ts';
++
++/** A valid snapshot centre; `extra` overrides any field. */
++export function snapshotCentre(id: string, extra: Partial<SnapshotCentre> = {}): SnapshotCentre {
++	return {
++		centre_id: id,
++		name: `Centre ${id}`,
++		address: { street: 'Hauptstraße 1', postcode: '80331', city: 'München' },
++		lat: 48.137,
++		lon: 11.575,
++		website: `https://${id}.example.de/`,
++		test_page_url: `https://${id}.example.de/test`,
++		reader: 'none',
++		reader_config: null,
++		opted_out: false,
++		source: 'rtpartner',
++		verified_at: null,
++		coverage: 'not_checked',
++		last_result: null,
++		last_checked_at: null,
++		last_success_at: null,
++		...extra,
++	};
++}
++
++/** A covered centre (KuferWeb) with the given last result. */
++export function coveredCentre(id: string, lastResult: SnapshotCentre['last_result'], extra: Partial<SnapshotCentre> = {}): SnapshotCentre {
++	return snapshotCentre(id, {
++		reader: 'kuferweb',
++		reader_config: { list_url: `https://${id}.example.de/kurse` },
++		coverage: 'covered',
++		last_result: lastResult,
++		last_checked_at: lastResult ? '2026-10-28T06:00:00Z' : null,
++		last_success_at: lastResult === 'ok' ? '2026-10-28T06:00:00Z' : null,
++		...extra,
++	});
++}
++
++export function snapshotOf(centres: SnapshotCentre[]): Snapshot {
++	return { schemaVersion: SNAPSHOT_SCHEMA_VERSION, generated_at: '2026-10-28T06:00:00Z', systems: [], centres, listings: [] };
++}
++
++export const jsonResponse = (body: unknown, status = 200): Response =>
++	new Response(typeof body === 'string' ? body : JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
+diff --git a/tests/opt-out-template.test.ts b/tests/opt-out-template.test.ts
+new file mode 100644
+index 0000000..06f1748
+--- /dev/null
++++ b/tests/opt-out-template.test.ts
+@@ -0,0 +1,49 @@
++import { readFileSync } from 'node:fs';
++import { fileURLToPath } from 'node:url';
++import { describe, expect, it } from 'vitest';
++import { parse as parseYaml } from 'yaml';
++import { OPT_OUT_URL } from '../web/src/about-page.tsx';
++
++const TEMPLATE_DIR = '../.github/ISSUE_TEMPLATE/';
++
++interface FormField {
++	type: string;
++	id?: string;
++	validations?: { required?: boolean };
++}
++
++interface IssueForm {
++	name: string;
++	description: string;
++	title: string;
++	labels?: unknown;
++	body: FormField[];
++}
++
++describe('opt-out issue form', () => {
++	const templateName = new URL(OPT_OUT_URL).searchParams.get('template');
++
++	it('is the template the About page links to', () => {
++		expect(OPT_OUT_URL.startsWith('https://github.com/esiak/testplatz/issues/new?')).toBe(true);
++		expect(templateName).toBe('opt-out-request.yml');
++	});
++
++	const form = parseYaml(readFileSync(fileURLToPath(new URL(`${TEMPLATE_DIR}${templateName}`, import.meta.url)), 'utf8')) as IssueForm;
++
++	it('has the name, a description and the title prefix, and no labels', () => {
++		expect(form.name).toBe('Opt-out request');
++		expect(form.description).toEqual(expect.any(String));
++		expect(form.description.length).toBeGreaterThan(0);
++		expect(form.title).toBe('Opt-out request: ');
++		expect(form).not.toHaveProperty('labels');
++	});
++
++	it('asks for centre name, website and contact, all required', () => {
++		const inputs = form.body.filter((field) => field.type === 'input');
++		for (const id of ['centre_name', 'website', 'contact']) {
++			const field = inputs.find((f) => f.id === id);
++			expect(field, id).toBeDefined();
++			expect(field!.validations?.required, id).toBe(true);
++		}
++	});
++});
+diff --git a/tests/shell.test.tsx b/tests/shell.test.tsx
+index 60fbd44..fbd289d 100644
+--- a/tests/shell.test.tsx
++++ b/tests/shell.test.tsx
+@@ -7,6 +7,7 @@ import { App } from '../web/src/app.tsx';
+ import en from '../web/src/i18n/en.json' with { type: 'json' };
+ import de from '../web/src/i18n/de.json' with { type: 'json' };
+ import type { Catalogue, Catalogues } from '../web/src/i18n/i18n.tsx';
++import { coveredCentre, jsonResponse, snapshotCentre, snapshotOf } from './fixtures/snapshot.ts';
+ 
+ /**
+  * Renders each page and checks the shell. Later stories add their surfaces and states to the
+@@ -38,13 +39,32 @@ function mount(page: PageName, catalogues?: Catalogues): void {
+ const langLink = (code: 'de' | 'en'): HTMLAnchorElement => root.querySelector<HTMLAnchorElement>(`nav a[hreflang="${code}"]`)!;
+ const h1Text = (): string => root.querySelector('h1')!.textContent ?? '';
+ 
+-/** Text nodes and label attributes that are left once sentinels are removed. */
+-function leftoverText(): string[] {
++/** Never settles: the About page stays in its loading state. */
++const pendingFetch = () => new Promise<Response>(() => {});
++
++function stubFetch(impl: () => Promise<Response>): void {
++	vi.stubGlobal('fetch', vi.fn<typeof fetch>(impl));
++}
++
++/** Lets pending fetches and their state updates finish. */
++async function settle(): Promise<void> {
++	for (let i = 0; i < 5; i++) {
++		await act(async () => {
++			await new Promise((resolve) => setTimeout(resolve, 0));
++		});
++	}
++}
++
++/**
++ * Text nodes and label attributes that are left once sentinels are removed. `allowed` lists data
++ * text (centre names) that may appear as a whole text node.
++ */
++function leftoverText(allowed: readonly string[] = []): string[] {
+ 	const leftovers: string[] = [];
+ 	const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+ 	for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+ 		const rest = (node.textContent ?? '').replace(SENTINEL, '').trim();
+-		if (rest) leftovers.push(`text: ${rest}`);
++		if (rest && !allowed.includes(rest)) leftovers.push(`text: ${rest}`);
+ 	}
+ 	for (const el of root.querySelectorAll('*')) {
+ 		for (const attr of LABEL_ATTRIBUTES) {
+@@ -62,6 +82,7 @@ function leftoverText(): string[] {
+ beforeEach(() => {
+ 	root = document.createElement('div');
+ 	document.body.append(root);
++	stubFetch(pendingFetch);
+ });
+ 
+ afterEach(() => {
+@@ -70,6 +91,7 @@ afterEach(() => {
+ 	document.title = '';
+ 	document.documentElement.removeAttribute('lang');
+ 	vi.restoreAllMocks();
++	vi.unstubAllGlobals();
+ });
+ 
+ describe('no hard-coded UI text', () => {
+@@ -82,6 +104,46 @@ describe('no hard-coded UI text', () => {
+ 		});
+ 	}
+ 
++	it('the About page loading state renders only catalogue text', () => {
++		setBrowser(['de-DE'], '', '/testplatz/about/');
++		mount('about', SENTINELS);
++		expect(root.querySelector('[aria-busy="true"]')).not.toBeNull();
++		expect(leftoverText()).toEqual([]);
++	});
++
++	it('the About page loaded state renders only catalogue text and centre names', async () => {
++		const centres = [
++			snapshotCentre('a', { name: 'Alpha Sprachschule' }),
++			snapshotCentre('b', { name: 'Bravo Akademie', test_page_url: null, website: null }),
++			coveredCentre('c', 'failed', { name: 'Charlie vhs' }),
++		];
++		stubFetch(() => Promise.resolve(jsonResponse(snapshotOf(centres))));
++		setBrowser(['de-DE'], '', '/testplatz/about/');
++		mount('about', SENTINELS);
++		await settle();
++		expect(root.querySelectorAll('.about__centre-list > li')).toHaveLength(3);
++		expect(leftoverText(centres.map((c) => c.name))).toEqual([]);
++	});
++
++	it('the About page empty state renders only catalogue text', async () => {
++		stubFetch(() => Promise.resolve(jsonResponse(snapshotOf([coveredCentre('a', 'ok')]))));
++		setBrowser(['de-DE'], '', '/testplatz/about/');
++		mount('about', SENTINELS);
++		await settle();
++		expect(root.textContent).toContain('[[about.not_checked.none]]');
++		expect(leftoverText()).toEqual([]);
++	});
++
++	it('the About page error state renders only catalogue text', async () => {
++		stubFetch(() => Promise.reject(new TypeError('offline')));
++		setBrowser(['de-DE'], '', '/testplatz/about/');
++		mount('about', SENTINELS);
++		await settle();
++		expect(root.querySelector('[role="alert"]')).not.toBeNull();
++		expect(root.querySelector('button')).not.toBeNull();
++		expect(leftoverText()).toEqual([]);
++	});
++
+ 	it('the check catches a literal string', () => {
+ 		setBrowser(['de-DE']);
+ 		mount('search', SENTINELS);
+diff --git a/tests/snapshot-loader.test.ts b/tests/snapshot-loader.test.ts
+new file mode 100644
+index 0000000..348d3fa
+--- /dev/null
++++ b/tests/snapshot-loader.test.ts
+@@ -0,0 +1,73 @@
++import { readFileSync } from 'node:fs';
++import { fileURLToPath } from 'node:url';
++import { describe, expect, it, vi } from 'vitest';
++import { snapshotSchema } from '../shared/snapshot.ts';
++import { loadSnapshot, SNAPSHOT_URL, uncheckedCentres } from '../web/src/data/snapshot.ts';
++import { coveredCentre, jsonResponse, snapshotCentre, snapshotOf } from './fixtures/snapshot.ts';
++
++const fetchReturning = (response: Response | Promise<Response>) => vi.fn<typeof fetch>(() => Promise.resolve(response));
++
++describe('loadSnapshot', () => {
++	it('fetches the same-origin snapshot and returns it parsed', async () => {
++		const snapshot = snapshotOf([snapshotCentre('a')]);
++		const fetchImpl = fetchReturning(jsonResponse(snapshot));
++		await expect(loadSnapshot(fetchImpl)).resolves.toEqual(snapshot);
++		expect(fetchImpl).toHaveBeenCalledTimes(1);
++		expect(fetchImpl).toHaveBeenCalledWith(SNAPSHOT_URL);
++		expect(SNAPSHOT_URL).toMatch(/^\/(?:[\w-]+\/)*snapshot\.json$/);
++	});
++
++	it('rejects a network error', async () => {
++		await expect(loadSnapshot(vi.fn<typeof fetch>(() => Promise.reject(new TypeError('offline'))))).rejects.toThrow('offline');
++	});
++
++	it('rejects a non-2xx response', async () => {
++		await expect(loadSnapshot(fetchReturning(jsonResponse(snapshotOf([]), 500)))).rejects.toThrow('HTTP 500');
++		await expect(loadSnapshot(fetchReturning(jsonResponse(snapshotOf([]), 404)))).rejects.toThrow('HTTP 404');
++	});
++
++	it('rejects invalid JSON', async () => {
++		await expect(loadSnapshot(fetchReturning(jsonResponse('{not json')))).rejects.toThrow();
++	});
++
++	it('rejects a wrong schemaVersion or shape', async () => {
++		await expect(loadSnapshot(fetchReturning(jsonResponse({ ...snapshotOf([]), schemaVersion: 2 })))).rejects.toThrow('invalid');
++		await expect(loadSnapshot(fetchReturning(jsonResponse({ centres: [] })))).rejects.toThrow('invalid');
++	});
++});
++
++describe('uncheckedCentres', () => {
++	it('keeps not_checked centres and covered centres whose last check is not ok', () => {
++		const snapshot = snapshotOf([
++			coveredCentre('ok', 'ok'),
++			coveredCentre('failed', 'failed'),
++			coveredCentre('never', null),
++			snapshotCentre('none'),
++			snapshotCentre('opted', { opted_out: true }),
++		]);
++		expect(uncheckedCentres(snapshot).map((c) => c.centre_id).sort()).toEqual(['failed', 'never', 'none', 'opted']);
++	});
++
++	it('sorts by name with German collation', () => {
++		const snapshot = snapshotOf([
++			snapshotCentre('z', { name: 'Zentrum' }),
++			snapshotCentre('oe', { name: 'Ötztal Akademie' }),
++			snapshotCentre('a', { name: 'akademie' }),
++			snapshotCentre('o', { name: 'Ostbayern' }),
++		]);
++		expect(uncheckedCentres(snapshot).map((c) => c.name)).toEqual(['akademie', 'Ostbayern', 'Ötztal Akademie', 'Zentrum']);
++	});
++
++	it('returns an empty list when every centre is covered and ok', () => {
++		expect(uncheckedCentres(snapshotOf([coveredCentre('a', 'ok')]))).toEqual([]);
++	});
++
++	it('returns every centre of the committed Epic 1 snapshot', () => {
++		const path = fileURLToPath(new URL('../data/public/snapshot.json', import.meta.url));
++		const snapshot = snapshotSchema.parse(JSON.parse(readFileSync(path, 'utf8')));
++		const unchecked = uncheckedCentres(snapshot);
++		expect(unchecked).toHaveLength(snapshot.centres.length);
++		const names = unchecked.map((c) => c.name);
++		expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b, 'de')));
++	});
++});
+diff --git a/web/src/about-page.tsx b/web/src/about-page.tsx
+index 398083c..81e3c01 100644
+--- a/web/src/about-page.tsx
++++ b/web/src/about-page.tsx
+@@ -1,9 +1,167 @@
++import type { ComponentChildren } from 'preact';
++import { useEffect, useState } from 'preact/hooks';
++import type { SnapshotCentre } from '../../shared/snapshot.ts';
++import { loadSnapshot, uncheckedCentres } from './data/snapshot.ts';
++import { parseFragment } from './fragment.ts';
+ import { I18nProvider, useI18n, type Catalogues } from './i18n/i18n.tsx';
+ import { PageShell } from './shell/page-shell.tsx';
+ 
++/** The issue form centres use to ask to be removed (`.github/ISSUE_TEMPLATE/opt-out-request.yml`). */
++export const OPT_OUT_URL = 'https://github.com/esiak/testplatz/issues/new?template=opt-out-request.yml';
++const OSM_COPYRIGHT_URL = 'https://www.openstreetmap.org/copyright';
++const NOMINATIM_URL = 'https://nominatim.org/';
++
++/** The id of the not-checked section; also a fragment key (`#not-checked`, `#not-checked=&lang=en`). */
++export const NOT_CHECKED_ID = 'not-checked';
++
++/** A link that opens in a new tab: visible `↗` (hidden from screen readers) and a "new tab" name. */
++function ExternalLink({ href, label, children }: { href: string; label: string; children?: ComponentChildren }) {
++	const { t } = useI18n();
++	return (
++		<a class="about__link" href={href} target="_blank" rel="noopener noreferrer" aria-label={t('link.new_tab', { label })}>
++			<span>{children ?? label}</span> <span aria-hidden="true">{t('link.external_mark')}</span>
++		</a>
++	);
++}
++
++type ListState = { kind: 'loading' } | { kind: 'loaded'; centres: SnapshotCentre[] } | { kind: 'failed' };
++
++function CentreList() {
++	const { t } = useI18n();
++	const [attempt, setAttempt] = useState(0);
++	const [state, setState] = useState<ListState>({ kind: 'loading' });
++
++	useEffect(() => {
++		let active = true;
++		setState({ kind: 'loading' });
++		loadSnapshot().then(
++			(snapshot) => {
++				if (active) setState({ kind: 'loaded', centres: uncheckedCentres(snapshot) });
++			},
++			() => {
++				if (active) setState({ kind: 'failed' });
++			},
++		);
++		return () => {
++			active = false;
++		};
++	}, [attempt]);
++
++	if (state.kind === 'loading') {
++		return (
++			<div class="about__centres" aria-busy="true">
++				<p>{t('about.not_checked.loading')}</p>
++			</div>
++		);
++	}
++
++	if (state.kind === 'failed') {
++		return (
++			<div class="about__centres">
++				<p role="alert">{t('about.not_checked.error')}</p>
++				<button type="button" class="about__retry" onClick={() => setAttempt((n) => n + 1)}>
++					{t('about.not_checked.retry')}
++				</button>
++			</div>
++		);
++	}
++
++	const { centres } = state;
++	if (centres.length === 0) {
++		return (
++			<div class="about__centres">
++				<p>{t('about.not_checked.none')}</p>
++			</div>
++		);
++	}
++
++	return (
++		<div class="about__centres">
++			<p>{t('about.not_checked.count', { count: centres.length })}</p>
++			<ul class="about__centre-list">
++				{centres.map((centre) => {
++					const href = centre.test_page_url ?? centre.website;
++					return (
++						<li key={centre.centre_id} class="about__centre">
++							{href ? (
++								<ExternalLink href={href} label={centre.name}>
++									<span lang="de">{centre.name}</span>
++								</ExternalLink>
++							) : (
++								<span lang="de">{centre.name}</span>
++							)}
++						</li>
++					);
++				})}
++			</ul>
++		</div>
++	);
++}
++
++/** Scrolls the not-checked section into view when the fragment has a `not-checked` key. */
++function useNotCheckedTarget(): void {
++	useEffect(() => {
++		const scrollIfTargeted = () => {
++			if (!parseFragment(location.hash).has(NOT_CHECKED_ID)) return;
++			document.getElementById(NOT_CHECKED_ID)?.scrollIntoView();
++		};
++		scrollIfTargeted();
++		window.addEventListener('hashchange', scrollIfTargeted);
++		return () => window.removeEventListener('hashchange', scrollIfTargeted);
++	}, []);
++}
++
+ function AboutContent() {
+ 	const { t } = useI18n();
+-	return <h1>{t('about.heading')}</h1>;
++	useNotCheckedTarget();
++
++	return (
++		<div class="about">
++			<h1>{t('about.heading')}</h1>
++
++			<section>
++				<h2>{t('about.how.heading')}</h2>
++				<p>{t('about.how.body')}</p>
++			</section>
++
++			<section id={NOT_CHECKED_ID}>
++				<h2>{t('about.not_checked.heading')}</h2>
++				<p>{t('about.not_checked.intro')}</p>
++				<ul>
++					<li>{t('about.not_checked.reason_system')}</li>
++					<li>{t('about.not_checked.reason_opted_out')}</li>
++					<li>{t('about.not_checked.reason_failed')}</li>
++				</ul>
++				<CentreList />
++			</section>
++
++			<section>
++				<h2>{t('about.sources.heading')}</h2>
++				<ul>
++					<li>{t('about.sources.directory')}</li>
++					<li>{t('about.sources.websites')}</li>
++				</ul>
++			</section>
++
++			<section>
++				<h2>{t('about.attribution.heading')}</h2>
++				<p>
++					<ExternalLink href={OSM_COPYRIGHT_URL} label={t('about.attribution.osm')} />
++				</p>
++				<p>
++					<ExternalLink href={NOMINATIM_URL} label={t('about.attribution.nominatim')} />
++				</p>
++			</section>
++
++			<section>
++				<h2>{t('about.opt_out.heading')}</h2>
++				<p>{t('about.opt_out.body')}</p>
++				<p>
++					<ExternalLink href={OPT_OUT_URL} label={t('about.opt_out.link')} />
++				</p>
++			</section>
++		</div>
++	);
+ }
+ 
+ export function AboutPage({ catalogues }: { catalogues?: Catalogues }) {
+diff --git a/web/src/data/snapshot.ts b/web/src/data/snapshot.ts
+new file mode 100644
+index 0000000..1315729
+--- /dev/null
++++ b/web/src/data/snapshot.ts
+@@ -0,0 +1,24 @@
++import { snapshotSchema, type Snapshot, type SnapshotCentre } from '../../../shared/snapshot.ts';
++
++/** Same-origin URL of the published snapshot. */
++export const SNAPSHOT_URL = `${import.meta.env.BASE_URL}snapshot.json`;
++
++/**
++ * Fetches and validates `snapshot.json`. Throws on a network error, a non-2xx response,
++ * invalid JSON, or a schema (including `schemaVersion`) mismatch.
++ */
++export async function loadSnapshot(fetchImpl: typeof fetch = fetch): Promise<Snapshot> {
++	const response = await fetchImpl(SNAPSHOT_URL);
++	if (!response.ok) throw new Error(`snapshot.json: HTTP ${response.status}`);
++	const json: unknown = await response.json();
++	const parsed = snapshotSchema.safeParse(json);
++	if (!parsed.success) throw new Error(`snapshot.json: invalid (${parsed.error.issues.length} issues)`);
++	return parsed.data;
++}
++
++/** Centres not checked automatically, or whose last check did not succeed, sorted by name (German collation). */
++export function uncheckedCentres(snapshot: Snapshot): SnapshotCentre[] {
++	return snapshot.centres
++		.filter((centre) => centre.coverage === 'not_checked' || centre.last_result !== 'ok')
++		.sort((a, b) => a.name.localeCompare(b.name, 'de'));
++}
+diff --git a/web/src/i18n/de.json b/web/src/i18n/de.json
+index e55a9a2..682716f 100644
+--- a/web/src/i18n/de.json
++++ b/web/src/i18n/de.json
+@@ -3,6 +3,29 @@
+ 	"search.heading": "Finden Sie Termine für den Einbürgerungstest in Ihrer Nähe in Bayern.",
+ 	"about.title": "Über die Daten",
+ 	"about.heading": "Über die Daten",
++	"about.how.heading": "So funktioniert es",
++	"about.how.body": "Wir lesen die Websites der Testzentren mehrmals am Tag. Sehen Sie vor der Anmeldung immer auf der Seite des Testzentrums nach.",
++	"about.not_checked.heading": "Nicht automatisch geprüfte Testzentren",
++	"about.not_checked.intro": "Wir prüfen ein Testzentrum nicht automatisch, wenn:",
++	"about.not_checked.reason_system": "seine Website ein System nutzt, das wir noch nicht lesen können",
++	"about.not_checked.reason_opted_out": "das Testzentrum uns gebeten hat, es nicht zu prüfen",
++	"about.not_checked.reason_failed": "unsere letzte Prüfung seiner Website fehlgeschlagen ist",
++	"about.not_checked.loading": "Testzentren werden geladen…",
++	"about.not_checked.count": "{count} Testzentren werden nicht automatisch geprüft.",
++	"about.not_checked.none": "Derzeit werden alle Testzentren automatisch geprüft.",
++	"about.not_checked.error": "Wir konnten die Liste der Testzentren nicht laden.",
++	"about.not_checked.retry": "Erneut versuchen",
++	"about.sources.heading": "Quellen",
++	"about.sources.directory": "Die Liste der zugelassenen Testzentren in Bayern. Sie beruht auf der Liste des BAMF und stammt von rtpartner.de, bis uns das BAMF eine eigene Liste schickt.",
++	"about.sources.websites": "Die Website jedes Testzentrums.",
++	"about.attribution.heading": "Namensnennung",
++	"about.attribution.osm": "Ortsdaten © OpenStreetMap-Mitwirkende (ODbL)",
++	"about.attribution.nominatim": "Standorte der Testzentren ermittelt mit Nominatim",
++	"about.opt_out.heading": "Für Testzentren",
++	"about.opt_out.body": "Wenn Sie ein Testzentrum betreiben und nicht möchten, dass wir Ihre Website prüfen, können Sie uns bitten, es zu entfernen.",
++	"about.opt_out.link": "Entfernung beantragen",
++	"link.new_tab": "{label} (öffnet in einem neuen Tab)",
++	"link.external_mark": "↗",
+ 	"lang.nav_label": "Sprache",
+ 	"lang.de.code": "DE",
+ 	"lang.de.name": "Deutsch",
+diff --git a/web/src/i18n/en.json b/web/src/i18n/en.json
+index 0dfc831..b5ca8c6 100644
+--- a/web/src/i18n/en.json
++++ b/web/src/i18n/en.json
+@@ -3,6 +3,29 @@
+ 	"search.heading": "Find Einbürgerungstest dates near you in Bavaria.",
+ 	"about.title": "About the data",
+ 	"about.heading": "About the data",
++	"about.how.heading": "How it works",
++	"about.how.body": "We read the centres' websites several times a day. Always check the centre's page before you register.",
++	"about.not_checked.heading": "Centres not checked automatically",
++	"about.not_checked.intro": "We don't check a centre automatically when:",
++	"about.not_checked.reason_system": "their website uses a system we can't read yet",
++	"about.not_checked.reason_opted_out": "the centre asked us not to check it",
++	"about.not_checked.reason_failed": "our last check of their site failed",
++	"about.not_checked.loading": "Loading centres…",
++	"about.not_checked.count": "{count} centres are not checked automatically.",
++	"about.not_checked.none": "Every centre is checked automatically right now.",
++	"about.not_checked.error": "We couldn't load the list of centres.",
++	"about.not_checked.retry": "Try again",
++	"about.sources.heading": "Sources",
++	"about.sources.directory": "The list of approved test centres in Bavaria. It is based on the BAMF list and taken from rtpartner.de until BAMF sends us its own list.",
++	"about.sources.websites": "Each centre's own website.",
++	"about.attribution.heading": "Attribution",
++	"about.attribution.osm": "Place data © OpenStreetMap contributors (ODbL)",
++	"about.attribution.nominatim": "Centre locations found with Nominatim",
++	"about.opt_out.heading": "For test centres",
++	"about.opt_out.body": "If you run a test centre and do not want us to check your website, you can ask us to remove it.",
++	"about.opt_out.link": "Ask to be removed",
++	"link.new_tab": "{label} (opens in a new tab)",
++	"link.external_mark": "↗",
+ 	"lang.nav_label": "Language",
+ 	"lang.de.code": "DE",
+ 	"lang.de.name": "Deutsch",
+diff --git a/web/src/styles/base.css b/web/src/styles/base.css
+index 0418623..d491ab6 100644
+--- a/web/src/styles/base.css
++++ b/web/src/styles/base.css
+@@ -100,3 +100,55 @@ a {
+ .site-footer__attribution {
+ 	margin-block: var(--space-2) 0;
+ }
++
++/* About the data */
++.about h2 {
++	font: var(--font-section);
++	margin-block: var(--space-5) var(--space-2);
++}
++
++.about p,
++.about ul {
++	margin-block: var(--space-2);
++}
++
++.about ul {
++	padding-inline-start: var(--space-5);
++}
++
++/* External links: at least 44 px tall, long text wraps inside the column. */
++.about__link {
++	display: inline-flex;
++	align-items: center;
++	gap: var(--space-1);
++	max-width: 100%;
++	min-height: var(--space-target-min);
++	color: var(--color-action);
++}
++
++.about__link > span:first-child {
++	min-width: 0;
++}
++
++.about .about__centre-list {
++	padding-inline-start: 0;
++	list-style: none;
++}
++
++.about__centre {
++	display: flex;
++	align-items: center;
++	min-height: var(--space-target-min);
++	border-block-end: thin solid var(--color-border);
++}
++
++.about__retry {
++	min-height: var(--button-secondary-min-height);
++	padding-inline: var(--space-4);
++	font: var(--font-body);
++	color: var(--button-secondary-color);
++	background: var(--button-secondary-background);
++	border: thin solid var(--button-secondary-border);
++	border-radius: var(--button-secondary-rounded);
++	cursor: pointer;
++}

@@ -100,3 +100,59 @@ a {
 .site-footer__attribution {
 	margin-block: var(--space-2) 0;
 }
+
+/* About the data */
+.about h2 {
+	font: var(--font-section);
+	margin-block: var(--space-5) var(--space-2);
+}
+
+.about p,
+.about ul {
+	margin-block: var(--space-2);
+}
+
+.about ul {
+	padding-inline-start: var(--space-5);
+}
+
+/* External links: at least 44 px tall, long text wraps inside the column. */
+.about__link {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--space-1);
+	max-width: 100%;
+	min-width: 0;
+	min-height: var(--space-target-min);
+	color: var(--color-action);
+}
+
+/* Names and link labels shrink and break anywhere, so one long word cannot widen the page at 320 px. */
+.about__link > span:first-child,
+.about__centre [lang="de"] {
+	min-width: 0;
+	overflow-wrap: anywhere;
+}
+
+.about .about__centre-list {
+	padding-inline-start: 0;
+	list-style: none;
+}
+
+.about__centre {
+	display: flex;
+	align-items: center;
+	min-height: var(--space-target-min);
+	border-block-end: thin solid var(--color-border);
+}
+
+.about__retry {
+	min-height: var(--button-secondary-min-height);
+	padding-inline: var(--space-4);
+	font: var(--font-body);
+	color: var(--button-secondary-color);
+	background: var(--button-secondary-background);
+	border: thin solid var(--button-secondary-border);
+	border-radius: var(--button-secondary-rounded);
+	cursor: pointer;
+}
