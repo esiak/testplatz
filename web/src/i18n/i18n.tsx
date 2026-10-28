@@ -48,6 +48,8 @@ export interface I18nValue {
 	t: (key: MessageKey, params?: Params) => string;
 	/** Switches the language and rewrites only `lang` in the fragment, without a history entry. */
 	setLang: (lang: Lang) => void;
+	/** Replaces the whole fragment without a history entry (no `hashchange`) and keeps `hash` in sync. */
+	replaceHash: (hash: string) => void;
 }
 
 const I18nContext = createContext<I18nValue | null>(null);
@@ -70,12 +72,18 @@ export function I18nProvider({ titleKey, catalogues = CATALOGUES, children }: I1
 
 	const [hash, setHash] = useState(() => location.hash);
 
-	const setLang = useCallback((next: Lang) => {
-		const nextHash = withLang(location.hash, next);
+	const replaceHash = useCallback((nextHash: string) => {
 		history.replaceState(history.state, '', `${location.pathname}${location.search}${nextHash}`);
 		setHash(nextHash);
-		setLangState(next);
 	}, []);
+
+	const setLang = useCallback(
+		(next: Lang) => {
+			replaceHash(withLang(location.hash, next));
+			setLangState(next);
+		},
+		[replaceHash],
+	);
 
 	useEffect(() => {
 		const onHashChange = () => {
@@ -89,8 +97,8 @@ export function I18nProvider({ titleKey, catalogues = CATALOGUES, children }: I1
 
 	const value = useMemo<I18nValue>(() => {
 		const catalogue = catalogues[lang];
-		return { lang, hash, setLang, t: (key, params) => translate(catalogue, key, params) };
-	}, [lang, hash, catalogues, setLang]);
+		return { lang, hash, setLang, replaceHash, t: (key, params) => translate(catalogue, key, params) };
+	}, [lang, hash, catalogues, setLang, replaceHash]);
 
 	// Layout effect: <html lang> and the title are right before the first paint.
 	useLayoutEffect(() => {

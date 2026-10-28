@@ -19,3 +19,6 @@ export function withLang(hash: string, lang: string): string {
 	params.set('lang', lang);
 	return serialiseFragment(params);
 }
+
+/** The About page's not-checked section id; also a fragment key (`#not-checked`, `#not-checked=&lang=en`). */
+export const NOT_CHECKED_ID = 'not-checked';

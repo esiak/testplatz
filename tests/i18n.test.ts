@@ -66,7 +66,8 @@ describe('translation catalogues', () => {
 	});
 
 	it('translate fills placeholders', () => {
-		expect(translate(CATALOGUES.en, 'results.none_in_radius', { radius: 20, next: 40 })).toBe('No test centres within 20 km. Try 40 km.');
+		expect(translate(CATALOGUES.en, 'results.none_in_radius', { radius: 20 })).toBe('No test centres within 20 km.');
+		expect(translate(CATALOGUES.en, 'search.next_radius', { radius: 40 })).toBe('Search 40 km');
 		expect(translate(CATALOGUES.en, 'freshness.relative', { hours: 2 })).toBe('Checked 2 h ago');
 		expect(translate(CATALOGUES.de, 'search.heading')).toBe(de['search.heading']);
 	});

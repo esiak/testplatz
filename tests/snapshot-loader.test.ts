@@ -2,7 +2,11 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it, vi } from 'vitest';
 import { snapshotSchema } from '../shared/snapshot.ts';
+import { SchemaVersionError } from '../web/src/data/load-json.ts';
+import { loadPlaces, PLACES_URL } from '../web/src/data/places.ts';
+import { clearReloadFlag, RELOAD_FLAG, reloadOnce } from '../web/src/data/reload-once.ts';
 import { loadSnapshot, SNAPSHOT_URL, uncheckedCentres } from '../web/src/data/snapshot.ts';
+import { placesOf, smallPlaces } from './fixtures/places.ts';
 import { coveredCentre, jsonResponse, snapshotCentre, snapshotOf } from './fixtures/snapshot.ts';
 
 const fetchReturning = (response: Response | Promise<Response>) => vi.fn<typeof fetch>(() => Promise.resolve(response));
@@ -33,6 +37,86 @@ describe('loadSnapshot', () => {
 	it('rejects a wrong schemaVersion or shape', async () => {
 		await expect(loadSnapshot(fetchReturning(jsonResponse({ ...snapshotOf([]), schemaVersion: 2 })))).rejects.toThrow('invalid');
 		await expect(loadSnapshot(fetchReturning(jsonResponse({ centres: [] })))).rejects.toThrow('invalid');
+	});
+});
+
+describe('schemaVersion mismatch', () => {
+	it('throws a SchemaVersionError only for a different schemaVersion', async () => {
+		const newer = loadSnapshot(fetchReturning(jsonResponse({ ...snapshotOf([]), schemaVersion: 2 })));
+		await expect(newer).rejects.toBeInstanceOf(SchemaVersionError);
+		const shape = loadSnapshot(fetchReturning(jsonResponse({ ...snapshotOf([]), centres: 'nope' })));
+		await expect(shape).rejects.not.toBeInstanceOf(SchemaVersionError);
+		const missing = loadSnapshot(fetchReturning(jsonResponse({ centres: [] })));
+		await expect(missing).rejects.not.toBeInstanceOf(SchemaVersionError);
+		await expect(loadSnapshot(fetchReturning(jsonResponse([])))).rejects.not.toBeInstanceOf(SchemaVersionError);
+	});
+});
+
+describe('loadPlaces', () => {
+	it('fetches the same-origin place table and returns it parsed', async () => {
+		const places = smallPlaces();
+		const fetchImpl = fetchReturning(jsonResponse(places));
+		await expect(loadPlaces(fetchImpl)).resolves.toEqual(places);
+		expect(fetchImpl).toHaveBeenCalledWith(PLACES_URL);
+		expect(PLACES_URL).toMatch(/^\/(?:[\w-]+\/)*places\.json$/);
+	});
+
+	it('rejects network errors, non-2xx, bad JSON and schema errors with a plain error', async () => {
+		for (const fetchImpl of [
+			vi.fn<typeof fetch>(() => Promise.reject(new TypeError('offline'))),
+			fetchReturning(jsonResponse(smallPlaces(), 500)),
+			fetchReturning(jsonResponse('{not json')),
+			fetchReturning(jsonResponse({ ...smallPlaces(), places: [] })),
+		]) {
+			const result = loadPlaces(fetchImpl);
+			await expect(result).rejects.toThrow();
+			await expect(result).rejects.not.toBeInstanceOf(SchemaVersionError);
+		}
+	});
+
+	it('rejects a different schemaVersion with a SchemaVersionError', async () => {
+		await expect(loadPlaces(fetchReturning(jsonResponse({ ...placesOf([]), schemaVersion: 2 })))).rejects.toBeInstanceOf(SchemaVersionError);
+	});
+});
+
+describe('reloadOnce', () => {
+	const memoryStorage = (initial: Record<string, string> = {}) => {
+		const map = new Map(Object.entries(initial));
+		const storage = {
+			getItem: (key: string) => map.get(key) ?? null,
+			setItem: (key: string, value: string) => void map.set(key, value),
+			removeItem: (key: string) => void map.delete(key),
+		} as Storage;
+		return { map, storage: () => storage };
+	};
+
+	it('reloads and sets the flag the first time', () => {
+		const { map, storage } = memoryStorage();
+		const reload = vi.fn();
+		expect(reloadOnce({ storage, reload })).toBe(true);
+		expect(reload).toHaveBeenCalledTimes(1);
+		expect(map.get(RELOAD_FLAG)).toBe('1');
+	});
+
+	it('does not reload when the flag is set or storage throws', () => {
+		const reload = vi.fn();
+		expect(reloadOnce({ storage: memoryStorage({ [RELOAD_FLAG]: '1' }).storage, reload })).toBe(false);
+		const throwing = () => {
+			throw new Error('blocked');
+		};
+		expect(reloadOnce({ storage: throwing, reload })).toBe(false);
+		expect(reload).not.toHaveBeenCalled();
+	});
+
+	it('clears the flag, and tolerates storage that throws', () => {
+		const { map, storage } = memoryStorage({ [RELOAD_FLAG]: '1' });
+		clearReloadFlag(storage);
+		expect(map.has(RELOAD_FLAG)).toBe(false);
+		expect(() =>
+			clearReloadFlag(() => {
+				throw new Error('blocked');
+			}),
+		).not.toThrow();
 	});
 });
 

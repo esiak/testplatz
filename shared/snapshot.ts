@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { centreFieldsSchema, checkCentre, READERS } from './directory.ts';
 
-/** The `schemaVersion` this contract describes. The app will embed it to detect a mismatch (Story 1.8). */
+/** The `schemaVersion` this contract describes. The app embeds it to detect a mismatch. */
 export const SNAPSHOT_SCHEMA_VERSION = 1;
 
 /** Whether a centre is read automatically. `not_checked` = uncovered card. */

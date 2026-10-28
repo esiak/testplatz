@@ -2,7 +2,7 @@ import type { ComponentChildren } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import type { SnapshotCentre } from '../../shared/snapshot.ts';
 import { loadSnapshot, uncheckedCentres } from './data/snapshot.ts';
-import { parseFragment } from './fragment.ts';
+import { NOT_CHECKED_ID, parseFragment } from './fragment.ts';
 import { I18nProvider, useI18n, type Catalogues } from './i18n/i18n.tsx';
 import { PageShell } from './shell/page-shell.tsx';
 
@@ -11,8 +11,7 @@ export const OPT_OUT_URL = 'https://github.com/esiak/testplatz/issues/new?templa
 const OSM_COPYRIGHT_URL = 'https://www.openstreetmap.org/copyright';
 const NOMINATIM_URL = 'https://nominatim.org/';
 
-/** The id of the not-checked section; also a fragment key (`#not-checked`, `#not-checked=&lang=en`). */
-export const NOT_CHECKED_ID = 'not-checked';
+export { NOT_CHECKED_ID };
 
 /** A link that opens in a new tab: visible `↗` (hidden from screen readers) and a "new tab" name. */
 function ExternalLink({ href, label, children }: { href: string; label: string; children?: ComponentChildren }) {

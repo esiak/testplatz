@@ -52,6 +52,34 @@ describe('snapshot URL', () => {
 	});
 });
 
+describe('places URL', () => {
+	it('fetches the place table under the production base', async () => {
+		vi.stubEnv('BASE_URL', viteConfig.base ?? '');
+		vi.resetModules();
+		try {
+			const { PLACES_URL } = await import('../web/src/data/places.ts');
+			expect(PLACES_URL).toBe('/testplatz/places.json');
+		} finally {
+			vi.unstubAllEnvs();
+			vi.resetModules();
+		}
+	});
+});
+
+describe('Why? URL', () => {
+	it('links to About under the production base', async () => {
+		vi.stubEnv('BASE_URL', viteConfig.base ?? '');
+		vi.resetModules();
+		try {
+			const { whyUrl } = await import('../web/src/search/uncovered-card.tsx');
+			expect(whyUrl('en')).toBe('/testplatz/about/#not-checked=&lang=en');
+		} finally {
+			vi.unstubAllEnvs();
+			vi.resetModules();
+		}
+	});
+});
+
 describe('page entries', () => {
 	const read = (rel: string): string => readFileSync(fileURLToPath(new URL(`../web/${rel}`, import.meta.url)), 'utf8');
 	const pages = [

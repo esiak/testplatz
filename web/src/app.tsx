@@ -1,16 +1,12 @@
-import { I18nProvider, useI18n, type Catalogues } from './i18n/i18n.tsx';
+import { I18nProvider, type Catalogues } from './i18n/i18n.tsx';
+import { SearchPage, type SearchServices } from './search/search-page.tsx';
 import { PageShell } from './shell/page-shell.tsx';
 
-function SearchPage() {
-	const { t } = useI18n();
-	return <h1>{t('search.heading')}</h1>;
-}
-
-export function App({ catalogues }: { catalogues?: Catalogues }) {
+export function App({ catalogues, services }: { catalogues?: Catalogues; services?: Partial<SearchServices> }) {
 	return (
 		<I18nProvider titleKey="search.title" catalogues={catalogues}>
 			<PageShell page="search">
-				<SearchPage />
+				<SearchPage services={services} />
 			</PageShell>
 		</I18nProvider>
 	);

@@ -156,3 +156,374 @@ a {
 	border-radius: var(--button-secondary-rounded);
 	cursor: pointer;
 }
+
+/* Visually hidden, still read by screen readers (the live region). */
+.visually-hidden {
+	position: absolute;
+	inline-size: 0.0625rem;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+}
+
+/* Buttons */
+.button-primary,
+.button-secondary {
+	min-height: var(--space-target-min);
+	padding-inline: var(--space-4);
+	font: var(--font-body);
+	cursor: pointer;
+}
+
+.button-primary {
+	min-height: var(--button-primary-min-height);
+	color: var(--button-primary-color);
+	background: var(--button-primary-background);
+	border: thin solid var(--button-primary-background);
+	border-radius: var(--button-primary-rounded);
+}
+
+/* Retry and next-radius buttons: full width on phones. */
+.button-secondary {
+	inline-size: 100%;
+	min-height: var(--button-secondary-min-height);
+	color: var(--button-secondary-color);
+	background: var(--button-secondary-background);
+	border: thin solid var(--button-secondary-border);
+	border-radius: var(--button-secondary-rounded);
+}
+
+@media (min-width: 37.5em) {
+	.button-secondary {
+		inline-size: auto;
+	}
+}
+
+/*
+ * Search bar. Narrow: the field (with its message) on its own rows, radius + button on the next.
+ * From 37.5em: one row. The wrappers use display: contents so labels and controls share the grid.
+ */
+.search-bar {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	grid-template-areas:
+		'place-label place-label'
+		'place-input place-input'
+		'place-message place-message'
+		'radius-label .'
+		'radius-select submit';
+	column-gap: var(--space-2);
+	row-gap: var(--space-1);
+	align-items: end;
+	margin-block-end: var(--space-4);
+	background: var(--search-bar-background);
+}
+
+@media (min-width: 37.5em) {
+	.search-bar {
+		grid-template-columns: minmax(0, 1fr) auto auto;
+		grid-template-areas:
+			'place-label radius-label .'
+			'place-input radius-select submit'
+			'place-message . .';
+	}
+}
+
+.search-bar__field,
+.search-bar__radius {
+	display: contents;
+}
+
+.search-bar__label {
+	font: var(--font-section);
+}
+
+.search-bar__field > .search-bar__label {
+	grid-area: place-label;
+}
+
+.search-bar__radius > .search-bar__label {
+	grid-area: radius-label;
+	margin-block-start: var(--space-2);
+}
+
+@media (min-width: 37.5em) {
+	.search-bar__radius > .search-bar__label {
+		margin-block-start: 0;
+	}
+}
+
+.search-bar__input,
+.search-bar__select {
+	min-width: 0;
+	min-height: var(--search-bar-min-height);
+	padding-inline: var(--space-3);
+	font: var(--font-body);
+	color: var(--color-ink-primary);
+	background: var(--search-bar-background);
+	border: thin solid var(--search-bar-field-border);
+	border-radius: var(--search-bar-rounded);
+}
+
+.search-bar__input {
+	grid-area: place-input;
+	inline-size: 100%;
+}
+
+.search-bar__input[aria-invalid='true'] {
+	border-color: var(--color-error);
+}
+
+.search-bar__select {
+	grid-area: radius-select;
+	inline-size: 100%;
+}
+
+.search-bar__submit {
+	grid-area: submit;
+}
+
+/* Field message: "Error: …" plus up to three "Did you mean …?" links. */
+.field-message {
+	grid-area: place-message;
+	min-width: 0;
+}
+
+.field-message__text {
+	margin-block: var(--space-1);
+	font: var(--field-message-typography);
+	color: var(--field-message-color);
+}
+
+.field-message__suggestions {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.field-message__suggestion {
+	display: inline-flex;
+	align-items: center;
+	max-width: 100%;
+	min-height: var(--space-target-min);
+	overflow-wrap: anywhere;
+}
+
+/* Results */
+.search__results > p {
+	margin-block: var(--space-2);
+}
+
+.results-count {
+	font: var(--font-body);
+}
+
+.notice-line {
+	font: var(--notice-line-typography);
+	color: var(--notice-line-color);
+}
+
+.load-failure__text {
+	color: var(--color-error);
+}
+
+.results {
+	display: grid;
+	gap: var(--space-3);
+	margin: var(--space-4) 0 0;
+	padding: 0;
+	list-style: none;
+}
+
+.results__item {
+	min-width: 0;
+}
+
+/* Uncovered card: one stretched link (the h3's link); Map ↗ and Why? sit above the link layer. */
+.card {
+	position: relative;
+	display: grid;
+	gap: var(--space-2);
+	min-width: 0;
+	padding: var(--result-card-padding);
+	background: var(--result-card-background);
+	border: thin solid var(--result-card-border);
+	border-radius: var(--result-card-rounded);
+}
+
+.card:has(.card__link:focus-visible) {
+	outline: var(--focus-ring-width) solid var(--focus-ring-color);
+	outline-offset: var(--focus-ring-offset);
+}
+
+/* The ring is drawn around the whole card instead. */
+.card__link:focus-visible {
+	outline-color: transparent;
+}
+
+.card__top {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: var(--space-2);
+}
+
+.card__name {
+	min-width: 0;
+	margin: 0;
+	font: var(--font-card-date);
+	overflow-wrap: anywhere;
+}
+
+.card__link {
+	color: var(--color-ink-primary);
+	text-decoration: none;
+}
+
+.card__link::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	border-radius: var(--result-card-rounded);
+}
+
+.chip {
+	padding: var(--space-1) var(--space-2);
+	font: var(--status-chip-typography);
+	border-radius: var(--status-chip-rounded);
+}
+
+.chip--unknown {
+	color: var(--status-chip-unknown-color);
+	background: var(--status-chip-unknown-background);
+}
+
+/* Selectable address and its Map link, with clearance where nothing else responds. */
+.card__address {
+	position: relative;
+	z-index: 1;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	column-gap: var(--space-2);
+	margin: 0;
+	padding-block: var(--space-2);
+	font: var(--address-line-typography);
+	color: var(--address-line-color);
+}
+
+.card__address-text {
+	min-width: 0;
+	overflow-wrap: anywhere;
+}
+
+.card__map {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--space-1);
+	min-width: var(--space-target-min);
+	min-height: var(--space-target-min);
+	padding-inline: var(--space-2);
+	color: var(--address-line-link-color);
+}
+
+.card__body {
+	margin: 0;
+	font: var(--font-body);
+}
+
+/* Key facts: four across when each cell gets fact-cell-min, else 2 × 2. */
+.card__facts {
+	container-type: inline-size;
+}
+
+.key-facts {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: var(--space-2);
+	margin: 0;
+	padding: var(--space-2) var(--space-3);
+	background: var(--key-facts-row-background);
+	border-radius: var(--key-facts-row-rounded);
+}
+
+/* 39em = 4 × fact-cell-min (9em) + 3 gaps + the row's inline padding. */
+@container (min-width: 39em) {
+	.key-facts {
+		grid-template-columns: repeat(4, minmax(var(--key-facts-row-cell-min-width), 1fr));
+	}
+}
+
+.key-facts__cell {
+	min-width: 0;
+}
+
+.key-facts__label {
+	font: var(--key-facts-row-label-typography);
+	color: var(--key-facts-row-label-color);
+}
+
+.key-facts__value {
+	margin: 0;
+	font: var(--key-facts-row-value-typography);
+	overflow-wrap: anywhere;
+}
+
+.card__bottom {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--space-2);
+}
+
+.card__destination {
+	min-width: 0;
+	font: var(--destination-line-typography);
+	color: var(--destination-line-color);
+	overflow-wrap: anywhere;
+}
+
+.card__why {
+	position: relative;
+	z-index: 1;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: var(--space-target-min);
+	min-height: var(--space-target-min);
+	margin-inline-start: auto;
+	padding-inline: var(--space-2);
+	font: var(--font-meta);
+	color: var(--color-action);
+}
+
+/* Skeleton card: the card outline with three static bars, no animation. */
+.skeleton {
+	display: grid;
+	gap: var(--space-3);
+	padding: var(--result-card-padding);
+	border: thin solid var(--result-card-border);
+	border-radius: var(--result-card-rounded);
+}
+
+.skeleton__bar {
+	display: block;
+	min-height: var(--space-3);
+	background: var(--color-surface-muted);
+	border-radius: var(--radius-sm);
+}
+
+.skeleton__bar:nth-child(1) {
+	inline-size: 70%;
+}
+
+.skeleton__bar:nth-child(2) {
+	inline-size: 90%;
+}
+
+.skeleton__bar:nth-child(3) {
+	inline-size: 50%;
+}

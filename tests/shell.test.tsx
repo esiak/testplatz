@@ -7,6 +7,9 @@ import { App } from '../web/src/app.tsx';
 import en from '../web/src/i18n/en.json' with { type: 'json' };
 import de from '../web/src/i18n/de.json' with { type: 'json' };
 import type { Catalogue, Catalogues } from '../web/src/i18n/i18n.tsx';
+import { PLACES_URL } from '../web/src/data/places.ts';
+import { SNAPSHOT_URL } from '../web/src/data/snapshot.ts';
+import { smallPlaces } from './fixtures/places.ts';
 import { coveredCentre, jsonResponse, snapshotCentre, snapshotOf } from './fixtures/snapshot.ts';
 
 /**
@@ -42,8 +45,36 @@ const h1Text = (): string => root.querySelector('h1')!.textContent ?? '';
 /** Never settles: the About page stays in its loading state. */
 const pendingFetch = () => new Promise<Response>(() => {});
 
-function stubFetch(impl: () => Promise<Response>): void {
+function stubFetch(impl: (input: RequestInfo | URL) => Promise<Response>): void {
 	vi.stubGlobal('fetch', vi.fn<typeof fetch>(impl));
+}
+
+/** Serves the search page's two data files; `fail` makes both requests fail. */
+function stubSearchData(centres: ReturnType<typeof snapshotCentre>[], fail = false): void {
+	stubFetch((input) => {
+		if (fail) return Promise.reject(new TypeError('offline'));
+		const url = String(input);
+		if (url === SNAPSHOT_URL) return Promise.resolve(jsonResponse(snapshotOf(centres)));
+		if (url === PLACES_URL) return Promise.resolve(jsonResponse(smallPlaces()));
+		return Promise.reject(new Error(`unexpected request ${url}`));
+	});
+}
+
+/** Types into the search field and submits the form. */
+function searchFor(text: string, km?: number): void {
+	const field = root.querySelector<HTMLInputElement>('form[role="search"] input')!;
+	const select = root.querySelector<HTMLSelectElement>('form[role="search"] select')!;
+	act(() => {
+		field.value = text;
+		field.dispatchEvent(new Event('input', { bubbles: true }));
+		if (km !== undefined) {
+			select.value = String(km);
+			select.dispatchEvent(new Event('change', { bubbles: true }));
+		}
+	});
+	act(() => {
+		root.querySelector('form[role="search"]')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+	});
 }
 
 /** Lets pending fetches and their state updates finish. */
@@ -142,6 +173,78 @@ describe('no hard-coded UI text', () => {
 		expect(root.querySelector('[role="alert"]')).not.toBeNull();
 		expect(root.querySelector('button')).not.toBeNull();
 		expect(leftoverText()).toEqual([]);
+	});
+
+	describe('search page states', () => {
+		const centres = [
+			snapshotCentre('a', {
+				name: 'Alpha Sprachschule',
+				address: { street: 'Bahnhofsplatz 6', postcode: '90443', city: 'Nürnberg' },
+				lat: 49.4539,
+				lon: 11.0773,
+			}),
+			snapshotCentre('b', {
+				name: 'Bravo Akademie',
+				address: { street: 'Königstraße 1', postcode: '90762', city: 'Fürth' },
+				lat: 49.4771,
+				lon: 10.9887,
+				test_page_url: null,
+				website: null,
+			}),
+			snapshotCentre('c', { name: 'Charlie vhs', lat: 49.59, lon: 11.0, test_page_url: null }),
+		];
+		const dataText = [...centres.map((c) => c.name), ...centres.map((c) => `${c.address.street}, ${c.address.postcode} ${c.address.city}`)];
+
+		async function searchPage(text: string, km?: number, fail = false): Promise<void> {
+			stubSearchData(centres, fail);
+			setBrowser(['de-DE']);
+			mount('search', SENTINELS);
+			await settle();
+			searchFor(text, km);
+			await settle();
+		}
+
+		it('loading', () => {
+			setBrowser(['de-DE']);
+			mount('search', SENTINELS);
+			searchFor('Nürnberg');
+			expect(root.querySelector('[aria-busy="true"]')).not.toBeNull();
+			expect(root.querySelector('[role="status"]')!.textContent).toBe('[[search.loading]]');
+			expect(leftoverText()).toEqual([]);
+		});
+
+		it('results', async () => {
+			await searchPage('Nürnberg', 20);
+			expect(root.querySelectorAll('ul.results > li > article')).toHaveLength(3);
+			expect(root.querySelector('.card__destination')).not.toBeNull();
+			expect(leftoverText(dataText)).toEqual([]);
+		});
+
+		it('place not found, with suggestions', async () => {
+			await searchPage('Nurnbreg');
+			expect(root.querySelector('[role="alert"]')).not.toBeNull();
+			expect(root.querySelectorAll('.field-message__suggestion').length).toBeGreaterThan(0);
+			expect(leftoverText()).toEqual([]);
+		});
+
+		it('outside Bavaria', async () => {
+			await searchPage('Kiel');
+			expect(root.querySelector('[role="alert"]')!.textContent).toBe('[[error.outside_bavaria]]');
+			expect(leftoverText()).toEqual([]);
+		});
+
+		it('no centres in range', async () => {
+			await searchPage('Augsburg', 10);
+			expect(root.querySelector('.no-centres button')).not.toBeNull();
+			expect(leftoverText()).toEqual([]);
+		});
+
+		it('load failure', async () => {
+			await searchPage('Nürnberg', 40, true);
+			expect(root.querySelector('.load-failure [role="alert"]')).not.toBeNull();
+			expect(root.querySelector('.load-failure button')).not.toBeNull();
+			expect(leftoverText()).toEqual([]);
+		});
 	});
 
 	it('the check catches a literal string', () => {
