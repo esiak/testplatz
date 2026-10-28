@@ -339,7 +339,7 @@
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": "2026-10-27T07:25:45.068Z"
+		"verified_at": "2026-10-28T19:30:00.000Z"
 	},
 	{
 		"centre_id": "vhs-alt-neuoetting-und-toeging-e-v",
@@ -393,7 +393,7 @@
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": null
+		"verified_at": "2026-10-28T19:30:00.000Z"
 	},
 	{
 		"centre_id": "vhs-augsburg-e-v",
@@ -551,7 +551,7 @@
 		"lon": 12.831315,
 		"website": "https://www.vhs-burghausen.de/",
 		"test_page_url": "https://www.vhs-burghausen.de/programm/sprachen/kategorie/Einbuergerungstest/11?Fsize=ayhmjjqpftsnptxtrzck#inhalt",
-		"reader": "kuferweb",
+		"reader": "none",
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
@@ -969,7 +969,7 @@
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": null
+		"verified_at": "2026-10-28T19:30:00.000Z"
 	},
 	{
 		"centre_id": "vhs-gunzenhausen-e-v",
@@ -1037,7 +1037,7 @@
 		"lon": 11.45767,
 		"website": "https://www.vhs-neumarkt.de/",
 		"test_page_url": null,
-		"reader": "kuferweb",
+		"reader": "none",
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
@@ -1059,7 +1059,7 @@
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": null
+		"verified_at": "2026-10-28T19:30:00.000Z"
 	},
 	{
 		"centre_id": "vhs-ingolstadt",
@@ -1203,7 +1203,7 @@
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": "2026-10-27T07:25:45.068Z"
+		"verified_at": "2026-10-28T19:30:00.000Z"
 	},
 	{
 		"centre_id": "vhs-lindau",
@@ -1253,7 +1253,7 @@
 		"lon": 11.76714,
 		"website": "https://www.vhs-mainburg.de/",
 		"test_page_url": null,
-		"reader": "kuferweb",
+		"reader": "none",
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
@@ -1293,7 +1293,7 @@
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": null
+		"verified_at": "2026-10-28T19:30:00.000Z"
 	},
 	{
 		"centre_id": "vhs-muehldorf-e-v",
@@ -1311,7 +1311,7 @@
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": null
+		"verified_at": "2026-10-28T19:30:00.000Z"
 	},
 	{
 		"centre_id": "vhs-neuburg-donau-e-v",
@@ -1599,7 +1599,7 @@
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": null
+		"verified_at": "2026-10-28T19:30:00.000Z"
 	},
 	{
 		"centre_id": "vhs-traunreut-e-v",
@@ -1617,7 +1617,7 @@
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": null
+		"verified_at": "2026-10-28T19:30:00.000Z"
 	},
 	{
 		"centre_id": "vhs-traunstein-e-v",
@@ -1649,7 +1649,7 @@
 		"lon": 12.552299,
 		"website": "https://www.vhs-trostberg.de/",
 		"test_page_url": null,
-		"reader": "kuferweb",
+		"reader": "none",
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
@@ -2013,7 +2013,7 @@
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": null
+		"verified_at": "2026-10-28T19:30:00.000Z"
 	},
 	{
 		"centre_id": "volkshochschule-karlstadt",
@@ -2062,12 +2062,12 @@
 		"lat": 48.703834,
 		"lon": 12.04102,
 		"website": "https://www.vhs-rottenburg-laaber.de/",
-		"test_page_url": "https://www.vhs-rottenburg-laaber.de/kurssuche/kurs/Einbuergerungstest/R26+S32",
+		"test_page_url": "https://www.vhs-rottenburg-laaber.de/kurse/sprachen",
 		"reader": "kuferweb",
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": "2026-10-27T07:25:45.068Z"
+		"verified_at": "2026-10-28T19:30:00.000Z"
 	},
 	{
 		"centre_id": "volkshochschule-straubing-bogen-ggmbh",
@@ -2085,7 +2085,7 @@
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": null
+		"verified_at": "2026-10-28T19:30:00.000Z"
 	},
 	{
 		"centre_id": "volkshochschule-suedost-im-lkr-muenchen",
