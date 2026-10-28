@@ -4,7 +4,7 @@ import { act } from 'preact/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { snapshotSchema, type SnapshotCentre } from '../shared/snapshot.ts';
 import { AboutPage, OPT_OUT_URL } from '../web/src/about-page.tsx';
-import { SNAPSHOT_URL, uncheckedCentres } from '../web/src/data/snapshot.ts';
+import { SNAPSHOT_URL, uncheckedCentres, unlocatedCentres } from '../web/src/data/snapshot.ts';
 import epicSnapshot from '../data/public/snapshot.json' with { type: 'json' };
 import de from '../web/src/i18n/de.json' with { type: 'json' };
 import en from '../web/src/i18n/en.json' with { type: 'json' };
@@ -48,7 +48,9 @@ async function settle(): Promise<void> {
 	}
 }
 
-const section = () => root.querySelector<HTMLElement>('#not-checked')!;
+const section = (id = 'not-checked') => root.querySelector<HTMLElement>(`#${id}`)!;
+const noLocation = () => section('no-location');
+const noLocationItems = () => [...noLocation().querySelectorAll<HTMLLIElement>('.about__centre-list > li')];
 const centreList = () => section().querySelector('.about__centre-list');
 const centreItems = () => [...section().querySelectorAll<HTMLLIElement>('.about__centre-list > li')];
 const sectionText = () => section().textContent ?? '';
@@ -70,7 +72,7 @@ describe('About page structure', () => {
 		['de', 'de-DE'],
 		['en', 'en-GB'],
 	] as const) {
-		it(`has one h1 and the five h2 sections in order (${lang})`, () => {
+		it(`has one h1 and the six h2 sections in order (${lang})`, () => {
 			const t = catalogues[lang as Lang];
 			stubFetch(respond([]));
 			setBrowser([browser]);
@@ -80,6 +82,7 @@ describe('About page structure', () => {
 			expect([...root.querySelectorAll('main h2')].map((h) => h.textContent)).toEqual([
 				t['about.how.heading'],
 				t['about.not_checked.heading'],
+				t['about.no_location.heading'],
 				t['about.sources.heading'],
 				t['about.attribution.heading'],
 				t['about.opt_out.heading'],
@@ -155,7 +158,7 @@ describe('not-checked list', () => {
 		mount();
 		const busy = section().querySelector('[aria-busy="true"]')!;
 		expect(busy.textContent).toBe('Loading centres…');
-		expect(root.querySelectorAll('main h2')).toHaveLength(5);
+		expect(root.querySelectorAll('main h2')).toHaveLength(6);
 		expect(fetchMock).toHaveBeenCalledTimes(1);
 		expect(fetchMock).toHaveBeenCalledWith(SNAPSHOT_URL);
 	});
@@ -257,7 +260,7 @@ describe('not-checked list', () => {
 			const button = section().querySelector('button')!;
 			expect(button.textContent).toBe('Try again');
 			expect(button.getAttribute('type')).toBe('button');
-			expect(root.querySelectorAll('main h2')).toHaveLength(5);
+			expect(root.querySelectorAll('main h2')).toHaveLength(6);
 			expect(centreList()).toBeNull();
 		});
 	}
@@ -278,6 +281,74 @@ describe('not-checked list', () => {
 	});
 });
 
+describe('no-location list', () => {
+	const unlocated = (id: string, name: string) => snapshotCentre(id, { name, lat: null, lon: null });
+
+	it('has the heading and intro, after #not-checked', () => {
+		stubFetch(respond([]));
+		setBrowser(['de-DE']);
+		mount();
+		expect(noLocation().tagName).toBe('SECTION');
+		expect(noLocation().querySelector('h2')!.textContent).toBe(de['about.no_location.heading']);
+		expect(noLocation().textContent).toContain(de['about.no_location.intro']);
+		expect(section().nextElementSibling).toBe(noLocation());
+	});
+
+	it('lists every centre without coordinates, whatever its coverage, sorted by name, from one shared snapshot load', async () => {
+		stubFetch(
+			respond([
+				unlocated('z', 'Zeta'),
+				coveredCentre('ok', 'ok', { name: 'Covered OK', lat: null, lon: null }),
+				snapshotCentre('placed', { name: 'Placed' }),
+				snapshotCentre('a', { name: 'Alpha', lat: null, lon: null, test_page_url: null, website: null }),
+			]),
+		);
+		setBrowser(['en-GB']);
+		mount();
+		expect(noLocation().querySelector('[aria-busy="true"]')!.textContent).toBe('Loading centres…');
+		await settle();
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+		expect(noLocationItems().map((li) => li.textContent!.replace('↗', '').trim())).toEqual(['Alpha', 'Covered OK', 'Zeta']);
+		expect(noLocationItems()[0]!.querySelector('a')).toBeNull();
+		expect(noLocationItems()[2]!.querySelector('a')!.getAttribute('href')).toBe('https://z.example.de/test');
+		expect(noLocation().textContent).toContain('3 centres have no map position yet.');
+		// The covered, ok centre is not in the not-checked list, but is in this one.
+		expect(centreItems().map((li) => li.textContent!.replace('↗', '').trim())).toEqual(['Alpha', 'Placed', 'Zeta']);
+	});
+
+	it('lists the centres without coordinates of the committed snapshot', async () => {
+		const expected = unlocatedCentres(snapshotSchema.parse(epicSnapshot));
+		stubFetch(() => Promise.resolve(jsonResponse(epicSnapshot)));
+		setBrowser(['de-DE']);
+		mount();
+		await settle();
+		expect(noLocationItems().map((li) => li.querySelector('[lang="de"]')!.textContent)).toEqual(expected.map((c) => c.name));
+	});
+
+	it('says every centre has a map position when none lack one', async () => {
+		stubFetch(respond([snapshotCentre('a')]));
+		setBrowser(['en-GB']);
+		mount();
+		await settle();
+		expect(noLocation().textContent).toContain(en['about.no_location.none']);
+		expect(noLocation().querySelector('.about__centre-list')).toBeNull();
+	});
+
+	it('shows the load failure with one alert for the page, and Try again in either list reloads both', async () => {
+		stubFetch(() => Promise.reject(new TypeError('offline')), respond([unlocated('a', 'Alpha')]));
+		setBrowser(['en-GB']);
+		mount();
+		await settle();
+		expect(root.querySelectorAll('[role="alert"]')).toHaveLength(1);
+		expect(noLocation().textContent).toContain("We couldn't load the list of centres.");
+		act(() => noLocation().querySelector('button')!.click());
+		await settle();
+		expect(fetchMock).toHaveBeenCalledTimes(2);
+		expect(noLocationItems()).toHaveLength(1);
+		expect(centreItems()).toHaveLength(1);
+	});
+});
+
 describe('fragment targeting', () => {
 	let scrolled: HTMLElement[];
 
@@ -286,6 +357,23 @@ describe('fragment targeting', () => {
 		vi.spyOn(Element.prototype, 'scrollIntoView').mockImplementation(function (this: Element) {
 			scrolled.push(this as HTMLElement);
 		});
+	});
+
+	it('scrolls to #no-location again once the lists above it have loaded, and keeps listening for hashchange', async () => {
+		stubFetch(respond([snapshotCentre('a', { name: 'Alpha', lat: null, lon: null })]));
+		setBrowser(['en-GB'], '#no-location');
+		mount();
+		expect(scrolled).toEqual([noLocation()]);
+		scrolled = [];
+		await settle();
+		// The list above has grown; the section is scrolled into view again.
+		expect(noLocation().querySelector('.about__centre-list')).not.toBeNull();
+		expect(scrolled.length).toBeGreaterThan(0);
+		expect(scrolled.every((el) => el === noLocation())).toBe(true);
+		scrolled = [];
+		location.hash = '#not-checked';
+		window.dispatchEvent(new HashChangeEvent('hashchange'));
+		expect(scrolled).toEqual([section()]);
 	});
 
 	it('scrolls the section into view for #not-checked', () => {
@@ -303,6 +391,20 @@ describe('fragment targeting', () => {
 		expect(scrolled).toEqual([section()]);
 		expect(document.documentElement.lang).toBe('en');
 		expect(root.querySelector('h1')!.textContent).toBe(en['about.heading']);
+	});
+
+	it('scrolls to the no-location section for #no-location and #no-location=&lang=de', () => {
+		stubFetch(respond([]));
+		setBrowser(['en-GB'], '#no-location');
+		mount();
+		expect(scrolled).toEqual([noLocation()]);
+		act(() => render(null, root));
+		scrolled = [];
+		setBrowser(['en-GB'], '#no-location=&lang=de');
+		mount();
+		expect(scrolled).toEqual([noLocation()]);
+		expect(document.documentElement.lang).toBe('de');
+		expect(noLocation().querySelector('h2')!.textContent).toBe(de['about.no_location.heading']);
 	});
 
 	it('does not scroll without the key, and scrolls on a later hashchange', () => {

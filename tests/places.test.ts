@@ -1,6 +1,17 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { isInBoundary, normalizePlaceName, placeRowSchema, placesSchema, STATE_CODES, stateForKey, type PlaceRow, type Places } from '../shared/places.ts';
+import {
+	isInBoundary,
+	normalizePlaceName,
+	otherPlaceSchema,
+	placeRowSchema,
+	PLACES_SCHEMA_VERSION,
+	placesSchema,
+	STATE_CODES,
+	stateForKey,
+	type PlaceRow,
+	type Places,
+} from '../shared/places.ts';
 import { PLACES_PATH } from '../tools/paths.ts';
 
 const row = (overrides: Partial<PlaceRow> = {}): PlaceRow => ({
@@ -30,13 +41,14 @@ const HOLE = [
 ];
 
 const file = (overrides: Partial<Places> = {}): Places => ({
-	schemaVersion: 1,
+	schemaVersion: PLACES_SCHEMA_VERSION,
 	data_timestamp: '2026-10-27T08:00:00Z',
 	attribution: 'Place data © OpenStreetMap contributors, ODbL 1.0',
 	complete: true,
 	missing: [],
 	bavaria: [SQUARE as [number, number][]],
 	places: [row()],
+	others: [],
 	...overrides,
 });
 
@@ -94,7 +106,8 @@ describe('placeRowSchema / placesSchema', () => {
 		expect(placesSchema.safeParse(file({ places: [row({ key: '09162001' }), row()] })).success).toBe(false);
 		expect(placesSchema.safeParse(file({ places: [row(), row()] })).success).toBe(false);
 		expect(placesSchema.safeParse(file({ bavaria: [SQUARE.slice(0, 4) as [number, number][]] })).success).toBe(false);
-		expect(placesSchema.safeParse({ ...file(), schemaVersion: 2 }).success).toBe(false);
+		expect(placesSchema.safeParse({ ...file(), schemaVersion: 1 }).success).toBe(false);
+		expect(placesSchema.safeParse({ ...file(), others: undefined }).success).toBe(false);
 		expect(placesSchema.safeParse(file({ data_timestamp: 'yesterday' })).success).toBe(false);
 		// complete ⇔ nothing missing; an empty boundary ⇔ the bavaria query is missing.
 		expect(placesSchema.safeParse(file({ complete: false })).success).toBe(false);
@@ -106,6 +119,34 @@ describe('placeRowSchema / placesSchema', () => {
 		expect(placesSchema.safeParse(file({ complete: false, missing: ['bavaria', 'ags-091'], bavaria: [] })).success).toBe(false);
 		expect(placesSchema.safeParse(file({ complete: false, missing: ['state-09'] })).success).toBe(false);
 		expect(placesSchema.safeParse(file({ bavaria: [[]] })).success).toBe(false);
+	});
+});
+
+describe('others (schema version 2)', () => {
+	const essen = { key: '05113000', name: 'Essen', state: 'NW' as const };
+	const partial = (others: Places['others'], missing = ['ags-051', 'bavaria']): Places =>
+		file({ complete: false, missing, bavaria: [], others });
+
+	it('accepts name-only entries outside Bavaria whose key prefix is missing', () => {
+		expect(placesSchema.safeParse(partial([essen, { key: '05113001', name: 'Essen-Nord', state: 'NW' }])).success).toBe(true);
+		expect(otherPlaceSchema.safeParse(essen).success).toBe(true);
+	});
+
+	it.each([
+		['a Bavarian entry', { key: '09162000', name: 'München', state: 'BY' as const }],
+		['a state that does not match the key', { ...essen, state: 'HE' as const }],
+		['a 7-digit key', { ...essen, key: '0511300' }],
+		['an empty name', { ...essen, name: ' ' }],
+	])('rejects %s', (_label, entry) => {
+		expect(otherPlaceSchema.safeParse(entry).success).toBe(false);
+	});
+
+	it('rejects extra fields, unsorted or duplicate keys, keys whose prefix is not missing, and entries in a complete file', () => {
+		expect(placesSchema.safeParse(partial([{ ...essen, district: 'Essen' } as never])).success).toBe(false);
+		expect(placesSchema.safeParse(partial([{ ...essen, key: '05113001' }, essen])).success).toBe(false);
+		expect(placesSchema.safeParse(partial([essen, essen])).success).toBe(false);
+		expect(placesSchema.safeParse(partial([essen], ['ags-053', 'bavaria'])).success).toBe(false);
+		expect(placesSchema.safeParse(file({ others: [essen] })).success).toBe(false);
 	});
 });
 
@@ -132,6 +173,14 @@ describe('committed places.json', () => {
 	it.runIf(!data.missing.includes('bavaria'))('has a Bavaria boundary containing Munich and excluding Berlin', () => {
 		expect(isInBoundary(48.137, 11.575, data.bavaria)).toBe(true);
 		expect(isInBoundary(52.52, 13.405, data.bavaria)).toBe(false);
+	});
+
+	it('names other-state municipalities only for missing key prefixes, never Bavarian, none when complete', () => {
+		if (data.complete) expect(data.others).toEqual([]);
+		const missing = new Set(data.missing);
+		expect(data.others.every((entry) => entry.state !== 'BY' && missing.has(`ags-${entry.key.slice(0, 3)}`))).toBe(true);
+		const rowKeys = new Set(data.places.map((r) => r.key));
+		expect(data.others.some((entry) => rowKeys.has(entry.key))).toBe(false);
 	});
 
 	it('has München as a kreisfreie Stadt and distinct districts for the Bavarian Hausen rows', () => {

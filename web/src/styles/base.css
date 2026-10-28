@@ -385,6 +385,13 @@ a {
 	color: var(--notice-line-color);
 }
 
+/* "See which": an inline link that still gets the minimum target height. */
+.notice-line__link {
+	display: inline-flex;
+	align-items: center;
+	min-height: var(--space-target-min);
+}
+
 .load-failure__text {
 	color: var(--color-error);
 }

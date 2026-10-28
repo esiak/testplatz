@@ -5,10 +5,11 @@ import { SchemaVersionError } from '../data/load-json.ts';
 import { loadPlaces } from '../data/places.ts';
 import { clearReloadFlag, defaultReloadServices, reloadOnce, type ReloadServices } from '../data/reload-once.ts';
 import { loadSnapshot } from '../data/snapshot.ts';
+import { NO_LOCATION_ID } from '../fragment.ts';
 import { useI18n } from '../i18n/i18n.tsx';
 import { SearchBar } from './search-bar.tsx';
 import { DEFAULT_RADIUS, nextRadius, parseSearchFragment, runSearch, searchFragment, type Outcome, type Radius, type Search } from './search.ts';
-import { UncoveredCard } from './uncovered-card.tsx';
+import { aboutSectionUrl, UncoveredCard } from './uncovered-card.tsx';
 
 /** What the page talks to; tests inject their own. */
 export interface SearchServices extends ReloadServices {
@@ -29,8 +30,22 @@ function sameSearch(a: Search | null, b: Search): boolean {
 
 function CountLine({ outcome }: { outcome: Extract<Outcome, { kind: 'results' }> }) {
 	const { t } = useI18n();
-	const unchecked = outcome.items.length;
+	const unchecked = outcome.items.length + outcome.unlocated.length;
 	return <>{t(unchecked === 1 ? 'results.count_one' : 'results.count', { dates: 0, unchecked, radius: outcome.search.r })}</>;
+}
+
+/** "N centres have no map position yet and may be nearby. See which" — absent when none are hidden. */
+function HiddenUnlocatedNotice({ count }: { count: number }) {
+	const { lang, t } = useI18n();
+	if (count === 0) return null;
+	return (
+		<p class="notice-line">
+			{t(count === 1 ? 'results.unlocated_notice_one' : 'results.unlocated_notice', { count })}{' '}
+			<a class="notice-line__link" href={aboutSectionUrl(lang, NO_LOCATION_ID)}>
+				{t('results.unlocated_link')}
+			</a>
+		</p>
+	);
 }
 
 function AnnouncementText({ announcement }: { announcement: Announcement | null }) {
@@ -97,7 +112,7 @@ export function SearchPage({ services }: { services?: Partial<SearchServices> })
 
 	const show = useCallback(
 		(search: Search, ready: Extract<DataState, { kind: 'ready' }>) => {
-			const result = runSearch(search, ready.places.places, ready.snapshot.centres);
+			const result = runSearch(search, ready.places.places, ready.snapshot.centres, ready.places.others);
 			// A single suggestion was searched: the field and the fragment take its pick text.
 			if ((result.kind === 'results' || result.kind === 'no_centres') && result.search.q !== search.q) {
 				lastSearch.current = result.search;
@@ -236,6 +251,7 @@ export function SearchPage({ services }: { services?: Partial<SearchServices> })
 						{t('search.next_radius', { radius: next })}
 					</button>
 				) : null}
+				<HiddenUnlocatedNotice count={outcome.hiddenUnlocated} />
 			</div>
 		);
 	} else if (outcome?.kind === 'results') {
@@ -245,10 +261,16 @@ export function SearchPage({ services }: { services?: Partial<SearchServices> })
 					<CountLine outcome={outcome} />
 				</p>
 				<p class="notice-line">{t('results.notice_no_dates')}</p>
+				<HiddenUnlocatedNotice count={outcome.hiddenUnlocated} />
 				<ul class="results">
 					{outcome.items.map((item) => (
 						<li key={item.centre.centre_id} class="results__item">
 							<UncoveredCard item={item} />
+						</li>
+					))}
+					{outcome.unlocated.map((centre) => (
+						<li key={centre.centre_id} class="results__item">
+							<UncoveredCard item={{ centre, distanceKm: null }} />
 						</li>
 					))}
 				</ul>

@@ -41,7 +41,13 @@ const CENTRES: SnapshotCentre[] = [
 		website: 'https://www.akademie.example.de/',
 		test_page_url: 'https://kurse.akademie.example.de/test',
 	}),
-	snapshotCentre('nocoords', { name: 'Ohne Koordinaten', lat: null, lon: null }),
+	// No map position, and in none of the searched places: only the hidden notice counts it.
+	snapshotCentre('nocoords', {
+		name: 'Ohne Koordinaten',
+		address: { street: 'Kulmbacher Str. 1', postcode: '96317', city: 'Kronach' },
+		lat: null,
+		lon: null,
+	}),
 	snapshotCentre('muc', { name: 'vhs München', lat: 48.1374, lon: 11.5755 }),
 ];
 
@@ -229,6 +235,7 @@ describe('a search with results', () => {
 		expect(paragraphs).toEqual([
 			'0 dates and 3 unchecked centres within 20 km',
 			'No dates found nearby. These centres may still have dates on their own pages.',
+			'1 centre has no map position yet and may be nearby. See which',
 		]);
 		expect(statusText()).toBe('0 dates and 3 unchecked centres within 20 km');
 	});
@@ -504,6 +511,110 @@ describe('no centres in range', () => {
 	});
 });
 
+describe('centres without a map position', () => {
+	const unlocated = (id: string, name: string, postcode: string, city: string) =>
+		snapshotCentre(id, { name, address: { street: 'Hauptstraße 1', postcode, city }, lat: null, lon: null });
+	const mvhs = unlocated('mvhs', 'Münchner VHS', '81667', 'München');
+	const brk = unlocated('brk', 'Bayerisches Rotes Kreuz', '80331', 'Somewhere');
+	const kronach = unlocated('kronach', 'VHS Kreis Kronach', '96317', 'Kronach');
+	const located = snapshotCentre('muc', { name: 'vhs München', lat: 48.1374, lon: 11.5755 });
+	const notice = () => root.querySelector<HTMLElement>('.search__results .notice-line:has(a)');
+
+	it('shows a centre of the searched place after the distanced cards, with distance unknown, counted as unchecked', async () => {
+		serve(ok(snapshotOf([mvhs, kronach, located, brk])));
+		setBrowser();
+		mount();
+		await settle();
+		await search('München', 20);
+		expect(cardNames()).toEqual(['vhs München', 'Bayerisches Rotes Kreuz', 'Münchner VHS']);
+		const distance = (card: HTMLElement) => card.querySelector('dd')!.textContent;
+		expect(cards().map(distance)).toEqual(['0 km', 'unknown', 'unknown']);
+		expect(statusText()).toBe('0 dates and 3 unchecked centres within 20 km');
+		// Their cards keep the uncovered-card shape: stretched link, map link, Why?.
+		const last = cards()[2]!;
+		expect(last.querySelector('h3 a')!.getAttribute('href')).toBe('https://mvhs.example.de/test');
+		expect(last.querySelector('.card__map')).not.toBeNull();
+		expect(last.querySelector('.card__why')!.getAttribute('href')).toBe('/about/#not-checked=&lang=en');
+		expect(notice()!.textContent).toBe('1 centre has no map position yet and may be nearby. See which');
+	});
+
+	it('shows results, not "no centres", when only such centres match, and no notice when none are hidden', async () => {
+		serve(ok(snapshotOf([mvhs])));
+		setBrowser('', ['de-DE']);
+		mount();
+		await settle();
+		await search('München', 10);
+		expect(cardNames()).toEqual(['Münchner VHS']);
+		expect(cards()[0]!.querySelector('dd')!.textContent).toBe(de['card.fact.distance_unknown']);
+		expect(root.querySelector('.search__results')!.textContent).not.toContain('Keine Testzentren');
+		expect(statusText()).toBe('0 Termine und 1 nicht geprüftes Testzentrum im Umkreis von 10 km');
+		expect(notice()).toBeNull();
+	});
+
+	it('counts the hidden ones in a notice that links to About #no-location, in the current language', async () => {
+		serve(ok(snapshotOf([kronach, unlocated('roth', 'VHS Roth', '91161', 'Hilpoltstein'), snapshotCentre('aug', { lat: 48.37, lon: 10.9 })])));
+		setBrowser('', ['de-DE']);
+		mount();
+		await settle();
+		await search('Augsburg', 40);
+		expect(cardNames()).toHaveLength(1);
+		const line = notice()!;
+		expect(line.textContent).toBe(`2 Testzentren haben noch keine Kartenposition und könnten in der Nähe sein. ${de['results.unlocated_link']}`);
+		const link = line.querySelector('a')!;
+		expect(link.getAttribute('href')).toBe('/about/#no-location=&lang=de');
+		expect(link.hasAttribute('target')).toBe(false);
+		// The notice follows the no-dates notice.
+		const paragraphs = [...root.querySelectorAll('.search__results > p')];
+		expect(paragraphs.indexOf(line)).toBe(paragraphs.length - 1);
+	});
+
+	it('adds the notice to "no centres in range", after the next-radius button', async () => {
+		serve(ok(snapshotOf([kronach])));
+		setBrowser();
+		mount();
+		await settle();
+		await search('Augsburg', 10);
+		const box = root.querySelector('.no-centres')!;
+		expect(box.textContent).toBe('No test centres within 10 km.Search 20 km1 centre has no map position yet and may be nearby. See which');
+		expect(box.lastElementChild!.querySelector('a')!.getAttribute('href')).toBe('/about/#no-location=&lang=en');
+		expect(statusText()).toBe('No test centres within 10 km.');
+	});
+});
+
+describe('Bavarian names with a qualifier and places outside Bavaria', () => {
+	it('searches Lindau (Bodensee) for "Lindau" and "88131 Lindau"', async () => {
+		serve(ok(snapshotOf([snapshotCentre('lindau', { name: 'vhs Lindau', lat: 47.55, lon: 9.69 })])));
+		setBrowser();
+		mount();
+		await settle();
+		for (const input of ['Lindau', '88131 Lindau']) {
+			await search(input, 10);
+			expect(alerts(), input).toEqual([]);
+			expect(cardNames(), input).toEqual(['vhs Lindau']);
+			expect(field().value, input).toBe(input);
+		}
+	});
+
+	it('asks to pick one for "Neuburg"', async () => {
+		setBrowser();
+		mount();
+		await settle();
+		await search('Neuburg');
+		expect(alerts()[0]!.textContent).toBe(en['error.several_places']);
+	});
+
+	it('shows Bavaria only for "Essen" and keeps the text, instead of searching Essenbach', async () => {
+		setBrowser();
+		mount();
+		await settle();
+		await search('Essen');
+		expect(alerts()[0]!.textContent).toBe(en['error.outside_bavaria']);
+		expect(field().value).toBe('Essen');
+		expect(location.hash).toBe('#q=Essen&r=40&lang=en');
+		expect(cards()).toEqual([]);
+	});
+});
+
 describe('shared links and the fragment', () => {
 	it('runs the search of a shared link', async () => {
 		setBrowser('#q=Augsburg&r=20&lang=en', ['de-DE']);
@@ -626,13 +737,17 @@ describe('load failure', () => {
 		['bad JSON', () => Promise.resolve(jsonResponse('{not json'))],
 		['a schema error', ok({ ...snapshotOf(CENTRES), centres: 'nope' })],
 	];
+	// The same failures for places.json: a schema error keeps the current schemaVersion.
+	const placesFailure = (name: string, failing: Responder): Responder =>
+		name === 'a schema error' ? ok({ ...smallPlaces(), places: 'nope' }) : failing;
 
 	for (const [name, failing] of failures) {
 		for (const file of ['snapshot', 'places'] as const) {
 			it(`shows the load error for ${name} in ${file}.json, and Try again recovers`, async () => {
 				let calls = 0;
 				const good = file === 'snapshot' ? ok(snapshotOf(CENTRES)) : ok(smallPlaces());
-				const flaky: Responder = () => (calls++ === 0 ? failing() : good());
+				const bad = file === 'snapshot' ? failing : placesFailure(name, failing);
+				const flaky: Responder = () => (calls++ === 0 ? bad() : good());
 				if (file === 'snapshot') serve(flaky);
 				else serve(undefined, flaky);
 				setBrowser();
@@ -658,7 +773,8 @@ describe('load failure', () => {
 
 describe('schemaVersion mismatch', () => {
 	const newerSnapshot = ok({ ...snapshotOf(CENTRES), schemaVersion: 2 });
-	const newerPlaces = ok({ ...placesOf([NBG]), schemaVersion: 2 });
+	// A places.json of the old schema version 1, as a stale cache would serve it.
+	const newerPlaces = ok({ ...placesOf([NBG]), schemaVersion: 1 });
 
 	it('reloads once and sets the flag', async () => {
 		serve(newerSnapshot);

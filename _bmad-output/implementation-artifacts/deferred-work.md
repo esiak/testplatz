@@ -10,3 +10,12 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-9-place-suggestions-while-typing.md`
   summary: On touch or pen input, `preventDefault` on pointer-down may not keep focus in the field, so the suggestion list could close before a tapped row registers (`web/src/search/search-bar.tsx`).
   evidence: Medium if true, unverified. happy-dom and desktop Chrome keep focus; settle by tapping a suggestion on a real iOS and Android phone (Epic 1 retro action item 7).
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-12-search-shows-every-centre-and-the-right-place.md`
+  summary: A postcode from a state whose rows are missing from the partial place table (e.g. "10115" Berlin) gives "We don't know this place" instead of "Bavaria only".
+  evidence: Low, pre-existing before Story 1.12. The name-only `others` entries carry no postcodes; settled by completing the place table (deferred 1.11) or by mapping postcode ranges to states.
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-12-search-shows-every-centre-and-the-right-place.md`
+  summary: "<postcode> <name>" for a place known only by name outside Bavaria (e.g. "45127 Essen") gives "We don't know this place" instead of "Bavaria only".
+  evidence: Low, pre-existing. Name-only `others` entries carry no postcodes, so the qualified form cannot match them; settled with the bare-postcode deferral above (complete place table or postcode ranges per state).
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-12-search-shows-every-centre-and-the-right-place.md`
+  summary: Replace the blanket "no cache record is fine" rule in `tests/directory.test.ts` with a named allowlist of centres whose coordinates were set by hand.
+  evidence: Low. Story 1.12 allows hand-set coordinates so the operator can fix the 8 missing ones; as written, a geocode-cache record lost by accident would also pass. No hand-set centre exists yet — add the allowlist with the first one.

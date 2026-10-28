@@ -1,15 +1,17 @@
 name: ci
 
+# snapshot.json and data/state/ are bot-written; places.json is operator-built and read by
+# committed-data tests, so a change to it is checked like code (Story 1.12).
 on:
   push:
     branches: [main]
     paths-ignore:
       - 'data/state/**'
-      - 'data/public/**'
+      - 'data/public/snapshot.json'
   pull_request:
     paths-ignore:
       - 'data/state/**'
-      - 'data/public/**'
+      - 'data/public/snapshot.json'
 
 permissions:
   contents: read

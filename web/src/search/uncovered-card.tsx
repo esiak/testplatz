@@ -1,19 +1,26 @@
+import type { SnapshotCentre } from '../../../shared/snapshot.ts';
 import { NOT_CHECKED_ID, serialiseFragment } from '../fragment.ts';
 import { useI18n } from '../i18n/i18n.tsx';
 import { destinationDomain, formatAddress, mapsUrl, type CentreInRange } from './search.ts';
 
+/** About the data, at the given section (a fragment key such as `not-checked`), in the given language. */
+export function aboutSectionUrl(lang: string, sectionId: string): string {
+	return `${import.meta.env.BASE_URL}about/${serialiseFragment(new URLSearchParams([[sectionId, ''], ['lang', lang]]))}`;
+}
+
 /** About the data, at the not-checked section, in the given language. */
 export function whyUrl(lang: string): string {
-	return `${import.meta.env.BASE_URL}about/${serialiseFragment(new URLSearchParams([[NOT_CHECKED_ID, ''], ['lang', lang]]))}`;
+	return aboutSectionUrl(lang, NOT_CHECKED_ID);
 }
 
 /**
  * A centre with no automatic check. The whole card is one stretched link (the h3's link) to the
  * centre's test page; "Map ↗" and "Why?" sit above the link layer as their own targets.
  */
-export function UncoveredCard({ item }: { item: CentreInRange }) {
+export function UncoveredCard({ item }: { item: CentreInRange | { centre: SnapshotCentre; distanceKm: null } }) {
 	const { lang, t } = useI18n();
 	const { centre, distanceKm } = item;
+	const distance = distanceKm === null ? t('card.fact.distance_unknown') : t('card.fact.distance_value', { km: Math.round(distanceKm) });
 	const href = centre.test_page_url ?? centre.website;
 	const domain = href ? destinationDomain(href) : null;
 	const address = formatAddress(centre.address);
@@ -21,7 +28,7 @@ export function UncoveredCard({ item }: { item: CentreInRange }) {
 	const seeWebsite = t('card.fact.see_website');
 
 	const facts: Array<[string, string]> = [
-		[t('card.fact.distance'), t('card.fact.distance_value', { km: Math.round(distanceKm) })],
+		[t('card.fact.distance'), distance],
 		[t('card.fact.status'), notChecked],
 		[t('card.fact.deadline'), seeWebsite],
 		[t('card.fact.registration'), seeWebsite],

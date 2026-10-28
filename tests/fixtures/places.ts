@@ -1,4 +1,4 @@
-import { PLACES_SCHEMA_VERSION, type PlaceRow, type Places } from '../../shared/places.ts';
+import { PLACES_SCHEMA_VERSION, type OtherPlace, type PlaceRow, type Places } from '../../shared/places.ts';
 
 /** A valid place row; the state follows the key's first two digits (`09` = BY, `01` = SH). */
 export function placeRow(key: string, name: string, extra: Partial<PlaceRow> = {}): PlaceRow {
@@ -6,16 +6,21 @@ export function placeRow(key: string, name: string, extra: Partial<PlaceRow> = {
 	return { key, name, postcodes: [], district: name, state, lat: 48.137, lon: 11.575, ...extra };
 }
 
-/** A partial place table holding `rows`, sorted by key. */
-export function placesOf(rows: PlaceRow[]): Places {
+/**
+ * A partial place table holding `rows` and the name-only `others`, each sorted by key. `missing`
+ * lists `bavaria` and the key prefix of every `others` entry.
+ */
+export function placesOf(rows: PlaceRow[], others: OtherPlace[] = []): Places {
+	const prefixes = [...new Set(others.map((entry) => `ags-${entry.key.slice(0, 3)}`))];
 	return {
 		schemaVersion: PLACES_SCHEMA_VERSION,
 		data_timestamp: '2026-10-27T19:17:35Z',
 		attribution: 'Place data © OpenStreetMap contributors, ODbL 1.0',
 		complete: false,
-		missing: ['bavaria'],
+		missing: [...prefixes, 'bavaria'].sort(),
 		bavaria: [],
 		places: [...rows].sort((a, b) => (a.key < b.key ? -1 : 1)),
+		others: [...others].sort((a, b) => (a.key < b.key ? -1 : 1)),
 	};
 }
 
@@ -49,6 +54,22 @@ export const PLACE_ROWS = {
 	oberbergkirchen: placeRow('09183133', 'Oberbergkirchen'),
 	oberasbach: placeRow('09573125', 'Oberasbach'),
 	oberaudorf: placeRow('09187157', 'Oberaudorf'),
+	// "Lindau" is only exact in SH; the Bavarian town carries a qualifier.
+	lindauSh: placeRow('01058096', 'Lindau', { postcodes: ['24214'], district: 'Kreis Rendsburg-Eckernförde', lat: 54.42, lon: 9.92 }),
+	lindauBy: placeRow('09776116', 'Lindau (Bodensee)', { postcodes: ['88131'], district: 'Landkreis Lindau (Bodensee)', lat: 47.5459, lon: 9.6842 }),
+	// Two Bavarian towns start with "Neuburg"; neither is exactly "Neuburg".
+	neuburgDonau: placeRow('09185149', 'Neuburg an der Donau', {
+		postcodes: ['86633'],
+		district: 'Landkreis Neuburg-Schrobenhausen',
+		lat: 48.73,
+		lon: 11.18,
+	}),
+	neuburgInn: placeRow('09275137', 'Neuburg am Inn', { postcodes: ['94127'], district: 'Landkreis Passau', lat: 48.5, lon: 13.45 }),
+	// The only suggestion for "Essen": it must not be searched for the NRW city.
+	essenbach: placeRow('09274121', 'Essenbach', { postcodes: ['84051'], district: 'Landkreis Landshut', lat: 48.61, lon: 12.21 }),
 } as const;
 
-export const smallPlaces = (): Places => placesOf(Object.values(PLACE_ROWS));
+/** Name-only municipalities outside Bavaria (key prefixes left out of the build). */
+export const OTHER_PLACES: OtherPlace[] = [{ key: '05113000', name: 'Essen', state: 'NW' }];
+
+export const smallPlaces = (): Places => placesOf(Object.values(PLACE_ROWS), OTHER_PLACES);

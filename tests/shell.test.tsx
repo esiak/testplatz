@@ -156,12 +156,24 @@ describe('no hard-coded UI text', () => {
 		expect(leftoverText(centres.map((c) => c.name))).toEqual([]);
 	});
 
+	it('the About page lists centres without a map position with only catalogue text and centre names', async () => {
+		const centres = [snapshotCentre('a', { name: 'Alpha Sprachschule', lat: null, lon: null }), snapshotCentre('b', { name: 'Bravo Akademie' })];
+		stubFetch(() => Promise.resolve(jsonResponse(snapshotOf(centres))));
+		setBrowser(['de-DE'], '', '/testplatz/about/');
+		mount('about', SENTINELS);
+		await settle();
+		expect(root.querySelectorAll('#no-location .about__centre-list > li')).toHaveLength(1);
+		expect(root.textContent).toContain('[[about.no_location.count_one]]');
+		expect(leftoverText(centres.map((c) => c.name))).toEqual([]);
+	});
+
 	it('the About page empty state renders only catalogue text', async () => {
 		stubFetch(() => Promise.resolve(jsonResponse(snapshotOf([coveredCentre('a', 'ok')]))));
 		setBrowser(['de-DE'], '', '/testplatz/about/');
 		mount('about', SENTINELS);
 		await settle();
 		expect(root.textContent).toContain('[[about.not_checked.none]]');
+		expect(root.textContent).toContain('[[about.no_location.none]]');
 		expect(leftoverText()).toEqual([]);
 	});
 
@@ -268,6 +280,48 @@ describe('no hard-coded UI text', () => {
 			await searchPage('Augsburg', 10);
 			expect(root.querySelector('.no-centres button')).not.toBeNull();
 			expect(leftoverText()).toEqual([]);
+		});
+
+		describe('with centres that have no map position', () => {
+			const inPlace = snapshotCentre('d', {
+				name: 'Delta vhs',
+				address: { street: 'Hauptmarkt 1', postcode: '90403', city: 'Nürnberg' },
+				lat: null,
+				lon: null,
+			});
+			const elsewhere = snapshotCentre('e', {
+				name: 'Echo vhs',
+				address: { street: 'Kulmbacher Str. 1', postcode: '96317', city: 'Kronach' },
+				lat: null,
+				lon: null,
+			});
+			const withUnlocated = [...centres, inPlace, elsewhere];
+			const unlocatedText = [...dataText, inPlace.name, `${inPlace.address.street}, ${inPlace.address.postcode} ${inPlace.address.city}`];
+
+			async function search(text: string, km: number): Promise<void> {
+				stubSearchData(withUnlocated);
+				setBrowser(['de-DE']);
+				mount('search', SENTINELS);
+				await settle();
+				searchFor(text, km);
+				await settle();
+			}
+
+			it('results with an unlocated card and the hidden notice', async () => {
+				await search('Nürnberg', 20);
+				expect(root.querySelectorAll('ul.results > li > article')).toHaveLength(4);
+				expect(root.textContent).toContain('[[card.fact.distance_unknown]]');
+				expect(root.textContent).toContain('[[results.unlocated_notice_one]]');
+				expect(root.textContent).toContain('[[results.unlocated_link]]');
+				expect(leftoverText(unlocatedText)).toEqual([]);
+			});
+
+			it('no centres in range, with the hidden notice', async () => {
+				await search('Augsburg', 10);
+				expect(root.querySelector('.no-centres button')).not.toBeNull();
+				expect(root.textContent).toContain('[[results.unlocated_notice]]');
+				expect(leftoverText()).toEqual([]);
+			});
 		});
 
 		it('load failure', async () => {

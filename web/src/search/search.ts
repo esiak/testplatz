@@ -1,6 +1,7 @@
 import { haversineKm } from '../../../shared/geo.ts';
-import { normalizePlaceName, type PlaceRow } from '../../../shared/places.ts';
+import { normalizePlaceName, type OtherPlace, type PlaceRow } from '../../../shared/places.ts';
 import type { SnapshotCentre } from '../../../shared/snapshot.ts';
+import { isUnlocated } from '../data/snapshot.ts';
 import { parseFragment, serialiseFragment } from '../fragment.ts';
 
 /** The allowed search radii in km, ascending. */
@@ -78,6 +79,16 @@ interface PlaceIndex {
 }
 
 const indexes = new WeakMap<readonly PlaceRow[], PlaceIndex>();
+const otherIndexes = new WeakMap<readonly OtherPlace[], Set<string>>();
+
+/** The normalised names of the name-only municipalities outside Bavaria, built once per array. */
+function otherNames(others: readonly OtherPlace[]): Set<string> {
+	const cached = otherIndexes.get(others);
+	if (cached) return cached;
+	const names = new Set(others.map((entry) => normalizePlaceName(entry.name)));
+	otherIndexes.set(others, names);
+	return names;
+}
 
 const smallest = (values: readonly string[]): string | null => values.reduce<string | null>((min, v) => (min === null || v < min ? v : min), null);
 
@@ -180,33 +191,60 @@ export function suggestPlaces(input: string, places: readonly PlaceRow[], limit:
 }
 
 /**
- * Resolves typed text to a place row. `"<postcode> <name>"` matches rows with both; a 5-digit
- * input matches postcodes; anything else the normalised name. A Bavarian match wins (lowest key),
- * except that a name shared by Bavarian towns with different label postcodes is `several`.
- * Matches only elsewhere are outside Bavaria.
+ * The Bavarian rows whose normalised name starts with `wanted` plus a space (whole leading words,
+ * as in "Lindau" → "Lindau (Bodensee)"): one name (not ambiguous) is found, several are several.
  */
-export function resolvePlace(input: string, places: readonly PlaceRow[]): Resolution {
+function leadingWordsMatch(wanted: string, index: PlaceIndex): Resolution | null {
+	const matches = index.bavarian.filter((entry) => entry.name.startsWith(`${wanted} `));
+	if (matches.length === 0) return null;
+	const names = new Set(matches.map((entry) => entry.name));
+	if (names.size > 1 || index.ambiguous.has(matches[0]!.name)) return { kind: 'several' };
+	return { kind: 'found', place: lowestKey(matches.map((entry) => entry.row)) };
+}
+
+/**
+ * Resolves typed text to a place row.
+ * - `"<postcode> <name>"` matches rows with that postcode whose name is the name, or starts with
+ *   it plus a space; a Bavarian match wins (exact name first, then lowest key).
+ * - A 5-digit input matches postcodes.
+ * - A name resolves in tiers: an exact Bavarian name (`several` when Bavarian towns share it
+ *   under different label postcodes); then Bavarian names starting with it as whole words; then an
+ *   exact name outside Bavaria, in `places` or in the name-only `others`, is outside Bavaria.
+ */
+export function resolvePlace(input: string, places: readonly PlaceRow[], others: readonly OtherPlace[] = []): Resolution {
 	const text = input.trim();
 	const qualified = QUALIFIED.exec(text);
 	if (qualified) {
 		const [, postcode, name] = qualified as unknown as [string, string, string];
 		const wanted = normalizePlaceName(name);
-		const matches = places.filter((row) => row.postcodes.includes(postcode) && normalizePlaceName(row.name) === wanted);
+		const withPostcode = places.filter((row) => row.postcodes.includes(postcode));
+		const exact = withPostcode.filter((row) => normalizePlaceName(row.name) === wanted);
+		const leading = withPostcode.filter((row) => normalizePlaceName(row.name).startsWith(`${wanted} `));
+		for (const rows of [exact, leading]) {
+			const bavarian = rows.filter((row) => row.state === 'BY');
+			if (bavarian.length > 0) return { kind: 'found', place: lowestKey(bavarian) };
+		}
+		if (exact.length > 0 || leading.length > 0) return { kind: 'outside_bavaria' };
+	}
+	if (POSTCODE.test(text)) {
+		const matches = places.filter((row) => row.postcodes.includes(text));
 		const bavarian = matches.filter((row) => row.state === 'BY');
 		if (bavarian.length > 0) return { kind: 'found', place: lowestKey(bavarian) };
 		if (matches.length > 0) return { kind: 'outside_bavaria' };
-	}
-	let matches: PlaceRow[];
-	if (POSTCODE.test(text)) {
-		matches = places.filter((row) => row.postcodes.includes(text));
 	} else {
 		const wanted = normalizePlaceName(text);
-		if (placeIndex(places).ambiguous.has(wanted)) return { kind: 'several' };
-		matches = places.filter((row) => normalizePlaceName(row.name) === wanted);
+		const index = placeIndex(places);
+		if (wanted) {
+			if (index.ambiguous.has(wanted)) return { kind: 'several' };
+			const bavarian = index.bavarian.filter((entry) => entry.name === wanted).map((entry) => entry.row);
+			if (bavarian.length > 0) return { kind: 'found', place: lowestKey(bavarian) };
+			const leading = leadingWordsMatch(wanted, index);
+			if (leading) return leading;
+			if (places.some((row) => row.state !== 'BY' && normalizePlaceName(row.name) === wanted) || otherNames(others).has(wanted)) {
+				return { kind: 'outside_bavaria' };
+			}
+		}
 	}
-	const bavarian = matches.filter((row) => row.state === 'BY');
-	if (bavarian.length > 0) return { kind: 'found', place: lowestKey(bavarian) };
-	if (matches.length > 0) return { kind: 'outside_bavaria' };
 	return { kind: 'not_found', suggestions: didYouMean(text, places) };
 }
 
@@ -259,9 +297,13 @@ export interface CentreInRange {
 	distanceKm: number;
 }
 
+const byNameThenId = (a: SnapshotCentre, b: SnapshotCentre): number =>
+	a.name.localeCompare(b.name, 'de') || (a.centre_id < b.centre_id ? -1 : a.centre_id > b.centre_id ? 1 : 0);
+
 /**
  * Every centre with coordinates within `radiusKm` of the origin, once each, nearest first,
- * then by name (German collation), then by id. Centres without coordinates are left out.
+ * then by name (German collation), then by id. Centres without coordinates are left out here;
+ * `unlocatedInPlace` matches those by place instead.
  */
 export function centresInRange(centres: readonly SnapshotCentre[], origin: { lat: number; lon: number }, radiusKm: number): CentreInRange[] {
 	const out: CentreInRange[] = [];
@@ -270,12 +312,22 @@ export function centresInRange(centres: readonly SnapshotCentre[], origin: { lat
 		const distanceKm = haversineKm(origin.lat, origin.lon, centre.lat, centre.lon);
 		if (distanceKm <= radiusKm) out.push({ centre, distanceKm });
 	}
-	return out.sort(
-		(a, b) =>
-			a.distanceKm - b.distanceKm ||
-			a.centre.name.localeCompare(b.centre.name, 'de') ||
-			(a.centre.centre_id < b.centre.centre_id ? -1 : a.centre.centre_id > b.centre.centre_id ? 1 : 0),
-	);
+	return out.sort((a, b) => a.distanceKm - b.distanceKm || byNameThenId(a.centre, b.centre));
+}
+
+/**
+ * Centres without coordinates in the searched place: the address postcode is one of the place's
+ * postcodes, or the address city is the place's name (normalised). Sorted by name, then id.
+ * The distance stays unknown; it is never guessed.
+ */
+export function unlocatedInPlace(centres: readonly SnapshotCentre[], place: PlaceRow): SnapshotCentre[] {
+	const name = normalizePlaceName(place.name);
+	return centres
+		.filter(
+			(centre) =>
+				isUnlocated(centre) && (place.postcodes.includes(centre.address.postcode) || normalizePlaceName(centre.address.city) === name),
+		)
+		.sort(byNameThenId);
 }
 
 export type FieldErrorCode = 'place_not_found' | 'outside_bavaria' | 'several_places';
@@ -283,8 +335,17 @@ export type FieldErrorCode = 'place_not_found' | 'outside_bavaria' | 'several_pl
 /** What a search shows. Field errors are codes so a language switch re-renders them. */
 export type Outcome =
 	| { kind: 'field_error'; code: FieldErrorCode; suggestions: string[] }
-	| { kind: 'results'; search: Search; items: CentreInRange[] }
-	| { kind: 'no_centres'; search: Search };
+	| {
+			kind: 'results';
+			search: Search;
+			/** Centres in range, nearest first. */
+			items: CentreInRange[];
+			/** Centres without coordinates in the searched place, shown after `items` with distance unknown. */
+			unlocated: SnapshotCentre[];
+			/** Centres without coordinates not shown as cards. */
+			hiddenUnlocated: number;
+	  }
+	| { kind: 'no_centres'; search: Search; unlocated: []; hiddenUnlocated: number };
 
 export type SearchResolution = Resolution | { kind: 'suggested'; place: PlaceRow; text: string };
 
@@ -293,8 +354,8 @@ export type SearchResolution = Resolution | { kind: 'suggested'; place: PlaceRow
  * Bavaria) decides; otherwise the text's suggestions do (collapsed, not capped): exactly one is
  * searched under its pick text, two or more are several, none is place-not-found.
  */
-export function resolveSearch(input: string, places: readonly PlaceRow[]): SearchResolution {
-	const exact = resolvePlace(input, places);
+export function resolveSearch(input: string, places: readonly PlaceRow[], others: readonly OtherPlace[] = []): SearchResolution {
+	const exact = resolvePlace(input, places, others);
 	if (exact.kind !== 'not_found') return exact;
 	// Two rows are enough to tell one suggestion from several.
 	const suggestions = suggestPlaces(input, places, 2);
@@ -303,15 +364,28 @@ export function resolveSearch(input: string, places: readonly PlaceRow[]): Searc
 	return exact;
 }
 
-/** Runs a search. When a single suggestion decides, the outcome's `search.q` is its pick text. */
-export function runSearch(search: Search, places: readonly PlaceRow[], centres: readonly SnapshotCentre[]): Outcome {
-	const resolution = resolveSearch(search.q, places);
+/**
+ * Runs a search. When a single suggestion decides, the outcome's `search.q` is its pick text.
+ * Centres without coordinates in the searched place count as results; the rest are counted in
+ * `hiddenUnlocated`.
+ */
+export function runSearch(
+	search: Search,
+	places: readonly PlaceRow[],
+	centres: readonly SnapshotCentre[],
+	others: readonly OtherPlace[] = [],
+): Outcome {
+	const resolution = resolveSearch(search.q, places, others);
 	if (resolution.kind === 'several') return { kind: 'field_error', code: 'several_places', suggestions: [] };
 	if (resolution.kind === 'outside_bavaria') return { kind: 'field_error', code: 'outside_bavaria', suggestions: [] };
 	if (resolution.kind === 'not_found') return { kind: 'field_error', code: 'place_not_found', suggestions: resolution.suggestions };
 	const searched = resolution.kind === 'suggested' ? { q: resolution.text, r: search.r } : search;
 	const items = centresInRange(centres, resolution.place, search.r);
-	return items.length > 0 ? { kind: 'results', search: searched, items } : { kind: 'no_centres', search: searched };
+	const unlocated = unlocatedInPlace(centres, resolution.place);
+	const hiddenUnlocated = centres.filter(isUnlocated).length - unlocated.length;
+	return items.length > 0 || unlocated.length > 0
+		? { kind: 'results', search: searched, items, unlocated, hiddenUnlocated }
+		: { kind: 'no_centres', search: searched, unlocated: [], hiddenUnlocated };
 }
 
 /** The hostname a URL opens, without a leading `www.`; null for an unparsable URL. */

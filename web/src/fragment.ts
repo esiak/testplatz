@@ -22,3 +22,6 @@ export function withLang(hash: string, lang: string): string {
 
 /** The About page's not-checked section id; also a fragment key (`#not-checked`, `#not-checked=&lang=en`). */
 export const NOT_CHECKED_ID = 'not-checked';
+
+/** The About page's section of centres without a map position; also a fragment key (`#no-location`, `#no-location=&lang=en`). */
+export const NO_LOCATION_ID = 'no-location';

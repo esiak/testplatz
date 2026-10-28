@@ -18,3 +18,13 @@ export function uncheckedCentres(snapshot: Snapshot): SnapshotCentre[] {
 		.filter((centre) => centre.coverage === 'not_checked' || centre.last_result !== 'ok')
 		.sort((a, b) => a.name.localeCompare(b.name, 'de'));
 }
+
+/** True when a centre has no map position, so no distance can be computed. The one definition, for search and About. */
+export const isUnlocated = (centre: SnapshotCentre): boolean => centre.lat === null || centre.lon === null;
+
+/** Centres with no map position (null coordinates), whatever their coverage, sorted by name (German collation). */
+export function unlocatedCentres(snapshot: Snapshot): SnapshotCentre[] {
+	return snapshot.centres
+		.filter(isUnlocated)
+		.sort((a, b) => a.name.localeCompare(b.name, 'de'));
+}

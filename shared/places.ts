@@ -34,7 +34,7 @@ const STATE_VALUES = Object.values(STATE_CODES) as [StateCode, ...StateCode[]];
 export const stateForKey = (key: string): StateCode | null =>
 	Object.hasOwn(STATE_CODES, key.slice(0, 2)) ? STATE_CODES[key.slice(0, 2) as StatePrefix] : null;
 
-export const PLACES_SCHEMA_VERSION = 1;
+export const PLACES_SCHEMA_VERSION = 2;
 
 /**
  * The one place-name normaliser: lowercase, `ß`→`ss`, `ä/ö/ü`→`a/o/u`, then `ae/oe/ue`→`a/o/u`,
@@ -86,6 +86,22 @@ export const placeRowSchema = z
 
 export type PlaceRow = z.infer<typeof placeRowSchema>;
 
+/**
+ * A municipality outside Bavaria known only by name, from a key prefix left out of a partial
+ * build. Search uses it only to say "Bavaria only" instead of swapping in a Bavarian town.
+ */
+export const otherPlaceSchema = z
+	.strictObject({
+		/** The 8-digit AGS. */
+		key: z.string().regex(/^\d{8}$/),
+		name: z.string().trim().min(1),
+		state: z.enum(STATE_VALUES),
+	})
+	.refine((entry) => stateForKey(entry.key) === entry.state, { message: 'state does not match the key', path: ['state'] })
+	.refine((entry) => entry.state !== 'BY', { message: 'must not be a Bavarian municipality', path: ['state'] });
+
+export type OtherPlace = z.infer<typeof otherPlaceSchema>;
+
 export const placesSchema = z
 	.strictObject({
 		schemaVersion: z.literal(PLACES_SCHEMA_VERSION),
@@ -103,10 +119,20 @@ export const placesSchema = z
 		/** Simplified Bavaria boundary: rings of `[lon, lat]`, read with the even-odd rule. Empty only when `bavaria` is missing. */
 		bavaria: z.array(ringSchema),
 		places: z.array(placeRowSchema).min(1),
+		/** Name-only municipalities outside Bavaria whose key prefix is `missing`, sorted by key; empty when complete. */
+		others: z.array(otherPlaceSchema),
 	})
 	.refine((file) => isSortedUnique(file.places.map((row) => row.key)), {
 		message: 'places must be sorted by key with unique keys',
 		path: ['places'],
+	})
+	.refine((file) => isSortedUnique(file.others.map((entry) => entry.key)), {
+		message: 'others must be sorted by key with unique keys',
+		path: ['others'],
+	})
+	.refine((file) => file.others.every((entry) => file.missing.includes(`ags-${entry.key.slice(0, 3)}`)), {
+		message: 'others may only hold keys whose prefix query is missing (so none when complete)',
+		path: ['others'],
 	})
 	.refine((file) => file.complete === (file.missing.length === 0), {
 		message: 'complete must be true exactly when nothing is missing',

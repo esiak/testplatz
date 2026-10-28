@@ -7,29 +7,17 @@ Dataset: OpenStreetMap via the Overpass API (`overpass-api.de/api/interpreter`).
 - Queries: 40
 - Requests sent: 0
 - Retries: 0
-- Cache hits: 10
+- Cache hits: 22
 - Failed queries: 0
 - Every request sent User-Agent `bgtsearch-bot/0.1.0 (+https://esiak.github.io/testplatz/about/)`: n/a (no requests)
 - Every request went to https://overpass-api.de/api/interpreter: n/a (no requests)
 - Smallest gap between two requests: n/a (fewer than two requests)
 
-## PARTIAL BUILD: 30 queries not cached and left out (`--cached-only`)
+## PARTIAL BUILD: 18 queries not cached and left out (`--cached-only`)
 
 places.json has `complete: false`. Rows for these key prefixes are absent, and the Bavaria boundary is empty when `bavaria` is listed. Run `npm run build:places` to fetch them.
 
-- ags-031
-- ags-032
-- ags-033
-- ags-034
-- ags-040
-- ags-051
-- ags-053
 - ags-055
-- ags-057
-- ags-059
-- ags-064
-- ags-065
-- ags-066
 - ags-071
 - ags-072
 - ags-073
@@ -50,17 +38,28 @@ places.json has `complete: false`. Rows for these key prefixes are absent, and t
 
 ## Output
 
-- Complete: NO (30 queries missing)
+- Complete: NO (18 queries missing)
 - Data timestamp (oldest OSM base among the responses): 2026-10-27T19:17:35Z
-- Rows: 3247
-- Rows per state: SH 1104, HH 1, NI 0, HB 0, NW 0, HE 0, RP 0, BW 0, BY 2142, SL 0, BE 0, BB 0, MV 0, SN 0, ST 0, TH 0
-- Distinct postcodes: 2588
+- Rows: 4946
+- Rows per state: SH 1104, HH 1, NI 954, HB 2, NW 318, HE 425, RP 0, BW 0, BY 2142, SL 0, BE 0, BB 0, MV 0, SN 0, ST 0, TH 0
+- Distinct postcodes: 4684
 - Rows without postcodes: 0
-- Size: 449754 bytes raw, 70740 bytes gzipped
+- Other-state names (name only, from missing key prefixes): 5909
+- Size: 991766 bytes raw, 162362 bytes gzipped
 - Bavaria boundary: MISSING (bavaria query not cached)
 
-## Dropped: no place node and no postcode (75)
+## Dropped: no place node and no postcode (85)
 
+- 03154501 Brunsleberfeld
+- 03154503 Königslutter
+- 03154504 Mariental (gemeindefreies Gebiet)
+- 03154506 Schöningen
+- 03158502 Barnstorf-Warle
+- 03158503 Voigtsdahlum
+- 03255502 Eimen (gemeindefreies Gebiet)
+- 03255503 Eschershausen (gemeindefreies Gebiet)
+- 03255508 Wenzen
+- 03457501 Insel Lütje Hörn
 - 09173452 Wolfratshauser Forst
 - 09176451 Haunstetter Forst
 - 09181451 Ammersee

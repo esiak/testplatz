@@ -19,8 +19,8 @@ function job(workflow: string, name: string): string {
 describe('ci.yml', () => {
 	const ci = read('ci.yml');
 
-	it.each(['push', 'pull_request'])('skips %s events that only touch bot-owned data', (trigger) => {
-		expect(pathsIgnore(ci, trigger).sort()).toEqual(['data/public/**', 'data/state/**']);
+	it.each(['push', 'pull_request'])('skips %s events that only touch bot-owned data, but not places.json', (trigger) => {
+		expect(pathsIgnore(ci, trigger).sort()).toEqual(['data/public/snapshot.json', 'data/state/**']);
 	});
 
 	it('runs push checks on main only, so a PR branch is not checked twice', () => {

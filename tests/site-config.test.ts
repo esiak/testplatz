@@ -66,13 +66,16 @@ describe('places URL', () => {
 	});
 });
 
-describe('Why? URL', () => {
-	it('links to About under the production base', async () => {
+describe('About section URLs', () => {
+	it('link Why? and the no-location notice to About under the production base', async () => {
 		vi.stubEnv('BASE_URL', viteConfig.base ?? '');
 		vi.resetModules();
 		try {
 			const { whyUrl } = await import('../web/src/search/uncovered-card.tsx');
 			expect(whyUrl('en')).toBe('/testplatz/about/#not-checked=&lang=en');
+			const { aboutSectionUrl } = await import('../web/src/search/uncovered-card.tsx');
+			const { NO_LOCATION_ID } = await import('../web/src/fragment.ts');
+			expect(aboutSectionUrl('de', NO_LOCATION_ID)).toBe('/testplatz/about/#no-location=&lang=de');
 		} finally {
 			vi.unstubAllEnvs();
 			vi.resetModules();

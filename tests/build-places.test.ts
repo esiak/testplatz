@@ -253,6 +253,43 @@ describe('parseIndex', () => {
 		expect(index.districts.has('09162')).toBe(false);
 	});
 
+	it('keeps the named municipalities (levels 4, 6 and 8), one per key, lower relation id first, sorted by key', () => {
+		const index = parseIndex(parsed(INDEX));
+		expect(index.municipalities).toEqual([
+			{ key: '05111000', name: 'Düsseldorf' },
+			{ key: '09162000', name: 'München' },
+			{ key: '09188451', name: 'Ammersee' },
+			{ key: '09273133', name: 'Hausen' },
+			{ key: '09474132', name: 'Hausen' },
+		]);
+		const later = muni(1999, '05970040', 'Siegen (old)');
+		const earlier = muni(1001, '05970040', 'Siegen');
+		const unnamed = muni(1002, '05970044', null);
+		const city = muni(1003, '11000000', 'Berlin', {
+			tags: { boundary: 'administrative', admin_level: '4', 'de:amtlicher_gemeindeschluessel': '11000000', name: 'Berlin' },
+		});
+		for (const order of [
+			[later, earlier, unnamed, city],
+			[city, unnamed, earlier, later],
+		]) {
+			expect(parseIndex(parsed(response(order))).municipalities).toEqual([
+				{ key: '05970040', name: 'Siegen' },
+				{ key: '11000000', name: 'Berlin' },
+			]);
+		}
+	});
+
+	it('keeps a municipality name when an unnamed relation with a lower id shares its key', () => {
+		const unnamedFirst = muni(1000, '05970040', null);
+		const named = muni(1001, '05970040', 'Siegen');
+		for (const order of [
+			[unnamedFirst, named],
+			[named, unnamedFirst],
+		]) {
+			expect(parseIndex(parsed(response(order))).municipalities).toEqual([{ key: '05970040', name: 'Siegen' }]);
+		}
+	});
+
 	it('keeps the lower relation id when two districts share an AGS, whatever the order', () => {
 		const later = district(1999, '09273', 'Kelheim (old)');
 		const earlier = district(1001, '09273', 'Landkreis Kelheim');
@@ -495,12 +532,36 @@ describe('runBuildPlaces', () => {
 		expect(places.missing).toEqual(['ags-092', 'bavaria']);
 		expect(places.bavaria).toEqual([]);
 		expect(places.places.map((r) => r.key)).toEqual(['05111000', '09162000', '09474132']);
+		// A Bavarian prefix left out never becomes a name-only entry.
+		expect(places.others).toEqual([]);
 		const note = readNote(d);
+		expect(note).toContain('- Other-state names (name only, from missing key prefixes): 0');
 		expect(note).toContain('## PARTIAL BUILD: 2 queries not cached and left out');
 		expect(note).toContain('- Complete: NO (2 queries missing)');
 		expect(note).toContain('- Bavaria boundary: MISSING');
 		expect(note).toContain('## Bavarian rows outside the boundary: not checked (boundary missing)');
 		expect(note).toMatch(/User-Agent `[^`]+`: n\/a \(no requests\)/);
+	});
+
+	it('--cached-only: names the municipalities of a missing non-Bavarian prefix in others, and a rerun changes nothing', async () => {
+		const d = dirs();
+		await run(d, fakeOverpass().fetchImpl);
+		rmSync(join(d.dir, 'cache', 'ags-051.json'));
+		const net = fakeOverpass();
+		expect(await run(d, net.fetchImpl, { cachedOnly: true })).toBe(0);
+		expect(net.calls).toHaveLength(0);
+		const places = readPlaces(d);
+		expect(places.missing).toEqual(['ags-051']);
+		expect(places.places.map((r) => r.key)).toEqual(['09162000', '09273133', '09474132']);
+		expect(places.others).toEqual([{ key: '05111000', name: 'Düsseldorf', state: 'NW' }]);
+		expect(readNote(d)).toContain('- Other-state names (name only, from missing key prefixes): 1');
+		const before = readFileSync(join(d.publicDir, 'places.json'), 'utf8');
+		const note = readNote(d);
+		const lines: string[] = [];
+		expect(await run(d, net.fetchImpl, { cachedOnly: true, log: (l) => lines.push(l) })).toBe(0);
+		expect(lines.at(-1)).toContain('nothing changed');
+		expect(readFileSync(join(d.publicDir, 'places.json'), 'utf8')).toBe(before);
+		expect(readNote(d)).toBe(note);
 	});
 
 	it('rewrites a note left by a failed run when the rebuilt file is unchanged', async () => {
@@ -520,7 +581,7 @@ describe('runBuildPlaces', () => {
 		const d = dirs();
 		await run(d, fakeOverpass().fetchImpl);
 		const before = readFileSync(join(d.publicDir, 'places.json'), 'utf8');
-		expect(readPlaces(d)).toMatchObject({ complete: true, missing: [] });
+		expect(readPlaces(d)).toMatchObject({ complete: true, missing: [], others: [] });
 		const net = fakeOverpass();
 		expect(await run(d, net.fetchImpl, { cachedOnly: true })).toBe(0);
 		expect(net.calls).toHaveLength(0);

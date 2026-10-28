@@ -1,8 +1,8 @@
 import type { ComponentChildren } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
-import type { SnapshotCentre } from '../../shared/snapshot.ts';
-import { loadSnapshot, uncheckedCentres } from './data/snapshot.ts';
-import { NOT_CHECKED_ID, parseFragment } from './fragment.ts';
+import type { Snapshot, SnapshotCentre } from '../../shared/snapshot.ts';
+import { loadSnapshot, uncheckedCentres, unlocatedCentres } from './data/snapshot.ts';
+import { NO_LOCATION_ID, NOT_CHECKED_ID, parseFragment } from './fragment.ts';
 import { I18nProvider, useI18n, type Catalogues } from './i18n/i18n.tsx';
 import { PageShell } from './shell/page-shell.tsx';
 
@@ -11,7 +11,7 @@ export const OPT_OUT_URL = 'https://github.com/esiak/testplatz/issues/new?templa
 const OSM_COPYRIGHT_URL = 'https://www.openstreetmap.org/copyright';
 const NOMINATIM_URL = 'https://nominatim.org/';
 
-export { NOT_CHECKED_ID };
+export { NO_LOCATION_ID, NOT_CHECKED_ID };
 
 /** A link that opens in a new tab: visible `↗` (hidden from screen readers) and a "new tab" name. */
 function ExternalLink({ href, label, children }: { href: string; label: string; children?: ComponentChildren }) {
@@ -23,19 +23,19 @@ function ExternalLink({ href, label, children }: { href: string; label: string; 
 	);
 }
 
-type ListState = { kind: 'loading' } | { kind: 'loaded'; centres: SnapshotCentre[] } | { kind: 'failed' };
+type SnapshotState = { kind: 'loading' } | { kind: 'loaded'; snapshot: Snapshot } | { kind: 'failed' };
 
-function CentreList() {
-	const { t } = useI18n();
+/** Loads the snapshot once for every list on the page; `retry` loads it again. */
+function useSnapshot(): { state: SnapshotState; retry: () => void } {
 	const [attempt, setAttempt] = useState(0);
-	const [state, setState] = useState<ListState>({ kind: 'loading' });
+	const [state, setState] = useState<SnapshotState>({ kind: 'loading' });
 
 	useEffect(() => {
 		let active = true;
 		setState({ kind: 'loading' });
 		loadSnapshot().then(
 			(snapshot) => {
-				if (active) setState({ kind: 'loaded', centres: uncheckedCentres(snapshot) });
+				if (active) setState({ kind: 'loaded', snapshot });
 			},
 			() => {
 				if (active) setState({ kind: 'failed' });
@@ -45,6 +45,23 @@ function CentreList() {
 			active = false;
 		};
 	}, [attempt]);
+
+	return { state, retry: () => setAttempt((n) => n + 1) };
+}
+
+interface CentreListProps {
+	state: SnapshotState;
+	retry: () => void;
+	/** Picks this list's centres from the loaded snapshot. */
+	select: (snapshot: Snapshot) => SnapshotCentre[];
+	countText: (count: number) => string;
+	noneText: string;
+	/** Only one list announces a load failure, so it is not read out twice. */
+	announceFailure: boolean;
+}
+
+function CentreList({ state, retry, select, countText, noneText, announceFailure }: CentreListProps) {
+	const { t } = useI18n();
 
 	if (state.kind === 'loading') {
 		return (
@@ -57,26 +74,26 @@ function CentreList() {
 	if (state.kind === 'failed') {
 		return (
 			<div class="about__centres">
-				<p role="alert">{t('about.not_checked.error')}</p>
-				<button type="button" class="about__retry" onClick={() => setAttempt((n) => n + 1)}>
+				<p role={announceFailure ? 'alert' : undefined}>{t('about.not_checked.error')}</p>
+				<button type="button" class="about__retry" onClick={retry}>
 					{t('about.not_checked.retry')}
 				</button>
 			</div>
 		);
 	}
 
-	const { centres } = state;
+	const centres = select(state.snapshot);
 	if (centres.length === 0) {
 		return (
 			<div class="about__centres">
-				<p>{t('about.not_checked.none')}</p>
+				<p>{noneText}</p>
 			</div>
 		);
 	}
 
 	return (
 		<div class="about__centres">
-			<p>{t('about.not_checked.count', { count: centres.length })}</p>
+			<p>{countText(centres.length)}</p>
 			<ul class="about__centre-list">
 				{centres.map((centre) => {
 					const href = centre.test_page_url ?? centre.website;
@@ -97,22 +114,32 @@ function CentreList() {
 	);
 }
 
-/** Scrolls the not-checked section into view when the fragment has a `not-checked` key. */
-function useNotCheckedTarget(): void {
+/** Section ids a fragment key can scroll to (`#not-checked`, `#no-location=&lang=de`, …). */
+const TARGET_IDS = [NOT_CHECKED_ID, NO_LOCATION_ID] as const;
+
+/**
+ * Scrolls a targeted section into view when the fragment has its key, and again once `ready`
+ * turns true: `#no-location` sits below a list that grows when the snapshot loads, and browsers
+ * without scroll anchoring (Safari) would otherwise leave it off-screen.
+ */
+function useSectionTarget(ready: boolean): void {
 	useEffect(() => {
 		const scrollIfTargeted = () => {
-			if (!parseFragment(location.hash).has(NOT_CHECKED_ID)) return;
-			document.getElementById(NOT_CHECKED_ID)?.scrollIntoView();
+			const params = parseFragment(location.hash);
+			const id = TARGET_IDS.find((candidate) => params.has(candidate));
+			if (id === undefined) return;
+			document.getElementById(id)?.scrollIntoView();
 		};
 		scrollIfTargeted();
 		window.addEventListener('hashchange', scrollIfTargeted);
 		return () => window.removeEventListener('hashchange', scrollIfTargeted);
-	}, []);
+	}, [ready]);
 }
 
 function AboutContent() {
 	const { t } = useI18n();
-	useNotCheckedTarget();
+	const { state, retry } = useSnapshot();
+	useSectionTarget(state.kind === 'loaded');
 
 	return (
 		<div class="about">
@@ -131,7 +158,27 @@ function AboutContent() {
 					<li>{t('about.not_checked.reason_opted_out')}</li>
 					<li>{t('about.not_checked.reason_failed')}</li>
 				</ul>
-				<CentreList />
+				<CentreList
+					state={state}
+					retry={retry}
+					select={uncheckedCentres}
+					countText={(count) => t('about.not_checked.count', { count })}
+					noneText={t('about.not_checked.none')}
+					announceFailure
+				/>
+			</section>
+
+			<section id={NO_LOCATION_ID}>
+				<h2>{t('about.no_location.heading')}</h2>
+				<p>{t('about.no_location.intro')}</p>
+				<CentreList
+					state={state}
+					retry={retry}
+					select={unlocatedCentres}
+					countText={(count) => t(count === 1 ? 'about.no_location.count_one' : 'about.no_location.count', { count })}
+					noneText={t('about.no_location.none')}
+					announceFailure={false}
+				/>
 			</section>
 
 			<section>

@@ -25,11 +25,14 @@ import {
 	searchFragment,
 	snapRadius,
 	suggestPlaces,
+	unlocatedInPlace,
 } from '../web/src/search/search.ts';
-import { PLACE_ROWS, placeRow, smallPlaces } from './fixtures/places.ts';
+import { unlocatedCentres } from '../web/src/data/snapshot.ts';
+import { OTHER_PLACES, PLACE_ROWS, placeRow, smallPlaces } from './fixtures/places.ts';
 import { snapshotCentre } from './fixtures/snapshot.ts';
 
 const places = smallPlaces().places;
+const others = smallPlaces().others;
 
 describe('snapRadius', () => {
 	it('keeps allowed values', () => {
@@ -153,6 +156,65 @@ describe('resolvePlace', () => {
 
 	it('matches a 4- or 6-digit input against names, not postcodes', () => {
 		expect(resolvePlace('9044', places).kind).toBe('not_found');
+	});
+});
+
+describe('resolvePlace tiers (Story 1.12)', () => {
+	it('lets a Bavarian name with a qualifier match on its leading words before an exact match elsewhere', () => {
+		for (const input of ['Lindau', 'lindau', ' LINDAU ']) {
+			expect(resolvePlace(input, places, others), input).toEqual({ kind: 'found', place: PLACE_ROWS.lindauBy });
+		}
+		expect(resolvePlace('Lindau (Bodensee)', places, others)).toEqual({ kind: 'found', place: PLACE_ROWS.lindauBy });
+	});
+
+	it('reports several when the leading words match more than one Bavarian name', () => {
+		expect(resolvePlace('Neuburg', places, others)).toEqual({ kind: 'several' });
+		expect(resolveSearch('Neuburg', places, others)).toEqual({ kind: 'several' });
+		expect(resolvePlace('Neuburg an der Donau', places, others)).toEqual({ kind: 'found', place: PLACE_ROWS.neuburgDonau });
+	});
+
+	it('reports several when the leading words match one name that Bavarian towns share under different postcodes', () => {
+		const rows = [
+			placeRow('09100001', 'Wald (Oberpfalz)', { postcodes: ['93000'] }),
+			placeRow('09100002', 'Wald (Oberpfalz)', { postcodes: ['94000'] }),
+		];
+		expect(resolvePlace('Wald', rows)).toEqual({ kind: 'several' });
+	});
+
+	it('matches whole leading words only', () => {
+		expect(resolvePlace('Lind', places, others).kind).toBe('not_found');
+		expect(resolvePlace('Neubur', places, others).kind).toBe('not_found');
+	});
+
+	it('accepts a qualified postcode form whose name is the leading words', () => {
+		expect(resolvePlace('88131 Lindau', places, others)).toEqual({ kind: 'found', place: PLACE_ROWS.lindauBy });
+		expect(resolvePlace('94127 Neuburg', places, others)).toEqual({ kind: 'found', place: PLACE_ROWS.neuburgInn });
+		expect(resolvePlace('24214 Lindau', places, others)).toEqual({ kind: 'outside_bavaria' });
+	});
+
+	it('lets an exact Bavarian name win over leading-word and other-state matches', () => {
+		const rows = [placeRow('09100000', 'Hof', { postcodes: ['95028'] }), placeRow('09100001', 'Hof am Berg'), placeRow('01000001', 'Hof')];
+		const elsewhere = [{ key: '05100000', name: 'Hof', state: 'NW' as const }];
+		expect(resolvePlace('Hof', rows, elsewhere)).toEqual({ kind: 'found', place: rows[0] });
+		expect(resolvePlace('Au', places, others)).toEqual({ kind: 'found', place: PLACE_ROWS.au });
+	});
+
+	it('reports a name known only from the name-only others as outside Bavaria, not a Bavarian prefix match', () => {
+		for (const input of ['Essen', 'essen ']) {
+			expect(resolvePlace(input, places, others), input).toEqual({ kind: 'outside_bavaria' });
+			expect(resolveSearch(input, places, others), input).toEqual({ kind: 'outside_bavaria' });
+		}
+		// Without the others, Story 1.9's single-suggestion rule still applies unchanged.
+		expect(resolveSearch('Essen', places)).toEqual({ kind: 'suggested', place: PLACE_ROWS.essenbach, text: 'Essenbach' });
+		expect(resolveSearch('Esse', places, others)).toEqual({ kind: 'suggested', place: PLACE_ROWS.essenbach, text: 'Essenbach' });
+	});
+
+	it('keeps others out of suggestions and did-you-mean', () => {
+		expect(suggestPlaces('Ess', places).map((s) => s.pickText)).toEqual(['Essenbach']);
+		const result = resolvePlace('Esen', places, others);
+		expect(result.kind).toBe('not_found');
+		if (result.kind === 'not_found') expect(result.suggestions).not.toContain('Essen');
+		expect(didYouMean('Esen', places)).not.toContain(OTHER_PLACES[0]!.name);
 	});
 });
 
@@ -376,19 +438,74 @@ describe('runSearch', () => {
 	});
 
 	it('returns no centres when nothing is in range', () => {
-		expect(runSearch({ q: 'Augsburg', r: 10 }, places, centres)).toEqual({ kind: 'no_centres', search: { q: 'Augsburg', r: 10 } });
+		expect(runSearch({ q: 'Augsburg', r: 10 }, places, centres)).toEqual({
+			kind: 'no_centres',
+			search: { q: 'Augsburg', r: 10 },
+			unlocated: [],
+			hiddenUnlocated: 0,
+		});
 	});
 
 	it('searches a single suggestion and reports its pick text as the search', () => {
 		expect(runSearch({ q: 'Nürnb', r: 20 }, places, centres)).toMatchObject({ kind: 'results', search: { q: 'Nürnberg', r: 20 } });
-		expect(runSearch({ q: 'Augs', r: 10 }, places, centres)).toEqual({ kind: 'no_centres', search: { q: 'Augsburg', r: 10 } });
+		expect(runSearch({ q: 'Augs', r: 10 }, places, centres)).toMatchObject({ kind: 'no_centres', search: { q: 'Augsburg', r: 10 } });
 		expect(runSearch({ q: 'Ober', r: 40 }, places, centres)).toEqual({ kind: 'field_error', code: 'several_places', suggestions: [] });
+	});
+
+	it('reports Lindau as the Bavarian town and Essen as outside Bavaria', () => {
+		expect(runSearch({ q: 'Lindau', r: 40 }, places, centres, others)).toMatchObject({ kind: 'no_centres', search: { q: 'Lindau', r: 40 } });
+		expect(runSearch({ q: 'Essen', r: 40 }, places, centres, others)).toEqual({ kind: 'field_error', code: 'outside_bavaria', suggestions: [] });
 	});
 
 	it('returns field errors as codes', () => {
 		expect(runSearch({ q: 'Kiel', r: 40 }, places, centres)).toEqual({ kind: 'field_error', code: 'outside_bavaria', suggestions: [] });
 		expect(runSearch({ q: 'Kastl', r: 40 }, places, centres)).toEqual({ kind: 'field_error', code: 'several_places', suggestions: [] });
 		expect(runSearch({ q: 'Atlantis', r: 40 }, places, centres)).toMatchObject({ kind: 'field_error', code: 'place_not_found' });
+	});
+});
+
+describe('centres without coordinates', () => {
+	const unlocated = (id: string, name: string, postcode: string, city: string) =>
+		snapshotCentre(id, { name, lat: null, lon: null, address: { street: 'Hauptstraße 1', postcode, city } });
+	const byCity = unlocated('by-city', 'Volkshochschule Augsburg', '86999', 'augsburg');
+	const byPostcode = unlocated('by-postcode', 'Bildungswerk', '86150', 'Somewhere');
+	const elsewhere = unlocated('elsewhere', 'VHS Kronach', '96317', 'Kronach');
+	const located = snapshotCentre('aug', { lat: 48.37, lon: 10.9 });
+
+	it('match the searched place by postcode or normalised city, sorted by name, then id', () => {
+		expect(unlocatedInPlace([byCity, elsewhere, byPostcode, located], PLACE_ROWS.augsburg).map((c) => c.centre_id)).toEqual([
+			'by-postcode',
+			'by-city',
+		]);
+		const twins = [unlocated('b', 'Same', '86150', 'Augsburg'), unlocated('a', 'Same', '86150', 'Augsburg')];
+		expect(unlocatedInPlace(twins, PLACE_ROWS.augsburg).map((c) => c.centre_id)).toEqual(['a', 'b']);
+	});
+
+	it('show after the distanced cards, once each, and count the rest as hidden', () => {
+		const outcome = runSearch({ q: 'Augsburg', r: 40 }, places, [byCity, elsewhere, byPostcode, located]);
+		expect(outcome).toMatchObject({ kind: 'results', hiddenUnlocated: 1 });
+		if (outcome.kind !== 'results') return;
+		expect(outcome.items.map((i) => i.centre.centre_id)).toEqual(['aug']);
+		expect(outcome.unlocated.map((c) => c.centre_id)).toEqual(['by-postcode', 'by-city']);
+	});
+
+	it('make a results outcome on their own', () => {
+		const outcome = runSearch({ q: 'Augsburg', r: 10 }, places, [byCity]);
+		expect(outcome).toEqual({ kind: 'results', search: { q: 'Augsburg', r: 10 }, items: [], unlocated: [byCity], hiddenUnlocated: 0 });
+	});
+
+	it('are counted as hidden in a no-centres outcome', () => {
+		expect(runSearch({ q: 'Augsburg', r: 10 }, places, [elsewhere, unlocated('x', 'X', '1', 'Y')])).toEqual({
+			kind: 'no_centres',
+			search: { q: 'Augsburg', r: 10 },
+			unlocated: [],
+			hiddenUnlocated: 2,
+		});
+	});
+
+	it('are all listed for About, whatever their coverage, sorted by name', () => {
+		const snapshot = { centres: [elsewhere, located, byCity] } as Parameters<typeof unlocatedCentres>[0];
+		expect(unlocatedCentres(snapshot).map((c) => c.centre_id)).toEqual(['elsewhere', 'by-city']);
 	});
 });
 
@@ -516,6 +633,53 @@ describe('the committed data files', () => {
 			const exact = suggestPlaces(name, placeFile.places).filter((s) => normalizePlaceName(s.place.name) === name);
 			expect(exact.length, name).toBeGreaterThan(1);
 		}
+	});
+
+	it('report major cities outside Bavaria as outside Bavaria, never as a Bavarian town', () => {
+		for (const name of ['Essen', 'Hamm', 'Siegen', 'Gera', 'Berlin', 'Kiel', 'Halle']) {
+			expect(resolveSearch(name, placeFile.places, placeFile.others), name).toEqual({ kind: 'outside_bavaria' });
+		}
+	});
+
+	it('resolve "Lindau" and "88131 Lindau" to Lindau (Bodensee)', () => {
+		const lindau = bavarian.find((row) => row.name === 'Lindau (Bodensee)')!;
+		expect(lindau).toBeDefined();
+		expect(resolveSearch('Lindau', placeFile.places, placeFile.others)).toEqual({ kind: 'found', place: lindau });
+		for (const postcode of lindau.postcodes) {
+			expect(resolveSearch(`${postcode} Lindau`, placeFile.places, placeFile.others)).toEqual({ kind: 'found', place: lindau });
+		}
+	});
+
+	it('never report a Bavarian name with a qualifier as outside Bavaria from its first word', () => {
+		const qualified = bavarian.map((row) => normalizePlaceName(row.name)).filter((name) => name.includes(' '));
+		const firstWords = new Set(qualified.map((name) => name.split(' ')[0]!));
+		expect(firstWords.size).toBeGreaterThan(0);
+		for (const word of firstWords) {
+			expect(resolveSearch(word, placeFile.places, placeFile.others).kind, word).not.toBe('outside_bavaria');
+		}
+	});
+
+	it('list every centre without coordinates for About, and show each one when its postcode is searched', () => {
+		const ids = snapshot.centres.filter((c) => c.lat === null || c.lon === null).map((c) => c.centre_id);
+		const listed = unlocatedCentres(snapshot);
+		expect(listed.map((c) => c.centre_id).sort()).toEqual([...ids].sort());
+		let searched = 0;
+		for (const centre of listed) {
+			const resolution = resolveSearch(centre.address.postcode, placeFile.places, placeFile.others);
+			if (resolution.kind !== 'found') continue;
+			searched++;
+			for (const r of RADII) {
+				const outcome = runSearch({ q: centre.address.postcode, r }, placeFile.places, snapshot.centres, placeFile.others);
+				expect(outcome.kind, centre.centre_id).toBe('results');
+				if (outcome.kind !== 'results') continue;
+				const shown = [...outcome.items.map((i) => i.centre.centre_id), ...outcome.unlocated.map((c) => c.centre_id)];
+				expect(new Set(shown).size, centre.centre_id).toBe(shown.length);
+				expect(shown.filter((id) => id === centre.centre_id), centre.centre_id).toHaveLength(1);
+				expect(outcome.unlocated.length + outcome.hiddenUnlocated, centre.centre_id).toBe(listed.length);
+			}
+		}
+		// Every listed centre's own postcode is in the table.
+		expect(searched).toBe(listed.length);
 	});
 
 	it('suggest only Bavarian names for a misspelt Bavarian town', () => {

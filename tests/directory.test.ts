@@ -192,16 +192,44 @@ describe('committed data/directory/centres.json', () => {
 		expect(centres.every((c) => c.lat === null || isInBavariaBox(c.lat, c.lon!))).toBe(true);
 	});
 
-	it('agrees with the committed geocode cache', () => {
+	it('agrees with the committed geocode cache (coordinates set by hand have no record)', () => {
 		const centres = directorySchema.parse(JSON.parse(text));
 		const loaded = loadCache(GEOCODE_CACHE_PATH);
 		expect(loaded.ok).toBe(true);
 		const { cache } = loaded as Extract<typeof loaded, { ok: true }>;
 		expect(serializeCache(cache)).toBe(readFileSync(GEOCODE_CACHE_PATH, 'utf8'));
-		for (const c of centres) {
-			const record = cache.centres[c.centre_id];
-			if (c.lat === null) expect(record, c.centre_id).toBeUndefined();
-			else expect(record, c.centre_id).toEqual({ query: queryKey(c.address), lat: c.lat, lon: c.lon });
-		}
+		expect(cacheDisagreements(centres, cache.centres)).toEqual([]);
+	});
+});
+
+type CacheCentres = Extract<ReturnType<typeof loadCache>, { ok: true }>['cache']['centres'];
+
+/**
+ * Centres whose coordinates disagree with the geocode cache: a centre without coordinates must
+ * have no record; coordinates set by hand have no record; a record that exists must match.
+ */
+function cacheDisagreements(centres: readonly Centre[], records: CacheCentres): string[] {
+	return centres
+		.filter((c) => {
+			const record = records[c.centre_id];
+			if (c.lat === null) return record !== undefined;
+			return record !== undefined && (record.query !== queryKey(c.address) || record.lat !== c.lat || record.lon !== c.lon);
+		})
+		.map((c) => c.centre_id);
+}
+
+describe('geocode cache agreement', () => {
+	const geocoded = centre({ centre_id: 'geocoded', lat: 49.47, lon: 10.99 });
+	const record = { query: queryKey(geocoded.address), lat: 49.47, lon: 10.99 };
+
+	it('accepts coordinates set by hand, with no cache record', () => {
+		const handSet = centre({ centre_id: 'hand-set', lat: 48.14, lon: 11.58 });
+		expect(cacheDisagreements([geocoded, handSet, centre({ centre_id: 'none' })], { geocoded: record } as CacheCentres)).toEqual([]);
+	});
+
+	it('flags a record that disagrees, and a record for a centre without coordinates', () => {
+		const moved = centre({ centre_id: 'geocoded', lat: 49.5, lon: 10.99 });
+		expect(cacheDisagreements([moved], { geocoded: record } as CacheCentres)).toEqual(['geocoded']);
+		expect(cacheDisagreements([centre({ centre_id: 'geocoded' })], { geocoded: record } as CacheCentres)).toEqual(['geocoded']);
 	});
 });

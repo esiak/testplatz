@@ -9,8 +9,10 @@
  * boundary). Each successful raw response is cached in data/places/cache/, so a rerun sends no
  * requests and writes a byte-identical file; `--refresh` ignores the cache. `--cached-only` sends
  * nothing and builds a partial file (`complete: false`, `missing` lists the queries left out) from
- * whatever is cached; it needs the `index` and at least one `ags-*` file. The operator reviews
- * data/places/places-note.md and commits.
+ * whatever is cached; it needs the `index` and at least one `ags-*` file. For each prefix left out,
+ * the index still names its municipalities: those outside Bavaria go into `others`, name only, so
+ * search can say "Bavaria only" for them. The operator reviews data/places/places-note.md and
+ * commits.
  */
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -30,6 +32,7 @@ import {
 	PLACES_SCHEMA_VERSION,
 	STATE_CODES,
 	stateForKey,
+	type OtherPlace,
 	type PlaceRow,
 	type Places,
 	type StatePrefix,
@@ -178,13 +181,23 @@ export interface ParsedIndex {
 	prefixes: string[];
 	/** District name by 5-digit AGS (lower relation id wins). */
 	districts: Map<string, string>;
+	/** Named municipalities (8-digit AGS), one per key (lower relation id wins), sorted by key. */
+	municipalities: ListedMunicipality[];
 }
 
 export function parseIndex(response: OverpassResponse): ParsedIndex {
 	const prefixes = new Set<string>();
 	const districts = new Map<string, { id: number; name: string }>();
+	const municipalities = new Map<string, { id: number; name: string }>();
 	for (const el of response.elements) {
-		if (isMunicipality(el)) prefixes.add(el.tags![AGS_TAG]!.slice(0, 3));
+		if (isMunicipality(el)) {
+			const ags = el.tags![AGS_TAG]!;
+			prefixes.add(ags.slice(0, 3));
+			// Only named relations compete, so an unnamed lower-id duplicate cannot hide the name.
+			const name = el.tags!['name']?.trim();
+			const existing = municipalities.get(ags);
+			if (name && (existing === undefined || el.id < existing.id)) municipalities.set(ags, { id: el.id, name });
+		}
 		if (isDistrict(el)) {
 			const name = el.tags!['name']?.trim();
 			const ags = el.tags![AGS_TAG]!;
@@ -195,6 +208,9 @@ export function parseIndex(response: OverpassResponse): ParsedIndex {
 	return {
 		prefixes: [...prefixes].sort(),
 		districts: new Map([...districts].map(([ags, d]) => [ags, d.name])),
+		municipalities: [...municipalities]
+			.sort(([a], [b]) => (a < b ? -1 : 1))
+			.map(([key, m]) => ({ key, name: m.name })),
 	};
 }
 
@@ -487,6 +503,15 @@ export function buildPlaces(inputs: BuildInputs): BuildResult {
 		if (state === 'BY' && inputs.bavaria.length > 0 && !isInBoundary(row.lat, row.lon, inputs.bavaria)) outsideBoundary.push({ key, name: row.name });
 		places.push(row);
 	}
+	// A prefix left out of a partial build still has its names in the index: keep those outside
+	// Bavaria, so search can tell "outside Bavaria" from "unknown".
+	const missingPrefixes = new Set(inputs.missing.filter((name) => name.startsWith('ags-')).map((name) => name.slice('ags-'.length)));
+	const others: OtherPlace[] = [];
+	for (const { key, name } of inputs.index.municipalities) {
+		const state = stateForKey(key);
+		if (state === null || state === 'BY' || !missingPrefixes.has(key.slice(0, 3))) continue;
+		others.push({ key, name, state });
+	}
 	const oldest = [...inputs.timestamps].sort((a, b) => Date.parse(a) - Date.parse(b))[0];
 	const file: Places = {
 		schemaVersion: PLACES_SCHEMA_VERSION,
@@ -496,6 +521,7 @@ export function buildPlaces(inputs: BuildInputs): BuildResult {
 		missing: [...inputs.missing].sort(),
 		bavaria: inputs.bavaria,
 		places,
+		others,
 	};
 	return { file, uninhabited, unnamed, duplicates, noPoint, outsideBoundary };
 }
@@ -582,6 +608,7 @@ export function placesNote(input: PlacesNoteInput): string {
 			`- Rows per state: ${perState.join(', ')}`,
 			`- Distinct postcodes: ${postcodes.size}`,
 			`- Rows without postcodes: ${file.places.filter((r) => r.postcodes.length === 0).length}`,
+			`- Other-state names (name only, from missing key prefixes): ${file.others.length}`,
 			`- Size: ${rawBytes} bytes raw, ${gzipBytes} bytes gzipped${gzipBytes > GZIP_FLAG_BYTES ? ' — FLAG: over 300 KB gzipped' : ''}`,
 			file.bavaria.length === 0
 				? '- Bavaria boundary: MISSING (bavaria query not cached)'

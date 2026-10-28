@@ -75,7 +75,7 @@ describe('loadPlaces', () => {
 	});
 
 	it('rejects a different schemaVersion with a SchemaVersionError', async () => {
-		await expect(loadPlaces(fetchReturning(jsonResponse({ ...placesOf([]), schemaVersion: 2 })))).rejects.toBeInstanceOf(SchemaVersionError);
+		await expect(loadPlaces(fetchReturning(jsonResponse({ ...placesOf([]), schemaVersion: 1 })))).rejects.toBeInstanceOf(SchemaVersionError);
 	});
 });
 
