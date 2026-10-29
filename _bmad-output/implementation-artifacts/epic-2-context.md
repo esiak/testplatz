@@ -4,7 +4,7 @@
 
 ## Goal
 
-About 55 Bavarian test centres on the two shared booking systems (KuferWeb ~30, ITEM KG ~25) switch from "not checked" to real test dates. Each date shows its status, deadline, registration method, who may register, and a deep link. A scheduled pipeline reads the provider sites politely 4 times a day, keeps history across runs, and publishes a static snapshot. The UI shows result cards, no-dates cards and "not checked right now" cards, and is honest about freshness and failures, so a gap in data never reads as "nothing available".
+About 55 Bavarian test centres on the two shared booking systems (KuferWeb ~30, ITEM KG ~25) switch from "not checked" to real test dates. Each date shows its status, deadline, registration method, who may register, and a deep link. A scheduled pipeline reads the provider sites politely once a day, keeps history across runs, and publishes a static snapshot. The UI shows result cards, no-dates cards and "not checked right now" cards, and is honest about freshness and failures, so a gap in data never reads as "nothing available".
 
 ## Stories
 
@@ -23,7 +23,8 @@ About 55 Bavarian test centres on the two shared booking systems (KuferWeb ~30, 
 - **Listing fields:** `centre_id`, `starts_at`, `place` (room), `address` (falls back to the centre address), `status` (`free`/`booked_out`/`waitlist`/`unknown`), `deadline` (local date), `registration_method` (`online`/`email`/`post`/`in_person`), `source_url`, `link_ok`, `eligibility`, `first_seen_at`. Every absent optional field is `null` and shows as "unknown", never guessed. A deadline before today shows "Passed" and the card stays. Past dates are never listed: publish drops them, and the browser hides them again.
 - **Eligibility (who may register):** the reader copies the paragraph that states the rule verbatim in German, length-capped. It takes it from the date page, else from the centre's test page. Match by keywords such as "Wohnsitz", "wohnhaft", "Hauptwohnsitz", "nur für", "Teilnehmende". The known example is MVHS (München): Munich residents only. No rule found → `null` → "Who may register: not stated, check the provider page", never "open to all". The rule is display text only: it is never matched against the searched place, and it never hides, reorders or flags a card. Scope covers residence area, own-course participants and age. Documents, fees and payment rules are out of scope, and centres without a reader get no eligibility. Each reader's fixtures include at least one page with a rule and one without. Coverage is an assumption: only the MVHS rule is confirmed so far.
 - **Status mapping:** a waitlist offer ("Warteliste") on any system → `waitlist`. KuferWeb: "AUSGEBUCHT" or a full traffic light → `booked_out`, a free light → `free`, no indicator → `unknown`. ITEM KG: `bookable` true → `free`, false → `booked_out`, absent or in-person-only → `unknown`. Precedence: waitlist > booked_out > free > unknown.
-- **Collection:** runs 4×/day. Every covered centre's last successful check must be under 12 h old, and a new published date must appear within 12 h.
+- **Collection:** runs once a day (05:17 UTC). Every covered centre's last successful check must be under 36 h old (one daily run plus slack for a late or failed run), and a new published date must appear within 36 h.
+- **About copy:** the "How it works" text says, in both languages, that the centres' websites are read once a day.
 - **Politeness:** the bot sends an identified user agent and respects robots.txt. Each site gets at most 4 visits per rolling 24 h, manual and local reruns included. Requests to a host are serial, with a delay and a timeout. Opted-out centres and centres with reader `none` get no request at all.
 - **Data minimisation:** store only date, time, place, status, deadline, registration method, eligibility text and link. No personal data such as instructor names; no schema has a field for it.
 - **Honesty:**
@@ -60,7 +61,7 @@ About 55 Bavarian test centres on the two shared booking systems (KuferWeb ~30, 
   - `first_seen_at` is set once and never changed.
   - The first `ok` run's listings are marked `baseline`.
 - **Listing id:** normalise builds `<centre_id>@<YYYY-MM-DDTHH:mm local>`. Same-minute sessions get `#2`, `#3`, ordered by `place`. The id never uses the provider URL.
-- **Time:** `starts_at` is ISO 8601 with the Europe/Berlin offset, `deadline` is a local date or `null`, and run timestamps are UTC `Z`. The 12 h and 24 h thresholds are constants in `shared/`, and freshness is computed in the browser.
+- **Time:** `starts_at` is ISO 8601 with the Europe/Berlin offset, `deadline` is a local date or `null`, and run timestamps are UTC `Z`. The 36 h freshness and 24 h "New" thresholds are constants in `shared/` (`FRESHNESS_HOURS = 36`), and freshness is computed in the browser.
 - **Snapshot:**
   - `snapshot.json` holds `{schemaVersion, generated_at, systems[], centres[], listings[]}`.
   - Centres carry `coverage` (`covered`/`not_checked`), `last_result`, `last_checked_at` and `last_success_at`.
@@ -77,7 +78,7 @@ About 55 Bavarian test centres on the two shared booking systems (KuferWeb ~30, 
 - **Codes and words:** data carries codes only. All words come from `web/src/i18n/{de,en}.json`, and CI fails on missing or extra keys. Provider free text (place, room, eligibility) is shown as published and marked `lang="de"` in the English UI.
 - **Git as the database:**
   - Each run makes one commit for `data/state/` and `data/public/`, then deploys from the pushed SHA. A failed push means no deploy.
-  - `pipeline.yml` runs at 05:17, 11:17, 17:17 and 23:17 UTC, on push to main and on dispatch. It uses one concurrency group with no cancel-in-progress.
+  - `pipeline.yml` runs on a daily schedule at 05:17 UTC (one cron entry, `17 5 * * *`), on push to main and on dispatch. It uses one concurrency group with no cancel-in-progress.
   - On a rejected push: if only the bot's own folders changed, rebase. Otherwise re-run merge and publish from the saved reader results, with no refetch.
   - A home-machine cron with a fine-grained token is the fallback.
 - **Logging:** one line per centre per run (id, reader, outcome, count, duration), with no page content.
@@ -97,7 +98,7 @@ About 55 Bavarian test centres on the two shared booking systems (KuferWeb ~30, 
   The address, the registration note and the eligibility line sit above the link layer: they are selectable and tapping them does nothing. If `link_ok` is false, the card opens `test_page_url` and the destination reads "Opens the centre's test page".
 - **Status chip text:** "Free seats", "Booked out", "Booked out · Waitlist" (spoken "Booked out, waitlist open"), "Status unknown", "No dates listed", "Not checked". The chip is `aria-hidden` on result cards.
 - **Card link name:** starts with the visible date: "<date, time>, <centre>, <status>, opens <domain> in a new tab". The glyphs ↗ ◷ · are `aria-hidden`.
-- **Freshness line:** meta size in ink-secondary, using `<time datetime>`. Under 12 h it reads "Checked 2 h ago"; older, it reads "◷ Checked Tue 14:00". No banner and no colour change.
+- **Freshness line:** meta size in ink-secondary, using `<time datetime>`. Under 36 h it reads "Checked 2 h ago"; older, it reads "◷ Checked Tue 14:00". No banner and no colour change.
 - **No-dates card:** centre name in card-date style and a "No dates listed" chip. Key facts: Deadline "unknown", Registration as known. It has a freshness line and opens the test page.
 - **Uncovered "right now" card:** same layout as Epic 1's uncovered card, with the "Not checked right now" line and a "Why?" link to About `#not-checked`. It has no freshness line.
 - **Sort:**
@@ -116,7 +117,8 @@ About 55 Bavarian test centres on the two shared booking systems (KuferWeb ~30, 
   - They must also stay listed on About `#no-location` whatever their coverage.
   - About `#not-checked` must also list centres whose check failed.
 - **Epic 3 dependencies:**
-  - The "New" badge needs `first_seen_at` and `baseline` from 2.5.
+  - The "New" badge (24 h window) needs `first_seen_at` and `baseline` from 2.5.
+  - The stale-system check uses the same 36 h freshness constant.
   - Booking-system status on About reads `systems[]` from 2.6.
   - The hide-booked-out toggle depends on the sort and notices from 2.7–2.9.
 - **Place table:** the place table is still partial, because Stories 1.10 and 1.11 are deferred. Epic 2 must not assume a complete `places.json`.

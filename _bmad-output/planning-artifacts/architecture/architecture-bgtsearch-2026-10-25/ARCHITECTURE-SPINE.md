@@ -173,9 +173,9 @@ Arrows are the only allowed imports. `readers` never imports `fetch` or `stages`
 - **Rule:**
   - `starts_at` is ISO 8601 with its Europe/Berlin offset. `deadline` is a local date or `null`. Run timestamps are UTC ISO 8601 (`Z`).
   - Publish drops listings with `starts_at ≤ runAt`, and `web/` hides `starts_at ≤ now` again.
-  - The freshness line always shows the centre's `last_success_at`. It switches to the exact time when `now − last_success_at > 12 h`, and a system reads "Not updated since …" under the same 12 h test.
+  - The freshness line always shows the centre's `last_success_at`. It switches to the exact time when `now − last_success_at > 36 h`, and a system reads "Not updated since …" under the same 36 h test.
   - "New" means `now − first_seen_at < 24 h` and not `baseline`. "Passed" means `deadline < today`.
-  - The 12 h and 24 h thresholds are constants in `shared/`.
+  - The 36 h freshness and 24 h "New" thresholds are constants in `shared/`. (Amended 2026-10-29: once-a-day collection.)
 
 ### AD-12 — Git is the database; one commit per run, then deploy [ADOPTED]
 
@@ -226,7 +226,7 @@ Arrows are the only allowed imports. `readers` never imports `fetch` or `stages`
 ```mermaid
 flowchart LR
   subgraph gh["GitHub (public repo, free)"]
-    CRON["schedule 4×/day<br/>05:17 11:17 17:17 23:17 UTC"] --> RUN[pipeline.yml]
+    CRON["schedule daily<br/>05:17 UTC"] --> RUN[pipeline.yml]
     PUSH[push to main / dispatch] --> RUN
     RUN -->|1 commit: data/state + data/public| REPO[(main)]
     RUN -->|deploy pushed SHA| PAGES[GitHub Pages]

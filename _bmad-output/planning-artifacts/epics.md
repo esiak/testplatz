@@ -27,11 +27,11 @@ FR5: Past test dates are never listed. (CAP-1)
 FR6: Each test date shows date/time, centre, full test address (falls back to the centre address), status (Free seats / Booked out / Booked out · Waitlist / Status unknown), registration deadline (date / "Passed" / "unknown"), registration method (Online / Email / Post / In person / see website), and links to the provider's page for that date. (CAP-2)
 FR7: Missing source fields show as "unknown", never guessed. (CAP-2)
 FR8: If a date's deep link was unreachable at the last check, the card opens the centre's test page instead and the destination line says "Opens the centre's test page". (CAP-2)
-FR9: Test dates are collected automatically from KuferWeb and ITEM KG centres 4 times a day; every covered centre's data is no older than 12 h, and a new published date appears within 12 h. (CAP-3)
+FR9: Test dates are collected automatically from KuferWeb and ITEM KG centres once a day; every covered centre's data is no older than 36 h, and a new published date appears within 36 h. (CAP-3)
 FR10: Provider status is mapped per data-sources.md: waitlist offer → waitlist; KuferWeb "AUSGEBUCHT"/full light → booked out, free light → free, none → unknown; ITEM KG bookable true → free, false → booked out, absent or in-person-only → unknown. (CAP-2, CAP-3)
 FR11: Centres with no reader, or opted out, appear as uncovered cards: "Not checked automatically. See the centre's page.", linking to the centre's test page, with a "Why?" link to About the data. (CAP-4, CAP-8)
 FR12: A covered centre whose last check failed or never ran and that has no dates left appears as an uncovered card with "Not checked right now. See the centre's page." — never as "No dates listed". (CAP-4, CAP-5)
-FR13: Every result card and no-dates card shows its centre's last successful check: relative ("Checked 2 h ago") under 12 h, exact time with ◷ ("◷ Checked Tue 14:00") when older. (CAP-5)
+FR13: Every result card and no-dates card shows its centre's last successful check: relative ("Checked 2 h ago") under 36 h, exact time with ◷ ("◷ Checked Tue 14:00") when older. (CAP-5)
 FR14: When a centre's collection fails or finds no expected page structure, its previous dates stay listed and age visibly (stale), rather than being removed or shown as empty. (CAP-5)
 FR15: The About the data page shows one row per booking system with centres covered, last successful run, and "Working" or "Not updated since <time>". (CAP-5)
 FR16: Dates first seen within the last 24 h show a "New" badge; first-seen time is stored once and survives later checks; dates found in a centre's first successful check are not marked new. (CAP-6)
@@ -62,7 +62,7 @@ NFR2: Privacy: the user's typed place and location never leave the browser; no a
 NFR3: Polite collection: identified bot user agent, robots.txt respected, at most 4 visits per site per rolling 24 h (including manual reruns), serial requests per host with delay and timeout.
 NFR4: Data minimisation: only date, time, place, status, deadline, registration method, eligibility text and link are stored; no personal data (e.g. instructor names).
 NFR5: Honesty: a gap in data must never read as "nothing available".
-NFR6: Freshness: covered centres' data ≤ 12 h old under normal operation.
+NFR6: Freshness: covered centres' data ≤ 36 h old under normal operation (one run a day plus slack for a late or failed run).
 NFR7: Scope: Bavaria only; search only (no booking, no provider accounts, no form submission on provider sites).
 NFR8: Accessibility: WCAG AA (text contrast ≥ 4.5:1, non-text ≥ 3:1), full keyboard access, screen-reader semantics, ≥ 44 px targets, reflow at 320 px / 200% zoom with longest German strings and WCAG text-spacing overrides.
 NFR9: Platform: phone-first responsive site in any modern browser, including WhatsApp and Instagram in-app browsers on iOS and Android (new tabs and the way back must work).
@@ -88,8 +88,8 @@ From ARCHITECTURE-SPINE.md:
 - Directory human-owned (AD-8) with typed `reader_config`; publish emits every centre with `coverage`; card type derived coverage-first.
 - Two zod contracts (AD-9): `snapshot.json` `{schemaVersion, generated_at, systems[], centres[], listings[]}` and `places.json` (all German municipalities/postcodes with state code + simplified Bavaria boundary); publish refuses invalid output; app reloads once on `schemaVersion` mismatch.
 - Codes in data, words in translation files (AD-10); CI fails on missing/extra i18n keys.
-- Time rules (AD-11): Berlin-offset ISO `starts_at`, local-date `deadline` or null, UTC run timestamps; 12 h / 24 h thresholds as shared constants; publish drops `starts_at ≤ runAt`.
-- Git as database (AD-12): one commit per run for `data/state/` + `data/public/`, atomic writes; rebase-conflict handling by re-running merge+publish; deploy only from pushed SHA via `actions/deploy-pages`; `pipeline.yml` on schedule (05:17, 11:17, 17:17, 23:17 UTC), push to main and dispatch; one concurrency group, no cancel-in-progress; `ci.yml` ignores `data/state/**` and `data/public/**` but validates `data/directory/**`.
+- Time rules (AD-11): Berlin-offset ISO `starts_at`, local-date `deadline` or null, UTC run timestamps; 36 h freshness / 24 h "New" thresholds as shared constants; publish drops `starts_at ≤ runAt`.
+- Git as database (AD-12): one commit per run for `data/state/` + `data/public/`, atomic writes; rebase-conflict handling by re-running merge+publish; deploy only from pushed SHA via `actions/deploy-pages`; `pipeline.yml` on schedule (daily 05:17 UTC), push to main and dispatch; one concurrency group, no cancel-in-progress; `ci.yml` ignores `data/state/**` and `data/public/**` but validates `data/directory/**`.
 - Monitoring: any failed run opens/updates a GitHub issue; each run pings an external dead-man check (provider chosen at setup); monthly `directory-monthly.yml` runs directory-diff and opens an issue.
 - Fallback: home-machine cron running `npm run pipeline` and pushing with a fine-grained token; no self-hosted runner.
 - Testing: readers against committed HTML fixtures; merge tests for tombstones, baseline, same-minute ids.
@@ -113,7 +113,7 @@ UX-DR11: Destination line: target domain + ↗ in action colour, meta; not a sep
 UX-DR12: Key-facts row as `dl/dt/dd`: Distance, Status, Deadline, Registration in fixed order on `surface-muted`; four across when cells ≥ 9em, otherwise 2×2; values wrap.
 UX-DR13: Status chip: pill with word + tint per variant (free / booked / unknown); "Booked out · Waitlist" spoken "Booked out, waitlist open"; "No dates listed" (booked tint), "Not checked" (unknown tint); `aria-hidden` on result cards (in link name).
 UX-DR14: "New" badge: ink-primary on surface-muted pill after the date; not blue.
-UX-DR15: Freshness line: meta, ink-secondary, `<time datetime>`, "h" spoken as "hours"; relative under 12 h, "◷ Checked Tue 14:00" when older; no banner, no colour change.
+UX-DR15: Freshness line: meta, ink-secondary, `<time datetime>`, "h" spoken as "hours"; relative under 36 h, "◷ Checked Tue 14:00" when older; no banner, no colour change.
 UX-DR16: No-dates card: result-card layout with centre name in card-date style, "No dates listed" chip, address line, key-facts (Distance; Status "No dates listed"; Deadline "unknown"; Registration as known), destination to test page, freshness line; whole card opens the test page.
 UX-DR17: Uncovered card: result-card layout with centre name, "Not checked" chip, address line, explanation line ("Not checked automatically. See the centre's page." or "Not checked right now. See the centre's page."), key-facts (Distance; Status "Not checked"; Deadline and Registration "see website"), destination line and "Why?" link (44 px, own target, name "Why is <centre> not checked?"); no freshness line; whole card opens the test page.
 UX-DR18: Section heading h2 "No dates to show" (Soonest sort only); heading structure h1 page task, h2 sections, h3 date/centre per card; results as a `<ul>` of cards.
@@ -139,7 +139,7 @@ FR5: Epic 2 - Past dates never listed
 FR6: Epic 2 - Date fields on result cards
 FR7: Epic 2 - Missing fields shown as unknown
 FR8: Epic 2 - Dead deep link falls back to test page
-FR9: Epic 2 - Automatic collection 4×/day (KuferWeb and ITEM KG)
+FR9: Epic 2 - Automatic collection once a day (KuferWeb and ITEM KG)
 FR10: Epic 2 - Status mapping per system
 FR11: Epic 1 - Uncovered cards for unchecked centres
 FR12: Epic 2 - Failing centre shows "Not checked right now"
@@ -175,7 +175,7 @@ A user enters a Bavarian town, postcode or their location, picks a radius, and s
 **Notes:** Story 1 is the `npm create preact` scaffold, repo layout, shared schemas and the GitHub Pages deploy. Builds the places table, directory, snapshot publish (centres only), and the uncovered card. Story 1.11 completes the place table that Story 1.5 shipped partially; it must land before 1.8's "Bavaria only" error and 1.10. **Deferred 2026-10-28 (operator decision):** Stories 1.10 and 1.11 are taken out of Epic 1 and left for later, because the public Overpass run behind 1.11 is very slow and fails; 1.10 needs 1.11's Bavaria boundary. Epic 1 closes with Stories 1.1–1.9 plus Story 1.12, which fixes the search bugs the retrospective found; see `implementation-artifacts/deferred-work.md` and the Epic 1 retrospective. Covers UX-DR1–7, 10, 11, 12 (Distance), 17, 18–22, 24–27, 29.
 
 ### Epic 2: See current test dates from KuferWeb and ITEM KG centres
-About 55 centres switch from "not checked" to real dates with status, deadline, registration method, who may register and a deep link, refreshed 4 times a day and honest about freshness and failures.
+About 55 centres switch from "not checked" to real dates with status, deadline, registration method, who may register and a deep link, refreshed once a day and honest about freshness and failures.
 **FRs covered:** FR2 (result and no-dates cards), FR3, FR5, FR6, FR7, FR8, FR9, FR10, FR12, FR13, FR14, FR22 (fetch skips), FR24, FR30 (date count), FR31 (date notices), FR35
 **Notes:** Polite fetch, the reader contract, normalise and merge with history, then the scheduled run that commits and deploys, built with the KuferWeb reader first, end to end. The ITEM KG reader follows as its own story. Result card, no-dates card, freshness line, status chip, key-facts row. Covers UX-DR9, 12–13, 15, 16, 23.
 
@@ -350,7 +350,7 @@ So that I know when to check a centre's own page.
 
 **Given** the footer link
 **When** I open About the data
-**Then** I see, in the chosen language: how it works ("we read the centres' websites several times a day; always check the centre's page before you register"); centres not checked automatically at `#not-checked` with the reasons (system we can't read yet, centre asked not to be checked, or our last check failed) and the list of those centres with links; sources (BAMF list, each centre's website); attribution (OSM/ODbL, Nominatim); and, for centres asking to be removed, a link that opens a new GitHub issue in `esiak/testplatz` from an "Opt-out request" issue template (centre name, website, contact) (FR33, NFR11)
+**Then** I see, in the chosen language: how it works ("we read the centres' websites once a day; always check the centre's page before you register"); centres not checked automatically at `#not-checked` with the reasons (system we can't read yet, centre asked not to be checked, or our last check failed) and the list of those centres with links; sources (BAMF list, each centre's website); attribution (OSM/ODbL, Nominatim); and, for centres asking to be removed, a link that opens a new GitHub issue in `esiak/testplatz` from an "Opt-out request" issue template (centre name, website, contact) (FR33, NFR11)
 
 **Given** the About page
 **When** it renders
@@ -564,7 +564,7 @@ The cached Overpass `index` (`data/places/cache/index.json`, from Story 1.5) alr
 
 ## Epic 2: See current test dates from KuferWeb and ITEM KG centres
 
-About 55 centres switch from "not checked" to real dates with status, deadline, registration method, who may register and a deep link, refreshed 4 times a day and honest about freshness and failures.
+About 55 centres switch from "not checked" to real dates with status, deadline, registration method, who may register and a deep link, refreshed once a day and honest about freshness and failures.
 
 ### Story 2.1: Shared listing shape and reader contract
 
@@ -713,8 +713,8 @@ So that dates don't vanish on a glitch and "new" will mean new.
 ### Story 2.6: Scheduled collection run
 
 As a user,
-I want dates refreshed several times a day without anyone pressing a button,
-So that what I see is never more than half a day old.
+I want dates refreshed every day without anyone pressing a button,
+So that what I see is never more than about a day old.
 
 **Acceptance Criteria:**
 
@@ -727,9 +727,13 @@ So that what I see is never more than half a day old.
 **Then** centres with a working reader have `coverage: covered` and their `last_result`, `last_checked_at`, `last_success_at`; `systems[]` lists each reader with `centres_covered`, `centres_ok`, `centres_failed`, `last_success_at`; `schemaVersion` becomes 2 now that listings carry entries, with `web/` updated in the same commit (AD-9); centres skipped for opt-out, reader `none` or robots are published as `not_checked`; listings with `starts_at ≤ runAt`, removed listings and `not_checked` centres' listings are excluded (FR5, AD-8, AD-9)
 
 **Given** `pipeline.yml`
-**When** the schedule fires at 05:17, 11:17, 17:17 and 23:17 UTC
+**When** the daily schedule fires at 05:17 UTC
 **Then** the run commits `data/state/` and `data/public/` in one commit, pushes, and deploys from the pushed SHA; if the push fails, nothing is deployed (FR9, AD-12)
-**And** under normal operation every covered centre's `last_success_at` is less than 12 h old (NFR6)
+**And** under normal operation every covered centre's `last_success_at` is less than 36 h old (NFR6)
+
+**Given** the About page "How it works" text
+**When** it renders in either language
+**Then** it says the centres' websites are read once a day (FR33)
 
 **Given** a push rejected because `main` moved
 **When** the bot pulls
@@ -766,7 +770,7 @@ So that I can decide and book in one tap.
 **And** with `link_ok: false`, the destination line reads "Opens the centre's test page" and the card opens `test_page_url` (FR8)
 
 **Given** the freshness line
-**When** the centre's `last_success_at` is under 12 h old
+**When** the centre's `last_success_at` is under 36 h old
 **Then** it reads "Checked 2 h ago"; when older, "◷ Checked Tue 14:00", same grey, no banner, using `<time datetime>` (FR13, UX-DR15)
 
 **Given** a card
@@ -795,7 +799,7 @@ So that a gap never looks like "nothing available".
 
 **Given** a covered centre whose last run failed but which still has listings
 **When** results render
-**Then** its result cards stay, and their freshness line ages to the exact-time form after 12 h (FR14)
+**Then** its result cards stay, and their freshness line ages to the exact-time form after 36 h (FR14)
 
 **Given** only no-dates and uncovered cards in range
 **When** results render
@@ -883,7 +887,7 @@ So that I know how far to trust the dates.
 **When** About the data renders
 **Then** a "Booking systems" section shows one row per system (KuferWeb, ITEM KG) with centres covered, last successful run, and status "Working" (FR15, FR33)
 
-**Given** a system whose `last_success_at` is more than 12 h before now
+**Given** a system whose `last_success_at` is more than 36 h before now
 **When** the row renders
 **Then** status reads "Not updated since Tue 14:00", in text, with no colour-only signal (AD-11)
 

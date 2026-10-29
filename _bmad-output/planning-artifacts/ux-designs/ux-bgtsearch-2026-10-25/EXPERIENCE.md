@@ -35,7 +35,7 @@ Results URL carries place, radius, sort and language in the fragment (`#q=Neu-Ul
 
 ### About the data: content
 
-1. **How it works**: one paragraph: we read the centres' websites several times a day; always check the centre's page before you register.
+1. **How it works**: one paragraph: we read the centres' websites once a day; always check the centre's page before you register.
 2. **Booking systems**: table, one row per system (KuferWeb, ITEM KG): centres covered, last successful run, status "Working" or "Not updated since Tue 14:00" (CAP-5).
 3. **Centres not checked automatically** (`#not-checked`): why (their website uses a system we can't read yet, the centre asked us not to check it, or our last check of their site failed), then the list of those centres with links.
 4. **Sources**: BAMF list of test centres; each centre's own website.
@@ -75,7 +75,7 @@ Behavioural. Visual specs in `DESIGN.md.Components`.
 | Key-facts row | Four cells in fixed order: Distance, Status, Deadline, Registration. Values: see Voice and Tone. Deadline passed → "Passed"; card stays. |
 | Status chip | Read-only. "Booked out · Waitlist" when the provider offers a waitlist. |
 | "New" badge | On result cards first seen in the last 24 h (CAP-6). |
-| Freshness line | On every result card and no-dates card: last successful check of that centre's source (CAP-3, CAP-5). Relative under 12 h; exact time with ◷ when older. The card stays in the list. |
+| Freshness line | On every result card and no-dates card: last successful check of that centre's source (CAP-3, CAP-5). Relative under 36 h; exact time with ◷ when older. The card stays in the list. |
 | Count line | "N dates and M unchecked centres within R km". N counts all dates, including hidden booked-out ones. Updates after search and toggle. |
 | Sort control | Radio group "Sort by": Soonest (default) and Nearest; applies on change. Soonest: dated cards by date, then distance; then section "No dates to show" with no-dates and uncovered cards by distance. Nearest: all cards by distance, then date. |
 | Hide booked-out toggle | Hides only "Booked out". Never hides "Booked out · Waitlist" [ASSUMPTION], "Status unknown", no-dates or uncovered cards. Shows "4 booked-out dates hidden · Show". Focus stays on the checkbox. |
@@ -100,7 +100,7 @@ Behavioural. Visual specs in `DESIGN.md.Components`.
 | No centres in radius | Results | "No test centres within 20 km." `button-secondary` "Search 40 km". |
 | All dates booked out | Results | Booked-out cards shown; notice "All checked dates are booked out. Other centres may still have seats." |
 | Everything hidden by toggle | Results | Notice "All 4 dates here are booked out and hidden." with "Show them". |
-| Card older than 12 h | Results | Freshness line switches to exact time with ◷; no banner, no colour change. |
+| Card older than 36 h | Results | Freshness line switches to exact time with ◷; no banner, no colour change. |
 | Whole data load fails | Results | "We couldn't load test dates. Try again." `button-secondary` "Try again". Error colour. |
 | System failing | About the data | That system's row reads "Not updated since Tue 14:00". |
 | Offline | Any | Browser default; no custom offline mode in v1 [ASSUMPTION]. |
