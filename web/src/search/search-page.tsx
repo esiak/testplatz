@@ -7,6 +7,8 @@ import { clearReloadFlag, defaultReloadServices, reloadOnce, type ReloadServices
 import { loadSnapshot } from '../data/snapshot.ts';
 import { NO_LOCATION_ID } from '../fragment.ts';
 import { useI18n } from '../i18n/i18n.tsx';
+import { ResultCard } from './result-card.tsx';
+import { datedResults, type Results } from './results.ts';
 import { SearchBar } from './search-bar.tsx';
 import { DEFAULT_RADIUS, nextRadius, parseSearchFragment, runSearch, searchFragment, type Outcome, type Radius, type Search } from './search.ts';
 import { aboutSectionUrl, UncoveredCard } from './uncovered-card.tsx';
@@ -15,12 +17,17 @@ import { aboutSectionUrl, UncoveredCard } from './uncovered-card.tsx';
 export interface SearchServices extends ReloadServices {
 	/** Used for the two data requests; defaults to the global `fetch` at call time. */
 	fetch?: typeof fetch;
+	/** The clock, read once per shown outcome; defaults to `Date.now`. */
+	now?: () => number;
 }
+
+/** A results outcome's cards, computed once against the `now` taken when the search ran. */
+type Shown = Results & { now: number };
 
 type DataState = { kind: 'loading' } | { kind: 'ready'; snapshot: Snapshot; places: Places } | { kind: 'failed' };
 
 /** What the live region says. Stored as a description so a language switch re-renders it. */
-type Announcement = { kind: 'loading' } | { kind: 'outcome'; outcome: Outcome } | { kind: 'suggestions'; count: number };
+type Announcement = { kind: 'loading' } | { kind: 'outcome'; outcome: Outcome; shown: Shown | null } | { kind: 'suggestions'; count: number };
 
 const SKELETON_COUNT = 3;
 
@@ -28,10 +35,18 @@ function sameSearch(a: Search | null, b: Search): boolean {
 	return a !== null && a.q === b.q && a.r === b.r;
 }
 
-function CountLine({ outcome }: { outcome: Extract<Outcome, { kind: 'results' }> }) {
+const COUNT_KEYS = {
+	date: { centre: 'results.count_date_one_one', centres: 'results.count_date_one' },
+	dates: { centre: 'results.count_one', centres: 'results.count' },
+} as const;
+
+/** "N dates and M unchecked centres within R km": dated cards shown, and centres shown without one. */
+function CountLine({ outcome, shown }: { outcome: Extract<Outcome, { kind: 'results' }>; shown: Shown }) {
 	const { t } = useI18n();
-	const unchecked = outcome.items.length + outcome.unlocated.length;
-	return <>{t(unchecked === 1 ? 'results.count_one' : 'results.count', { dates: 0, unchecked, radius: outcome.search.r })}</>;
+	const dates = shown.dated.length;
+	const unchecked = shown.undated.length;
+	const key = COUNT_KEYS[dates === 1 ? 'date' : 'dates'][unchecked === 1 ? 'centre' : 'centres'];
+	return <>{t(key, { dates, unchecked, radius: outcome.search.r })}</>;
 }
 
 /** "N centres have no map position yet and may be nearby. See which" — absent when none are hidden. */
@@ -56,8 +71,8 @@ function AnnouncementText({ announcement }: { announcement: Announcement | null 
 		const { count } = announcement;
 		return <>{t(count === 1 ? 'search.suggestions_count_one' : 'search.suggestions_count', { count })}</>;
 	}
-	const { outcome } = announcement;
-	if (outcome.kind === 'results') return <CountLine outcome={outcome} />;
+	const { outcome, shown } = announcement;
+	if (outcome.kind === 'results' && shown) return <CountLine outcome={outcome} shown={shown} />;
 	if (outcome.kind === 'no_centres') return <>{t('results.none_in_radius', { radius: outcome.search.r })}</>;
 	return null;
 }
@@ -81,6 +96,7 @@ export function SearchPage({ services }: { services?: Partial<SearchServices> })
 	const fetchImpl = services?.fetch;
 	const storage = services?.storage ?? defaultReloadServices.storage;
 	const reload = services?.reload ?? defaultReloadServices.reload;
+	const clock = services?.now ?? Date.now;
 
 	const [text, setText] = useState('');
 	const [radius, setRadius] = useState<Radius>(DEFAULT_RADIUS);
@@ -88,6 +104,7 @@ export function SearchPage({ services }: { services?: Partial<SearchServices> })
 	const [attempt, setAttempt] = useState(0);
 	const [pending, setPending] = useState<Search | null>(null);
 	const [outcome, setOutcome] = useState<Outcome | null>(null);
+	const [shown, setShown] = useState<Shown | null>(null);
 	/** Counts shown outcomes, so a repeated field error remounts (and re-announces) its alert. */
 	const [outcomeId, setOutcomeId] = useState(0);
 	const [announcement, setAnnouncement] = useState<{ value: Announcement; id: number } | null>(null);
@@ -119,7 +136,13 @@ export function SearchPage({ services }: { services?: Partial<SearchServices> })
 				setText(result.search.q);
 				replaceHash(searchFragment(result.search.q, result.search.r, langRef.current));
 			}
+			let resultShown: Shown | null = null;
+			if (result.kind === 'results') {
+				const now = clock();
+				resultShown = { ...datedResults(result, ready.snapshot.listings, now), now };
+			}
 			setOutcome(result);
+			setShown(resultShown);
 			setOutcomeId((n) => n + 1);
 			// A name several towns share keeps the list open so the user can pick one.
 			if (result.kind === 'field_error' && result.code === 'several_places') {
@@ -127,8 +150,9 @@ export function SearchPage({ services }: { services?: Partial<SearchServices> })
 				setListOpenId((n) => n + 1);
 			}
 			if (result.kind === 'field_error') setAnnouncement(null);
-			else announce({ kind: 'outcome', outcome: result });
+			else announce({ kind: 'outcome', outcome: result, shown: resultShown });
 		},
+		// The services are fixed for the page's lifetime.
 		[announce, replaceHash],
 	);
 
@@ -254,23 +278,23 @@ export function SearchPage({ services }: { services?: Partial<SearchServices> })
 				<HiddenUnlocatedNotice count={outcome.hiddenUnlocated} />
 			</div>
 		);
-	} else if (outcome?.kind === 'results') {
+	} else if (outcome?.kind === 'results' && shown) {
 		body = (
 			<>
 				<p class="results-count">
-					<CountLine outcome={outcome} />
+					<CountLine outcome={outcome} shown={shown} />
 				</p>
-				<p class="notice-line">{t('results.notice_no_dates')}</p>
+				{shown.dated.length === 0 ? <p class="notice-line">{t('results.notice_no_dates')}</p> : null}
 				<HiddenUnlocatedNotice count={outcome.hiddenUnlocated} />
 				<ul class="results">
-					{outcome.items.map((item) => (
-						<li key={item.centre.centre_id} class="results__item">
-							<UncoveredCard item={item} />
+					{shown.dated.map((result) => (
+						<li key={result.listing.id} class="results__item">
+							<ResultCard result={result} now={shown.now} />
 						</li>
 					))}
-					{outcome.unlocated.map((centre) => (
-						<li key={centre.centre_id} class="results__item">
-							<UncoveredCard item={{ centre, distanceKm: null }} />
+					{shown.undated.map((item) => (
+						<li key={item.centre.centre_id} class="results__item">
+							<UncoveredCard item={item} />
 						</li>
 					))}
 				</ul>

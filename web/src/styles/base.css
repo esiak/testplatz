@@ -438,7 +438,9 @@ a {
 	gap: var(--space-2);
 }
 
-.card__name {
+/* The heading: the centre name on uncovered cards, the date (and link text) on result cards. */
+.card__name,
+.card__date {
 	min-width: 0;
 	margin: 0;
 	font: var(--font-card-date);
@@ -466,6 +468,38 @@ a {
 .chip--unknown {
 	color: var(--status-chip-unknown-color);
 	background: var(--status-chip-unknown-background);
+}
+
+.chip--free {
+	color: var(--status-chip-free-color);
+	background: var(--status-chip-free-background);
+}
+
+.chip--booked {
+	color: var(--status-chip-booked-color);
+	background: var(--status-chip-booked-background);
+}
+
+.card__centre {
+	margin: 0;
+	font: var(--font-body);
+	overflow-wrap: anywhere;
+}
+
+/* Provider text, shown as published: above the link layer, selectable, taps do nothing. */
+.card__eligibility {
+	position: relative;
+	z-index: 1;
+	margin: 0;
+	font: var(--font-body);
+	overflow-wrap: anywhere;
+	user-select: text;
+}
+
+.card__freshness {
+	margin: 0 0 0 auto;
+	font: var(--freshness-line-typography);
+	color: var(--freshness-line-color);
 }
 
 /* Selectable address and its Map link, with clearance where nothing else responds. */

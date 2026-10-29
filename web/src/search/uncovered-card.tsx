@@ -1,7 +1,7 @@
 import type { SnapshotCentre } from '../../../shared/snapshot.ts';
 import { NOT_CHECKED_ID, serialiseFragment } from '../fragment.ts';
 import { useI18n } from '../i18n/i18n.tsx';
-import { destinationDomain, formatAddress, mapsUrl, type CentreInRange } from './search.ts';
+import { destinationDomain, formatAddress, mapsUrl } from './search.ts';
 
 /** About the data, at the given section (a fragment key such as `not-checked`), in the given language. */
 export function aboutSectionUrl(lang: string, sectionId: string): string {
@@ -17,7 +17,7 @@ export function whyUrl(lang: string): string {
  * A centre with no automatic check. The whole card is one stretched link (the h3's link) to the
  * centre's test page; "Map ↗" and "Why?" sit above the link layer as their own targets.
  */
-export function UncoveredCard({ item }: { item: CentreInRange | { centre: SnapshotCentre; distanceKm: null } }) {
+export function UncoveredCard({ item }: { item: { centre: SnapshotCentre; distanceKm: number | null } }) {
 	const { lang, t } = useI18n();
 	const { centre, distanceKm } = item;
 	const distance = distanceKm === null ? t('card.fact.distance_unknown') : t('card.fact.distance_value', { km: Math.round(distanceKm) });

@@ -2,7 +2,7 @@
 import { render } from 'preact';
 import { act } from 'preact/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { SNAPSHOT_SCHEMA_VERSION, type SnapshotCentre } from '../shared/snapshot.ts';
+import { SNAPSHOT_SCHEMA_VERSION, type SnapshotCentre, type SnapshotListing } from '../shared/snapshot.ts';
 import { App } from '../web/src/app.tsx';
 import { PLACES_URL } from '../web/src/data/places.ts';
 import { RELOAD_FLAG } from '../web/src/data/reload-once.ts';
@@ -10,7 +10,7 @@ import { SNAPSHOT_URL } from '../web/src/data/snapshot.ts';
 import de from '../web/src/i18n/de.json' with { type: 'json' };
 import en from '../web/src/i18n/en.json' with { type: 'json' };
 import { PLACE_ROWS, placesOf, smallPlaces } from './fixtures/places.ts';
-import { jsonResponse, snapshotCentre, snapshotOf } from './fixtures/snapshot.ts';
+import { coveredCentre, jsonResponse, snapshotCentre, snapshotListing, snapshotOf } from './fixtures/snapshot.ts';
 
 // ---------- fixtures ----------
 
@@ -58,6 +58,9 @@ let fetchMock: ReturnType<typeof vi.fn<typeof fetch>>;
 let store: Map<string, string>;
 let reload: ReturnType<typeof vi.fn<() => void>>;
 let storageThrows: boolean;
+/** What the injected clock returns. */
+let clockNow: number;
+const DEFAULT_NOW = Date.parse('2026-10-29T12:00:00Z');
 
 type Responder = () => Promise<Response>;
 const ok = (body: unknown): Responder => () => Promise.resolve(jsonResponse(body));
@@ -94,6 +97,7 @@ function mount(): void {
 						return fakeStorage();
 					},
 					reload,
+					now: () => clockNow,
 				}}
 			/>,
 			root,
@@ -159,6 +163,7 @@ beforeEach(() => {
 	store = new Map();
 	reload = vi.fn<() => void>();
 	storageThrows = false;
+	clockNow = DEFAULT_NOW;
 	serve();
 });
 
@@ -399,6 +404,264 @@ describe('uncovered card', () => {
 		expect(fuerth.querySelector('.card__destination')).toBeNull();
 		expect(fuerth.querySelector('.card__map')).not.toBeNull();
 		expect(fuerth.querySelector('.card__why')).not.toBeNull();
+	});
+});
+
+describe('result cards', () => {
+	// Thursday 29 Oct 2026, 13:00 in Berlin.
+	const NOW = DEFAULT_NOW;
+	const kufer = coveredCentre('kufer', 'ok', {
+		name: 'vhs Nürnberg',
+		address: { street: 'Gewerbemuseumsplatz 1', postcode: '90403', city: 'Nürnberg' },
+		lat: NBG.lat,
+		lon: NBG.lon,
+		website: 'https://www.vhs-nuernberg.de/',
+		test_page_url: 'https://www.vhs-nuernberg.de/einbuergerungstest',
+		last_success_at: '2026-10-29T10:00:00Z',
+	});
+	const item = coveredCentre('item', 'ok', {
+		name: 'Bildungszentrum Fürth',
+		address: { street: 'Königstraße 1', postcode: '90762', city: 'Fürth' },
+		lat: 49.4771,
+		lon: 10.9887,
+		website: 'https://www.bz-fuerth.de/',
+		test_page_url: 'https://www.bz-fuerth.de/test',
+		// 47 h before NOW: Tuesday 14:00 in Berlin.
+		last_success_at: '2026-10-27T13:00:00Z',
+	});
+	const stale = coveredCentre('stale', 'ok', {
+		name: 'vhs Erlangen',
+		address: { street: 'Friedrichstraße 19', postcode: '91054', city: 'Erlangen' },
+		lat: 49.5897,
+		lon: 11.0078,
+	});
+	const akademie = CENTRES.find((centre) => centre.centre_id === 'nbg')!;
+
+	const waitlist = snapshotListing('kufer', '2026-12-09T10:00:00+01:00', {
+		address: 'Gewerbemuseumsplatz 1, 90403 Nürnberg',
+		status: 'waitlist',
+		deadline: '2026-11-11',
+		registration_method: 'online',
+		source_url: 'https://www.vhs-nuernberg.de/kurs/123',
+		eligibility: 'Nur für Personen mit Hauptwohnsitz in Nürnberg.',
+	});
+	const deadLink = snapshotListing('item', '2026-11-20T09:00:00+01:00', {
+		address: 'Königstraße 1, 90762 Fürth',
+		status: 'free',
+		deadline: '2026-10-28',
+		source_url: 'https://item.example.de/kurs/9',
+		link_ok: false,
+	});
+	// Started an hour before NOW.
+	const pastSameCentre = snapshotListing('kufer', '2026-10-29T12:00:00+01:00');
+	const pastOnly = snapshotListing('stale', '2026-10-20T10:00:00+02:00');
+
+	async function show(listings = [waitlist, deadLink, pastSameCentre, pastOnly], lang: 'en' | 'de' = 'en'): Promise<HTMLElement[]> {
+		return showWith([kufer, item, stale, akademie], listings, lang);
+	}
+
+	async function showWith(centres: SnapshotCentre[], listings: SnapshotListing[], lang: 'en' | 'de' = 'en'): Promise<HTMLElement[]> {
+		act(() => render(null, root));
+		serve(ok(snapshotOf(centres, listings)));
+		clockNow = NOW;
+		setBrowser('', [lang === 'en' ? 'en-GB' : 'de-DE']);
+		mount();
+		await settle();
+		await search('Nürnberg', 20);
+		return cards();
+	}
+
+	const facts = (card: HTMLElement) => [...card.querySelectorAll('dt')].map((dt) => [dt.textContent, dt.nextElementSibling!.textContent]);
+	const paragraphs = () => [...root.querySelectorAll('.search__results > p')].map((p) => p.textContent);
+
+	it('lists dates by start, hides past ones, then the centres without a date as uncovered cards', async () => {
+		const shown = await show();
+		expect(cardNames()).toEqual(['Fri 20 Nov, 09:00', 'Wed 9 Dec, 10:00', 'Akademie Nürnberg', 'vhs Erlangen']);
+		expect(shown[3]!.querySelector('.card__why')).not.toBeNull();
+		expect(root.textContent).not.toContain('Thu 29 Oct');
+	});
+
+	it('counts the dates and the centres without one in the count line and the announcement, with no no-dates notice', async () => {
+		await show();
+		expect(paragraphs()).toEqual(['2 dates and 2 unchecked centres within 20 km']);
+		expect(statusText()).toBe('2 dates and 2 unchecked centres within 20 km');
+	});
+
+	it('uses the singular forms for one date and one centre', async () => {
+		await show([waitlist, pastOnly]);
+		expect(statusText()).toBe('1 date and 3 unchecked centres within 20 km');
+		await showWith([kufer, item, akademie], [waitlist, deadLink]);
+		expect(statusText()).toBe('2 dates and 1 unchecked centre within 20 km');
+		await showWith([kufer, akademie], [waitlist]);
+		expect(statusText()).toBe('1 date and 1 unchecked centre within 20 km');
+		await showWith([kufer, akademie], [waitlist], 'de');
+		expect(statusText()).toBe('1 Termin und 1 nicht geprüftes Testzentrum im Umkreis von 20 km');
+	});
+
+	it('reads "less than 1 h" for a check under an hour ago, in both languages', async () => {
+		const fresh = { ...kufer, last_success_at: '2026-10-29T11:30:00Z' };
+		await showWith([fresh], [waitlist]);
+		expect(cards()[0]!.querySelector('.card__freshness')!.textContent).toBe('Checked less than 1 h ago');
+		await showWith([fresh], [waitlist], 'de');
+		expect(cards()[0]!.querySelector('.card__freshness')!.textContent).toBe('Vor weniger als 1 Std. geprüft');
+	});
+
+	it('shows "Booked out" and the email and post registration words', async () => {
+		const booked = snapshotListing('kufer', '2026-12-01T18:30:00+01:00', { status: 'booked_out', registration_method: 'email' });
+		const byPost = snapshotListing('kufer', '2026-12-02T18:30:00+01:00', { registration_method: 'post' });
+		const [first, second] = await showWith([kufer], [booked, byPost]);
+		const chip = first!.querySelector('.chip')!;
+		expect(chip.textContent).toBe('Booked out');
+		expect(chip.classList.contains('chip--booked')).toBe(true);
+		expect(first!.querySelector('h3 a')!.getAttribute('aria-label')).toBe(
+			'Tue 1 Dec, 18:30, vhs Nürnberg, Booked out, opens kufer.example.de in a new tab',
+		);
+		expect(facts(first!)[1]).toEqual(['Status', 'Booked out']);
+		expect(facts(first!)[3]).toEqual(['Registration', 'Email']);
+		expect(facts(second!)[3]).toEqual(['Registration', 'Post']);
+	});
+
+	it('shows a date of a centre without coordinates in the searched place with distance unknown', async () => {
+		const unplaced = coveredCentre('unplaced', 'ok', {
+			name: 'Bildungswerk Nürnberg',
+			address: { street: 'Hauptstraße 1', postcode: '90402', city: 'Nürnberg' },
+			lat: null,
+			lon: null,
+		});
+		const [card] = await showWith([unplaced], [snapshotListing('unplaced', '2026-12-01T18:30:00+01:00')]);
+		expect(card!.querySelector('h3 a')!.textContent).toBe('Tue 1 Dec, 18:30');
+		expect(facts(card!)[0]).toEqual(['Distance', 'unknown']);
+	});
+
+	it('opens the website, or else the dead deep link, with its domain, when the centre has no test page', async () => {
+		const noTestPage = { ...item, test_page_url: null };
+		let [card] = await showWith([noTestPage], [deadLink]);
+		expect(card!.querySelector('h3 a')!.getAttribute('href')).toBe('https://www.bz-fuerth.de/');
+		expect(card!.querySelector('.card__destination')!.textContent).toBe('bz-fuerth.de ↗');
+		[card] = await showWith([{ ...noTestPage, website: null }], [deadLink]);
+		expect(card!.querySelector('h3 a')!.getAttribute('href')).toBe('https://item.example.de/kurs/9');
+		expect(card!.querySelector('.card__destination')!.textContent).toBe('item.example.de ↗');
+		expect(card!.querySelector('h3 a')!.getAttribute('aria-label')).toBe(
+			'Fri 20 Nov, 09:00, Bildungszentrum Fürth, Free seats, opens item.example.de in a new tab',
+		);
+	});
+
+	it('shows the no-dates notice and reverts the centre when all its dates are past', async () => {
+		await show([pastSameCentre, pastOnly]);
+		expect(paragraphs()).toEqual([
+			'0 dates and 4 unchecked centres within 20 km',
+			'No dates found nearby. These centres may still have dates on their own pages.',
+		]);
+		expect(cardNames()).toEqual(['Akademie Nürnberg', 'vhs Nürnberg', 'Bildungszentrum Fürth', 'vhs Erlangen']);
+	});
+
+	it('has every part in order, with the date as a stretched link to the date page', async () => {
+		const card = (await show())[1]!;
+		expect([...card.children].map((el) => el.className)).toEqual([
+			'card__top',
+			'card__centre',
+			'card__address',
+			'card__facts',
+			'card__eligibility',
+			'card__bottom',
+		]);
+		const link = card.querySelector<HTMLAnchorElement>('h3 a')!;
+		expect(link.textContent).toBe('Wed 9 Dec, 10:00');
+		expect(link.getAttribute('href')).toBe('https://www.vhs-nuernberg.de/kurs/123');
+		expect(link.getAttribute('target')).toBe('_blank');
+		expect(link.getAttribute('rel')).toBe('noopener noreferrer');
+		expect(link.getAttribute('aria-label')).toBe(
+			'Wed 9 Dec, 10:00, vhs Nürnberg, Booked out, waitlist open, opens vhs-nuernberg.de in a new tab',
+		);
+		expect(root.querySelectorAll('a a')).toHaveLength(0);
+
+		const chip = card.querySelector('.chip')!;
+		expect(chip.textContent).toBe('Booked out · Waitlist');
+		expect(chip.getAttribute('aria-hidden')).toBe('true');
+		expect(chip.classList.contains('chip--booked')).toBe(true);
+
+		const centre = card.querySelector('.card__centre')!;
+		expect(centre.textContent).toBe('vhs Nürnberg');
+		expect(centre.getAttribute('lang')).toBe('de');
+
+		expect(card.querySelector('.card__address-text')!.textContent).toBe('Gewerbemuseumsplatz 1, 90403 Nürnberg');
+		const map = card.querySelector('.card__map')!;
+		expect(link.contains(map)).toBe(false);
+		expect(map.getAttribute('aria-label')).toBe('Map: Gewerbemuseumsplatz 1, 90403 Nürnberg (Google Maps, new tab)');
+		expect(map.querySelector('[aria-hidden="true"]')!.textContent).toBe('↗');
+
+		expect(facts(card).map(([label]) => label)).toEqual(['Distance', 'Status', 'Deadline', 'Registration']);
+		expect(facts(card)[0]![1]).toBe('0 km');
+		expect(facts(card)[2]![1]).toBe('11 Nov');
+		expect(facts(card)[3]![1]).toBe('Online');
+		const statusCell = card.querySelectorAll('dd')[1]!;
+		expect(statusCell.querySelector('[aria-hidden="true"]')!.textContent).toBe('Booked out · Waitlist');
+		expect(statusCell.querySelector('.visually-hidden')!.textContent).toBe('Booked out, waitlist open');
+
+		const destination = card.querySelector('.card__destination')!;
+		expect(destination.textContent).toBe('vhs-nuernberg.de ↗');
+		expect(destination.getAttribute('aria-hidden')).toBe('true');
+
+		const time = card.querySelector('.card__freshness time')!;
+		expect(time.textContent).toBe('Checked 2 h ago');
+		expect(time.getAttribute('datetime')).toBe('2026-10-29T10:00:00Z');
+	});
+
+	it('shows the eligibility text as published, in German, outside the link', async () => {
+		const card = (await show())[1]!;
+		const line = card.querySelector('.card__eligibility')!;
+		expect(line.textContent).toBe('Who may register: Nur für Personen mit Hauptwohnsitz in Nürnberg.');
+		const text = line.querySelector('[lang="de"]')!;
+		expect(text.textContent).toBe('Nur für Personen mit Hauptwohnsitz in Nürnberg.');
+		expect(card.querySelector('h3 a')!.contains(text)).toBe(false);
+	});
+
+	it('opens the test page for a dead deep link, with passed deadline, unknowns and the exact freshness time', async () => {
+		const card = (await show())[0]!;
+		const link = card.querySelector<HTMLAnchorElement>('h3 a')!;
+		expect(link.getAttribute('href')).toBe('https://www.bz-fuerth.de/test');
+		expect(link.getAttribute('aria-label')).toBe('Fri 20 Nov, 09:00, Bildungszentrum Fürth, Free seats, opens bz-fuerth.de in a new tab');
+		expect(card.querySelector('.card__destination')!.textContent).toBe("Opens the centre's test page");
+		const chip = card.querySelector('.chip')!;
+		expect(chip.textContent).toBe('Free seats');
+		expect(chip.classList.contains('chip--free')).toBe(true);
+		expect(facts(card)).toEqual([
+			['Distance', '7 km'],
+			['Status', 'Free seats'],
+			['Deadline', 'Passed'],
+			['Registration', 'unknown'],
+		]);
+		expect(card.querySelector('.card__eligibility')!.textContent).toBe('Who may register: not stated, check the provider page');
+		const time = card.querySelector('.card__freshness time')!;
+		expect(time.textContent).toBe('◷ Checked Tue 14:00');
+		expect(time.querySelector('[aria-hidden="true"]')!.textContent).toBe('◷');
+	});
+
+	it('shows "Status unknown" and in-person registration, and no freshness line without a successful check', async () => {
+		const unknown = snapshotListing('kufer', '2026-12-01T18:30:00+01:00', { status: 'unknown', registration_method: 'in_person' });
+		serve(ok(snapshotOf([{ ...kufer, last_success_at: null, last_result: 'failed' }], [unknown])));
+		setBrowser();
+		mount();
+		await settle();
+		await search('Nürnberg', 20);
+		const card = cards()[0]!;
+		const chip = card.querySelector('.chip')!;
+		expect(chip.textContent).toBe('Status unknown');
+		expect(chip.classList.contains('chip--unknown')).toBe(true);
+		expect(facts(card)[1]).toEqual(['Status', 'Status unknown']);
+		expect(facts(card)[3]).toEqual(['Registration', 'In person']);
+		expect(card.querySelector('.card__freshness')).toBeNull();
+	});
+
+	it('uses the German formats and words', async () => {
+		const card = (await show(undefined, 'de'))[1]!;
+		expect(card.querySelector('h3 a')!.textContent).toBe('Mi., 9. Dez., 10:00');
+		expect(card.querySelector('h3 a')!.getAttribute('aria-label')).toBe(
+			'Mi., 9. Dez., 10:00, vhs Nürnberg, Ausgebucht, Warteliste offen, öffnet vhs-nuernberg.de in einem neuen Tab',
+		);
+		expect(facts(card)[2]).toEqual(['Anmeldeschluss', '11. Nov.']);
+		expect(card.querySelector('.card__freshness')!.textContent).toBe('Vor 2 Std. geprüft');
+		expect(statusText()).toBe('2 Termine und 2 nicht geprüfte Testzentren im Umkreis von 20 km');
 	});
 });
 
