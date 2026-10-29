@@ -19,6 +19,12 @@ export interface FetchedPage {
 	finalUrl: string | null;
 }
 
+/** A fetched page without its body: what normalise needs to compute `link_ok`. */
+export type PageSummary = Omit<FetchedPage, 'html'>;
+
+/** The page without its `html`. */
+export const summarisePage = ({ url, role, status, finalUrl }: FetchedPage): PageSummary => ({ url, role, status, finalUrl });
+
 /** What to fetch for one centre. */
 export interface ReaderPlan {
 	listUrls: string[];

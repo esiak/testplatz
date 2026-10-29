@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { isHttpUrl } from './directory.ts';
+import { CENTRE_ID_PATTERN, isHttpUrl } from './directory.ts';
 
 /** Seat status of one test date (data-sources.md §Status mapping). */
 export const STATUS_CODES = ['free', 'booked_out', 'waitlist', 'unknown'] as const;
@@ -56,6 +56,58 @@ export const rawListingSchema = z.strictObject({
 });
 
 export type RawListing = z.infer<typeof rawListingSchema>;
+
+/** `starts_at`: local date and time with seconds `:00` and the Europe/Berlin offset in force. */
+const STARTS_AT_PATTERN = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}):00\+0[12]:00$/;
+/** Listing id (AD-7): `<centre_id>@<YYYY-MM-DDTHH:mm>`, then `#2`, `#3`, … for further same-minute dates. */
+export const LISTING_ID_PATTERN = /^([a-z0-9]+(?:-[a-z0-9]+)*)@(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})(?:#([2-9]|[1-9]\d+))?$/;
+
+const startsAt = z.string().refine(
+	(value) => {
+		const match = STARTS_AT_PATTERN.exec(value);
+		return match !== null && isLocalDate(match[1]!) && isLocalTime(match[2]!);
+	},
+	{ message: 'must be YYYY-MM-DDTHH:mm:00 with offset +01:00 or +02:00' },
+);
+
+/** The normalised listing fields, without the cross-field checks (extend this, then add `checkListing`). */
+export const listingFieldsSchema = z.strictObject({
+	id: z.string().regex(LISTING_ID_PATTERN, { message: 'must be <centre_id>@<YYYY-MM-DDTHH:mm>[#n]' }),
+	centre_id: z.string().regex(CENTRE_ID_PATTERN, { message: 'must be a lowercase slug' }),
+	starts_at: startsAt,
+	place: rawListingSchema.shape.place,
+	/** Never `null`: normalise falls back to the centre address. */
+	address: notBlank(z.string()),
+	status: rawListingSchema.shape.status,
+	deadline: rawListingSchema.shape.deadline,
+	registration_method: rawListingSchema.shape.registration_method,
+	source_url: rawListingSchema.shape.source_url,
+	/** True only when a 2xx detail page fetched this run is the `source_url` (AD-7). */
+	link_ok: z.boolean(),
+	eligibility: rawListingSchema.shape.eligibility,
+});
+
+type ListingFields = z.infer<typeof listingFieldsSchema>;
+
+/** Cross-field listing checks: the id names the listing's `centre_id` and the local minute of `starts_at`. */
+export function checkListing(listing: ListingFields, ctx: z.RefinementCtx): void {
+	const id = LISTING_ID_PATTERN.exec(listing.id);
+	if (id === null) return;
+	if (id[1] !== listing.centre_id) {
+		ctx.addIssue({ code: 'custom', path: ['id'], message: `must start with the centre_id "${listing.centre_id}@"` });
+	}
+	if (id[2] !== listing.starts_at.slice(0, 16)) {
+		ctx.addIssue({ code: 'custom', path: ['id'], message: 'must name the local date and time of starts_at' });
+	}
+}
+
+/**
+ * One test date after normalise (AD-7): identity, `starts_at` with offset, address fallback and
+ * `link_ok`. The shape shared by the merge state and the later snapshot.
+ */
+export const listingSchema = listingFieldsSchema.superRefine(checkListing);
+
+export type Listing = z.infer<typeof listingSchema>;
 
 /**
  * Availability indicators a reader found on a page; absent means not seen. When the provider's

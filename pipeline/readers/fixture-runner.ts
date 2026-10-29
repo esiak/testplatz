@@ -31,9 +31,20 @@ function loadPage(url: string, role: FetchedPage['role'], fixtures: Fixtures, fi
 }
 
 /**
- * The reader's validated result for `centre` over `fixtures`. Detail URLs are chosen with the
- * shared `selectDetailUrls` rule (de-duplicated, then capped). A throwing `parse` propagates.
+ * The pages fetch would hand to `parse` for `centre` over `fixtures`: list pages, then the detail
+ * URLs chosen with the shared `selectDetailUrls` rule (de-duplicated, then capped).
  */
+export function loadFixturePages(reader: Reader, centre: Centre, fixtures: Fixtures, fixturesDir: string): FetchedPage[] {
+	const plan = reader.plan(centre);
+	const listPages = plan.listUrls.map((url) => loadPage(url, 'list', fixtures, fixturesDir));
+	// Like fetch: a URL fetch would not request reaches parse as a page with nothing received.
+	const detailPages = selectDetailUrls(plan, listPages).map((url): FetchedPage =>
+		isFetchableUrl(url) ? loadPage(url, 'detail', fixtures, fixturesDir) : { url, role: 'detail', status: null, html: null, finalUrl: null },
+	);
+	return [...listPages, ...detailPages];
+}
+
+/** The reader's validated result for `centre` over `fixtures` (pages as `loadFixturePages`). A throwing `parse` propagates. */
 export function runReaderOnFixtures(
 	reader: Reader,
 	centre: Centre,
@@ -41,11 +52,5 @@ export function runReaderOnFixtures(
 	ctx: ParseContext,
 	fixturesDir: string,
 ): ParseResult {
-	const plan = reader.plan(centre);
-	const listPages = plan.listUrls.map((url) => loadPage(url, 'list', fixtures, fixturesDir));
-	// Like fetch: a URL fetch would not request reaches parse as a page with nothing received.
-	const detailPages = selectDetailUrls(plan, listPages).map((url): FetchedPage =>
-		isFetchableUrl(url) ? loadPage(url, 'detail', fixtures, fixturesDir) : { url, role: 'detail', status: null, html: null, finalUrl: null },
-	);
-	return checkParseResult(reader.parse([...listPages, ...detailPages], centre, ctx));
+	return checkParseResult(reader.parse(loadFixturePages(reader, centre, fixtures, fixturesDir), centre, ctx));
 }

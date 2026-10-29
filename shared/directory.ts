@@ -95,6 +95,11 @@ export type Address = z.infer<typeof addressSchema>;
 export type Centre = z.infer<typeof centreSchema>;
 export type Directory = z.infer<typeof directorySchema>;
 
+/** `street, postcode city`: the one address format for the UI and the listing address fallback. */
+export function formatAddress(address: Address): string {
+	return `${address.street}, ${address.postcode} ${address.city}`;
+}
+
 const SLUG_MAX = 60;
 
 /** Lowercase ASCII slug: ä→ae ö→oe ü→ue ß→ss, other accents stripped, the rest → `-`. */

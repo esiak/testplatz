@@ -7,3 +7,5 @@ export const PUBLIC_DIR = fileURLToPath(new URL('../../data/public', import.meta
 export const SNAPSHOT_FILE = 'snapshot.json';
 export const SNAPSHOT_PATH = join(PUBLIC_DIR, SNAPSHOT_FILE);
 export { VISIT_LOG_PATH } from '../fetch/visits.ts';
+/** Merge's history file (AD-6); only `pipeline/stages/merge.ts` writes it. */
+export const STATE_PATH = fileURLToPath(new URL('../../data/state/state.json', import.meta.url));

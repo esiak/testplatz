@@ -397,10 +397,8 @@ export function destinationDomain(url: string): string | null {
 	}
 }
 
-/** `street, postcode city`. */
-export function formatAddress(address: SnapshotCentre['address']): string {
-	return `${address.street}, ${address.postcode} ${address.city}`;
-}
+/** `street, postcode city` (shared with the pipeline's listing address fallback). */
+export { formatAddress } from '../../../shared/directory.ts';
 
 /** Google Maps search for an address. Nothing loads from Google until the link is followed. */
 export function mapsUrl(address: string): string {

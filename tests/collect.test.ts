@@ -102,7 +102,7 @@ describe('collectRun', () => {
 	it('skips an opted-out centre with zero requests, before any other rule', async () => {
 		const { reader } = stubReader();
 		const { net, result } = run([centre('a', 'a.de', { opted_out: true })], {}, { kuferweb: reader }, fullBudget('a.de'));
-		expect(await result).toEqual({ outcomes: { a: { kind: 'skipped', reason: 'opted-out' } }, visits: [] });
+		expect(await result).toEqual({ outcomes: { a: { kind: 'skipped', reason: 'opted-out' } }, visits: [], pages: {} });
 		expect(net.calls).toEqual([]);
 	});
 
@@ -113,6 +113,7 @@ describe('collectRun', () => {
 		expect(await result).toEqual({
 			outcomes: { a: { kind: 'skipped', reason: 'no-reader' }, b: { kind: 'skipped', reason: 'no-reader' } },
 			visits: [],
+			pages: {},
 		});
 		expect(net.calls).toEqual([]);
 	});
@@ -127,6 +128,7 @@ describe('collectRun', () => {
 		expect(await result).toEqual({
 			outcomes: { a: { kind: 'skipped', reason: 'robots' }, b: { kind: 'skipped', reason: 'robots' } },
 			visits: [{ host: 'a.de', at: AT }],
+			pages: {},
 		});
 		expect(net.calls).toEqual(['https://a.de/robots.txt']);
 		expect(parsed).toEqual({});
@@ -141,7 +143,7 @@ describe('collectRun', () => {
 	it('does not contact an over-budget host at all, not even robots.txt', async () => {
 		const { reader } = stubReader();
 		const { net, result } = run([centre('a', 'a.de')], { 'https://a.de/robots.txt': status(404) }, { kuferweb: reader }, fullBudget('a.de'));
-		expect(await result).toEqual({ outcomes: { a: { kind: 'skipped', reason: 'budget' } }, visits: [] });
+		expect(await result).toEqual({ outcomes: { a: { kind: 'skipped', reason: 'budget' } }, visits: [], pages: {} });
 		expect(net.calls).toEqual([]);
 	});
 
@@ -153,7 +155,11 @@ describe('collectRun', () => {
 			{ kuferweb: reader },
 			fullBudget('a.de', 24 * HOUR - HOUR),
 		);
-		expect(await result).toEqual({ outcomes: { a: { kind: 'ok', listings: [] } }, visits: [{ host: 'a.de', at: AT }] });
+		expect(await result).toEqual({
+			outcomes: { a: { kind: 'ok', listings: [] } },
+			visits: [{ host: 'a.de', at: AT }],
+			pages: { a: [{ url: 'https://a.de/kurse', role: 'list', status: 200, finalUrl: 'https://a.de/kurse' }] },
+		});
 		expect(net.calls).toEqual(['https://a.de/robots.txt', 'https://a.de/kurse']);
 	});
 
@@ -164,7 +170,7 @@ describe('collectRun', () => {
 	])('fails a list page answering %s without calling parse', async (_case, route) => {
 		const { reader, parsed } = stubReader();
 		const { result } = run([centre('a', 'a.de')], { 'https://a.de/robots.txt': status(404), 'https://a.de/kurse': route }, { kuferweb: reader });
-		expect(await result).toEqual({ outcomes: { a: { kind: 'failed', reason: 'list-page' } }, visits: [{ host: 'a.de', at: AT }] });
+		expect(await result).toEqual({ outcomes: { a: { kind: 'failed', reason: 'list-page' } }, visits: [{ host: 'a.de', at: AT }], pages: {} });
 		expect(parsed).toEqual({});
 	});
 
@@ -184,6 +190,13 @@ describe('collectRun', () => {
 		expect(await result).toEqual({
 			outcomes: { a: { kind: 'ok', listings: [listing('https://a.de/k/1'), listing('https://a.de/k/2')] } },
 			visits: [{ host: 'a.de', at: AT }],
+			pages: {
+				a: [
+					{ url: 'https://a.de/kurse', role: 'list', status: 200, finalUrl: 'https://a.de/kurse' },
+					{ url: 'https://a.de/k/1', role: 'detail', status: 200, finalUrl: 'https://a.de/k/1' },
+					{ url: 'https://a.de/k/2', role: 'detail', status: 200, finalUrl: 'https://a.de/k/2' },
+				],
+			},
 		});
 		expect(net.calls).toEqual(['https://a.de/robots.txt', 'https://a.de/kurse', 'https://a.de/k/1', 'https://a.de/k/2']);
 		expect(parsed.a!.map((p) => [p.url, p.role, p.status, p.finalUrl])).toEqual([
@@ -269,6 +282,25 @@ describe('collectRun', () => {
 		expect(parsed.a![2]).toEqual({ url: 'https://a.de/gone', role: 'detail', status: 404, html: null, finalUrl: 'https://a.de/gone' });
 	});
 
+	it('returns page summaries without html, keeping a failed detail page status, also when parse fails', async () => {
+		const { reader } = stubReader({ parse: () => ({ kind: 'failed', reason: 'structure-missing' }) });
+		const { result } = run(
+			[centre('a', 'a.de')],
+			{ 'https://a.de/robots.txt': status(404), 'https://a.de/kurse': links('https://a.de/gone') },
+			{ kuferweb: reader },
+		);
+		expect(await result).toMatchObject({
+			outcomes: { a: { kind: 'failed', reason: 'structure-missing' } },
+			pages: {
+				a: [
+					{ url: 'https://a.de/kurse', role: 'list', status: 200, finalUrl: 'https://a.de/kurse' },
+					{ url: 'https://a.de/gone', role: 'detail', status: 404, finalUrl: 'https://a.de/gone' },
+				],
+			},
+		});
+		expect(Object.values((await result).pages).flat().every((page) => !('html' in page))).toBe(true);
+	});
+
 	it('does not request an unparseable detail URL and passes it with null status', async () => {
 		const { reader, parsed } = stubReader();
 		const { net, result } = run(
@@ -289,7 +321,7 @@ describe('collectRun', () => {
 			{ kuferweb: reader },
 			fullBudget('b.de'),
 		);
-		expect(await result).toEqual({ outcomes: { a: { kind: 'skipped', reason: 'budget' } }, visits: [{ host: 'a.de', at: AT }] });
+		expect(await result).toEqual({ outcomes: { a: { kind: 'skipped', reason: 'budget' } }, visits: [{ host: 'a.de', at: AT }], pages: {} });
 		expect(net.calls.filter((u) => u.includes('b.de'))).toEqual([]);
 		expect(parsed).toEqual({});
 	});
@@ -342,7 +374,7 @@ describe('collectRun', () => {
 	it('skips as budget, with zero requests, when only the second list URL is over budget', async () => {
 		const { reader } = stubReader({ plan: () => ({ listUrls: ['https://a.de/kurse', 'https://b.de/kurse'] }) });
 		const { net, result } = run([centre('a', 'a.de')], { 'https://a.de/robots.txt': status(404), 'https://a.de/kurse': links() }, { kuferweb: reader }, fullBudget('b.de'));
-		expect(await result).toEqual({ outcomes: { a: { kind: 'skipped', reason: 'budget' } }, visits: [] });
+		expect(await result).toEqual({ outcomes: { a: { kind: 'skipped', reason: 'budget' } }, visits: [], pages: {} });
 		expect(net.calls).toEqual([]);
 	});
 
@@ -357,7 +389,7 @@ describe('collectRun', () => {
 	it('fails reader-error with no request when the plan has no list URLs', async () => {
 		const { reader, parsed } = stubReader({ plan: () => ({ listUrls: [] }) });
 		const { net, result } = run([centre('a', 'a.de')], {}, { kuferweb: reader });
-		expect(await result).toEqual({ outcomes: { a: { kind: 'failed', reason: 'reader-error' } }, visits: [] });
+		expect(await result).toEqual({ outcomes: { a: { kind: 'failed', reason: 'reader-error' } }, visits: [], pages: {} });
 		expect(net.calls).toEqual([]);
 		expect(parsed).toEqual({});
 	});
