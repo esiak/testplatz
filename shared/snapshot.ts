@@ -1,8 +1,15 @@
 import { z } from 'zod';
 import { centreFieldsSchema, checkCentre, READERS } from './directory.ts';
+import { checkListing, listingFieldsSchema } from './listing.ts';
 
 /** The `schemaVersion` this contract describes. The app embeds it to detect a mismatch. */
-export const SNAPSHOT_SCHEMA_VERSION = 1;
+export const SNAPSHOT_SCHEMA_VERSION = 2;
+
+/**
+ * Freshness threshold (AD-11, amended 2026-10-29 for once-a-day collection): a centre's
+ * `last_success_at` older than this reads as the exact time, and a system as "not updated since".
+ */
+export const FRESHNESS_MS = 36 * 60 * 60 * 1000;
 
 /** Whether a centre is read automatically. `not_checked` = uncovered card. */
 export const COVERAGE = ['covered', 'not_checked'] as const;
@@ -41,23 +48,52 @@ export const systemSchema = z.strictObject({
 	last_success_at: utcDatetime.nullable(),
 });
 
-export const snapshotSchema = z.strictObject({
-	schemaVersion: z.literal(SNAPSHOT_SCHEMA_VERSION),
-	generated_at: utcDatetime,
-	systems: z.array(systemSchema),
-	centres: z.array(snapshotCentreSchema).superRefine((centres, ctx) => {
-		const seen = new Set<string>();
-		centres.forEach((centre, index) => {
-			if (seen.has(centre.centre_id)) {
-				ctx.addIssue({ code: 'custom', path: [index, 'centre_id'], message: `duplicate centre_id "${centre.centre_id}"` });
+/** A published test date: the normalised listing plus `first_seen_at` and `baseline` from merge. */
+export const snapshotListingSchema = listingFieldsSchema
+	.extend({
+		/** The run that first saw this id. */
+		first_seen_at: utcDatetime,
+		/** Seen on the centre's first `ok` run, so it is not "new". */
+		baseline: z.boolean(),
+	})
+	.superRefine(checkListing);
+
+export const snapshotSchema = z
+	.strictObject({
+		schemaVersion: z.literal(SNAPSHOT_SCHEMA_VERSION),
+		generated_at: utcDatetime,
+		systems: z.array(systemSchema),
+		centres: z.array(snapshotCentreSchema).superRefine((centres, ctx) => {
+			const seen = new Set<string>();
+			centres.forEach((centre, index) => {
+				if (seen.has(centre.centre_id)) {
+					ctx.addIssue({ code: 'custom', path: [index, 'centre_id'], message: `duplicate centre_id "${centre.centre_id}"` });
+				}
+				seen.add(centre.centre_id);
+			});
+		}),
+		/** Upcoming, not removed listings of `covered` centres, sorted by id. */
+		listings: z.array(snapshotListingSchema).superRefine((listings, ctx) => {
+			for (let index = 1; index < listings.length; index += 1) {
+				if (listings[index - 1]!.id >= listings[index]!.id) {
+					ctx.addIssue({ code: 'custom', path: [index, 'id'], message: 'listing ids must be unique and sorted' });
+				}
 			}
-			seen.add(centre.centre_id);
+		}),
+	})
+	.superRefine((snapshot, ctx) => {
+		const coverage = new Map(snapshot.centres.map((centre) => [centre.centre_id, centre.coverage]));
+		snapshot.listings.forEach((listing, index) => {
+			const found = coverage.get(listing.centre_id);
+			if (found === undefined) {
+				ctx.addIssue({ code: 'custom', path: ['listings', index, 'centre_id'], message: `unknown centre "${listing.centre_id}"` });
+			} else if (found !== 'covered') {
+				ctx.addIssue({ code: 'custom', path: ['listings', index, 'centre_id'], message: `centre "${listing.centre_id}" is not covered` });
+			}
 		});
-	}),
-	// Listings arrive in Epic 2, which bumps the schema version.
-	listings: z.array(z.unknown()).max(0, { message: `must be empty in schema version ${SNAPSHOT_SCHEMA_VERSION}` }),
-});
+	});
 
 export type SnapshotCentre = z.infer<typeof snapshotCentreSchema>;
+export type SnapshotListing = z.infer<typeof snapshotListingSchema>;
 export type SnapshotSystem = z.infer<typeof systemSchema>;
 export type Snapshot = z.infer<typeof snapshotSchema>;

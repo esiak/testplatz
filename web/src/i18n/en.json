@@ -4,7 +4,7 @@
 	"about.title": "About the data",
 	"about.heading": "About the data",
 	"about.how.heading": "How it works",
-	"about.how.body": "We read the centres' websites several times a day. Always check the centre's page before you register.",
+	"about.how.body": "We read the centres' websites once a day. Always check the centre's page before you register.",
 	"about.not_checked.heading": "Centres not checked automatically",
 	"about.not_checked.intro": "We don't check a centre automatically when:",
 	"about.not_checked.reason_system": "their website uses a system we can't read yet",

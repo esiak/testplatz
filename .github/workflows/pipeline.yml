@@ -1,6 +1,9 @@
 name: pipeline
 
 on:
+  # Once a day at 05:17 UTC (operator decision 2026-10-29; freshness threshold 36 h).
+  schedule:
+    - cron: '17 5 * * *'
   push:
     branches: [main]
   workflow_dispatch:
@@ -9,13 +12,15 @@ concurrency:
   group: pipeline
   cancel-in-progress: false
 
-# Each job gets only what it needs: publish may push data/public/ to main, build holds no write
-# token while it runs third-party install scripts, and only deploy gets the Pages/OIDC token.
+# Each job gets only what it needs: publish may push data/state/ and data/public/ to main, build
+# holds no write token while it runs third-party install scripts, and only deploy gets the
+# Pages/OIDC token.
 permissions:
   contents: read
 
 jobs:
-  # Test, run the pipeline, then commit data/public/ once (if it changed) and push it to main.
+  # Test, run the pipeline (saving this run's reader results), then commit data/state/ and
+  # data/public/ once (if they changed) and push them to main.
   publish:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
@@ -35,19 +40,21 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
-      - run: npm run pipeline
+      - run: npm run pipeline -- --save-collect "$RUNNER_TEMP/collect.json"
       - id: commit
-        name: Commit and push data/public/
+        name: Commit and push data/state/ and data/public/
         env:
           GH_TOKEN: ${{ github.token }}
-          # After a rejected push the script resets onto the moved upstream; type-check and test
-          # that code before publishing it, as the steps above did for this commit. No `npm ci`
+          # After a rejected push the script rebases onto an upstream that changed only the data
+          # folders; otherwise it resets onto the moved upstream and replays merge + publish from
+          # this run's saved reader results (no refetch). Type-check and test that code before
+          # publishing it, as the steps above did for this commit. No `npm ci`
           # here: the push credential sits in this step's and the script's initial environment
           # (readable through /proc/<pid>/environ by any child), so install scripts must never run
           # in this step. The retry reuses node_modules from the `npm ci` step above; if upstream
           # changed dependencies, the tests fail, this run fails without deploying, and the queued
           # run for that upstream push publishes instead.
-          PUBLISH_CMD: npm run typecheck && npm test && npm run pipeline
+          PUBLISH_CMD: npm run typecheck && npm test && npm run pipeline -- --from-collect "$RUNNER_TEMP/collect.json"
         run: |
           basic="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 | tr -d '\n')"
           echo "::add-mask::$basic"

@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { parse } from 'yaml';
 
 const read = (name: string): string =>
 	readFileSync(new URL(`../.github/workflows/${name}`, import.meta.url), 'utf8').replace(/\r\n/g, '\n');
@@ -52,6 +53,13 @@ describe('pipeline.yml', () => {
 	const build = job(pipeline, 'build');
 	const deploy = job(pipeline, 'deploy');
 
+	it('is scheduled once a day at 05:17 UTC, and also runs on push to main and on dispatch', () => {
+		const on = (parse(pipeline) as { on: Record<string, unknown> }).on;
+		expect(Object.keys(on).sort()).toEqual(['push', 'schedule', 'workflow_dispatch']);
+		expect(on.schedule).toEqual([{ cron: '17 5 * * *' }]);
+		expect(on.push).toEqual({ branches: ['main'] });
+	});
+
 	it('runs from main or dispatch in one non-cancelling concurrency group, and only for main', () => {
 		expect(pipeline).toMatch(/^  push:\n    branches: \[main\]\n/m);
 		expect(pipeline).toContain('workflow_dispatch:');
@@ -65,12 +73,12 @@ describe('pipeline.yml', () => {
 		expect(deploy).toMatch(/^    needs: build$/m);
 	});
 
-	it('tests, runs the pipeline, then commits, in that order in the publish job', () => {
+	it('tests, runs the pipeline saving its reader results, then commits, in that order in the publish job', () => {
 		const steps = [
 			'run: npm ci',
 			'run: npm run typecheck',
 			'run: npm test',
-			'run: npm run pipeline',
+			'run: npm run pipeline -- --save-collect "$RUNNER_TEMP/collect.json"',
 			'.github/scripts/commit-public.sh',
 		].map((s) => publish.indexOf(s));
 		expect(steps.every((i) => i >= 0)).toBe(true);
@@ -79,10 +87,10 @@ describe('pipeline.yml', () => {
 		expect(publish).toMatch(/- id: commit\n/);
 	});
 
-	it('type-checks and tests a moved upstream before re-publishing it on a retry, without installing', () => {
+	it('type-checks and tests a moved upstream, then replays the saved reader results on a retry, without installing', () => {
 		const commitStep = publish.slice(publish.indexOf('- id: commit'));
 		const match = commitStep.match(/^\s+PUBLISH_CMD: (.*)$/m);
-		expect(match?.[1]).toBe('npm run typecheck && npm test && npm run pipeline');
+		expect(match?.[1]).toBe('npm run typecheck && npm test && npm run pipeline -- --from-collect "$RUNNER_TEMP/collect.json"');
 		expect(match?.[1]).not.toContain('npm ci');
 	});
 

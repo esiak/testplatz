@@ -88,13 +88,15 @@ function stubReader(overrides: { plan?: (c: Centre) => Partial<ReaderPlan>; pars
 	return { reader, parsed, contexts };
 }
 
+/** Runs collect over a fake network; `result` leaves out `durations` (see the durations test). */
 function run(centres: Centre[], routes: Record<string, Route>, readers: ReaderRegistry, log: Visit[] = []) {
 	const net = fakeNetwork(routes);
 	const result = collectRun(centres, readers, {
 		log,
 		runAt: RUN_AT,
 		clientOptions: { fetchImpl: net.fetchImpl, delayMs: 0, timeoutMs: 50, sleep: async () => {} },
-	});
+		clock: () => 0,
+	}).then(({ durations: _durations, ...rest }) => rest);
 	return { net, result };
 }
 
@@ -457,6 +459,32 @@ describe('collectRun', () => {
 			{ host: 'b.de', at: AT },
 		]);
 		expect(snapshot()).toEqual(before);
+	});
+});
+
+describe('collectRun durations', () => {
+	it('measures each centre with the injected clock, in whole ms, skipped centres included', async () => {
+		const { reader } = stubReader();
+		const net = fakeNetwork({ 'https://a.de/robots.txt': status(404), 'https://a.de/kurse': links() });
+		let ticks = 0;
+		const { durations } = await collectRun([centre('a', 'a.de'), centre('b', 'b.de', { opted_out: true })], { kuferweb: reader }, {
+			log: [],
+			runAt: RUN_AT,
+			clientOptions: { fetchImpl: net.fetchImpl, delayMs: 0, timeoutMs: 50, sleep: async () => {} },
+			// Each reading advances 10.4 ms, so every centre spans a whole number of readings.
+			clock: () => (ticks += 10.4),
+		});
+		expect(Object.keys(durations).sort()).toEqual(['a', 'b']);
+		for (const ms of Object.values(durations)) {
+			expect(Number.isInteger(ms)).toBe(true);
+			expect(ms).toBeGreaterThan(0);
+		}
+	});
+
+	it('defaults to a real clock', async () => {
+		const { reader } = stubReader();
+		const { durations } = await collectRun([centre('a', 'a.de', { opted_out: true })], { kuferweb: reader }, { log: [], runAt: RUN_AT });
+		expect(durations.a).toBeGreaterThanOrEqual(0);
 	});
 });
 

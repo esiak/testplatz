@@ -2,7 +2,7 @@
 import { render } from 'preact';
 import { act } from 'preact/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { snapshotSchema, type SnapshotCentre } from '../shared/snapshot.ts';
+import { SNAPSHOT_SCHEMA_VERSION, snapshotSchema, type SnapshotCentre } from '../shared/snapshot.ts';
 import { AboutPage, OPT_OUT_URL } from '../web/src/about-page.tsx';
 import { SNAPSHOT_URL, uncheckedCentres, unlocatedCentres } from '../web/src/data/snapshot.ts';
 import epicSnapshot from '../data/public/snapshot.json' with { type: 'json' };
@@ -103,12 +103,17 @@ describe('About page structure', () => {
 	}
 
 	it('uses the specified English copy', () => {
-		expect(en['about.how.body']).toBe("We read the centres' websites several times a day. Always check the centre's page before you register.");
+		expect(en['about.how.body']).toBe("We read the centres' websites once a day. Always check the centre's page before you register.");
 		expect(en['about.attribution.osm']).toBe('Place data © OpenStreetMap contributors (ODbL)');
 		expect(en['about.attribution.nominatim']).toBe('Centre locations found with Nominatim');
 		expect(en['about.opt_out.link']).toBe('Ask to be removed');
 		expect(en['about.sources.directory']).toContain('rtpartner.de');
 		expect(en['about.sources.directory']).toContain('BAMF');
+	});
+
+	it('says in both languages that the websites are read once a day', () => {
+		expect(en['about.how.body']).toMatch(/^We read the centres' websites once a day\. /);
+		expect(de['about.how.body']).toMatch(/^Wir lesen die Websites der Testzentren einmal am Tag\. /);
 	});
 });
 
@@ -246,7 +251,7 @@ describe('not-checked list', () => {
 		['a network error', () => Promise.reject(new TypeError('offline'))],
 		['HTTP 500', () => Promise.resolve(jsonResponse(snapshotOf([]), 500))],
 		['invalid JSON', () => Promise.resolve(jsonResponse('{oops'))],
-		['schemaVersion 2', () => Promise.resolve(jsonResponse({ ...snapshotOf([]), schemaVersion: 2 }))],
+		['a newer schemaVersion', () => Promise.resolve(jsonResponse({ ...snapshotOf([]), schemaVersion: SNAPSHOT_SCHEMA_VERSION + 1 }))],
 	];
 
 	for (const [name, failure] of failures) {

@@ -1,36 +1,95 @@
 /**
- * Publish stage: turns the centre directory into `data/public/snapshot.json` (AD-1, AD-9).
+ * Publish stage: turns the centre directory, merge's state and this run's outcomes into
+ * `data/public/snapshot.json` (AD-1, AD-8, AD-9).
  *
  * The snapshot is validated before it is written, and written atomically (temp file + rename).
  * When the existing file is valid and equal apart from `generated_at`, it is left untouched, so an
- * unchanged directory produces no data commit. Publish never writes `data/directory/`.
+ * unchanged run produces no data commit. Publish never writes `data/directory/` or merge's files.
  */
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
-import { directorySchema, sortDirectory, type Centre } from '../../shared/directory.ts';
-import { SNAPSHOT_SCHEMA_VERSION, snapshotSchema, type Snapshot } from '../../shared/snapshot.ts';
-import { DIRECTORY_PATH, SNAPSHOT_PATH } from './paths.ts';
+import { sortDirectory, type Centre, type Reader as ReaderSystem } from '../../shared/directory.ts';
+import { SNAPSHOT_SCHEMA_VERSION, snapshotSchema, type Coverage, type Snapshot, type SnapshotListing, type SnapshotSystem } from '../../shared/snapshot.ts';
+import type { State } from '../../shared/state.ts';
+import type { NormalisedOutcome } from './normalise.ts';
 
 /** UTC ISO 8601 with `Z`, whole seconds. */
 const isoSeconds = (date: Date): string => date.toISOString().replace(/\.\d{3}Z$/, 'Z');
 
+const compare = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
+
+export interface SnapshotInput {
+	/** The directory as read at run start. */
+	centres: readonly Centre[];
+	/** Merge's state after this run. */
+	state: State;
+	/** This run's normalised outcome per `centre_id`; a centre without one has none this run. */
+	outcomes: Readonly<Record<string, NormalisedOutcome>>;
+	/** The reader systems registered for this run. */
+	readers: readonly Exclude<ReaderSystem, 'none'>[];
+	runAt: Date;
+}
+
 /**
- * The snapshot for a directory at `runAt`. Every centre appears once, sorted by `centre_id`.
- * No readers exist yet, so every centre is `not_checked` with null run fields.
+ * A centre's coverage: `not_checked` when it is opted out, has reader `none` or a reader that is
+ * not registered, or robots.txt kept this run out; otherwise `covered` (a budget skip or a centre
+ * with no state yet stays covered).
  */
-export function buildSnapshot(centres: readonly Centre[], runAt: Date): Snapshot {
+export function coverageOf(centre: Centre, readers: ReadonlySet<string>, outcome: NormalisedOutcome | undefined): Coverage {
+	if (centre.opted_out || centre.reader === 'none' || !readers.has(centre.reader)) return 'not_checked';
+	if (outcome?.kind === 'skipped' && outcome.reason === 'robots') return 'not_checked';
+	return 'covered';
+}
+
+/**
+ * The snapshot for this run. Every directory centre appears once, sorted by `centre_id`, with run
+ * fields from state when `covered` (null when it has no state yet) and null when `not_checked`.
+ * `systems[]` has one entry per registered reader. `listings[]` holds the stored listings of
+ * covered centres that are not removed and start after `runAt`, without `removed_at`, by id.
+ */
+export function buildSnapshot({ centres, state, outcomes, readers, runAt }: SnapshotInput): Snapshot {
+	const registered = new Set<string>(readers);
+	const now = runAt.getTime();
+	const snapshotCentres: Snapshot['centres'] = [];
+	const listings: SnapshotListing[] = [];
+	const systems = new Map<string, SnapshotSystem>(
+		[...registered].sort(compare).map((reader) => [
+			reader,
+			{ reader: reader as SnapshotSystem['reader'], centres_covered: 0, centres_ok: 0, centres_failed: 0, last_success_at: null },
+		]),
+	);
+
+	for (const centre of sortDirectory(centres)) {
+		const coverage = coverageOf(centre, registered, outcomes[centre.centre_id]);
+		const history = coverage === 'covered' ? state.centres[centre.centre_id] : undefined;
+		snapshotCentres.push({
+			...centre,
+			coverage,
+			last_result: history?.last_result ?? null,
+			last_checked_at: history?.last_checked_at ?? null,
+			last_success_at: history?.last_success_at ?? null,
+		});
+		if (coverage !== 'covered') continue;
+
+		const system = systems.get(centre.reader)!;
+		system.centres_covered += 1;
+		if (history?.last_result === 'ok') system.centres_ok += 1;
+		if (history?.last_result === 'failed') system.centres_failed += 1;
+		const success = history?.last_success_at ?? null;
+		if (success !== null && (system.last_success_at === null || Date.parse(success) > Date.parse(system.last_success_at))) {
+			system.last_success_at = success;
+		}
+		for (const { removed_at, ...listing } of history?.listings ?? []) {
+			if (removed_at === null && Date.parse(listing.starts_at) > now) listings.push(listing);
+		}
+	}
+
 	return {
 		schemaVersion: SNAPSHOT_SCHEMA_VERSION,
 		generated_at: isoSeconds(runAt),
-		systems: [],
-		centres: sortDirectory(centres).map((centre) => ({
-			...centre,
-			coverage: 'not_checked',
-			last_result: null,
-			last_checked_at: null,
-			last_success_at: null,
-		})),
-		listings: [],
+		systems: [...systems.values()],
+		centres: snapshotCentres,
+		listings: listings.sort((a, b) => compare(a.id, b.id)),
 	};
 }
 
@@ -72,50 +131,4 @@ export function writeSnapshot(snapshot: Snapshot, path: string): 'written' | 'un
 		throw caught;
 	}
 	return 'written';
-}
-
-export interface PublishOptions {
-	directoryPath?: string;
-	snapshotPath?: string;
-	now?: () => Date;
-	log?: (line: string) => void;
-	error?: (line: string) => void;
-}
-
-/** Reads and validates the directory, then publishes the snapshot. Returns the exit code. */
-export function runPublish(options: PublishOptions = {}): number {
-	const {
-		directoryPath = DIRECTORY_PATH,
-		snapshotPath = SNAPSHOT_PATH,
-		now = () => new Date(),
-		log = console.log,
-		error = console.error,
-	} = options;
-
-	let data: unknown;
-	try {
-		data = JSON.parse(readFileSync(directoryPath, 'utf8'));
-	} catch (caught) {
-		error(`cannot read the directory ${directoryPath}, nothing written: ${(caught as Error).message}`);
-		return 1;
-	}
-	const directory = directorySchema.safeParse(data);
-	if (!directory.success) {
-		error(`the directory ${directoryPath} fails the schema, nothing written:\n${directory.error.message}`);
-		return 1;
-	}
-
-	try {
-		const snapshot = buildSnapshot(directory.data, now());
-		const outcome = writeSnapshot(snapshot, snapshotPath);
-		log(
-			outcome === 'written'
-				? `${snapshot.centres.length} centres published to ${snapshotPath}`
-				: `${snapshot.centres.length} centres; ${snapshotPath} unchanged, left as it is`,
-		);
-		return 0;
-	} catch (caught) {
-		error(`cannot publish the snapshot, nothing written: ${(caught as Error).message}`);
-		return 1;
-	}
 }

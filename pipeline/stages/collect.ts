@@ -26,6 +26,8 @@ export interface CollectOptions {
 	runAt: Date;
 	/** Transport and timing for the run's client (tests pass `fetchImpl`, `sleep`, `delayMs`, `timeoutMs`). */
 	clientOptions?: Omit<FetchClientOptions, 'isHostBlocked'>;
+	/** Millisecond clock for the per-centre durations (default `performance.now`). */
+	clock?: () => number;
 }
 
 export interface CollectResult {
@@ -34,9 +36,11 @@ export interface CollectResult {
 	visits: Visit[];
 	/** The pages (list then detail, no `html`) of every centre that reached parse; input for `link_ok`. */
 	pages: Record<string, PageSummary[]>;
+	/** Wall time per centre in whole ms, from its first rule to its outcome (for the run log). */
+	durations: Record<string, number>;
 }
 
-export async function collectRun(centres: readonly Centre[], readers: ReaderRegistry, { log, runAt, clientOptions }: CollectOptions): Promise<CollectResult> {
+export async function collectRun(centres: readonly Centre[], readers: ReaderRegistry, { log, runAt, clientOptions, clock = () => performance.now() }: CollectOptions): Promise<CollectResult> {
 	const client = createFetchClient({ ...clientOptions, isHostBlocked: (host) => overBudget(log, host, runAt) });
 
 	const pages: Record<string, PageSummary[]> = {};
@@ -57,10 +61,18 @@ export async function collectRun(centres: readonly Centre[], readers: ReaderRegi
 		return parseCentre(reader, centre, fetched.pages, { runAt });
 	}
 
-	const results = await Promise.all(centres.map(async (centre) => [centre.centre_id, await collectCentre(centre)] as const));
+	const durations: Record<string, number> = {};
+	const results = await Promise.all(
+		centres.map(async (centre) => {
+			const start = clock();
+			const outcome = await collectCentre(centre);
+			durations[centre.centre_id] = Math.max(0, Math.round(clock() - start));
+			return [centre.centre_id, outcome] as const;
+		}),
+	);
 	const at = runAt.toISOString();
 	const visits = Object.keys(client.stats().rawRequests)
 		.sort()
 		.map((host) => ({ host, at }));
-	return { outcomes: Object.fromEntries(results), visits, pages };
+	return { outcomes: Object.fromEntries(results), visits, pages, durations };
 }

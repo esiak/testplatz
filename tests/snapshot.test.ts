@@ -1,15 +1,18 @@
-import { existsSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { buildSnapshot, runPublish, serializeSnapshot, writeSnapshot } from '../pipeline/stages/publish.ts';
+import { buildSnapshot, serializeSnapshot, writeSnapshot, type SnapshotInput } from '../pipeline/stages/publish.ts';
 import { SNAPSHOT_PATH } from '../pipeline/stages/paths.ts';
+import type { NormalisedOutcome } from '../pipeline/stages/normalise.ts';
 import { type Centre } from '../shared/directory.ts';
-import { snapshotSchema, type Snapshot } from '../shared/snapshot.ts';
+import { FRESHNESS_MS, SNAPSHOT_SCHEMA_VERSION, snapshotSchema, type Snapshot, type SnapshotListing } from '../shared/snapshot.ts';
+import { emptyState, type CentreState, type State, type StoredListing } from '../shared/state.ts';
 
 const tmp = (): string => mkdtempSync(join(tmpdir(), 'bgt-snapshot-'));
 const RUN_1 = new Date('2026-10-27T07:00:00.000Z');
 const RUN_2 = new Date('2026-10-28T07:00:00.000Z');
+const EARLIER = '2026-10-26T05:17:00.000Z';
 
 const centre = (id: string, extra: Partial<Centre> = {}): Centre => ({
 	centre_id: id,
@@ -26,209 +29,241 @@ const centre = (id: string, extra: Partial<Centre> = {}): Centre => ({
 	verified_at: null,
 	...extra,
 });
+const kufer = (id: string, extra: Partial<Centre> = {}): Centre => centre(id, { reader: 'kuferweb', reader_config: { list_url: `https://${id}.de/kurse` }, ...extra });
+const itemkg = (id: string, extra: Partial<Centre> = {}): Centre => centre(id, { reader: 'itemkg', reader_config: { list_url: `https://${id}.de/kurse` }, ...extra });
 
-const DIRECTORY: Centre[] = [
-	centre('zeta'),
-	centre('alpha', { reader: 'kuferweb', reader_config: { list_url: 'https://example.de/kurse' }, opted_out: true }),
-	centre('mid', { lat: null, lon: null, verified_at: null }),
-];
+const DIRECTORY: Centre[] = [centre('zeta'), kufer('alpha', { opted_out: true }), centre('mid', { lat: null, lon: null })];
 
-/** A temp directory holding `centres.json` (raw text or entries) and the snapshot path. */
-function setup(directory: Centre[] | string = DIRECTORY): { dir: string; directoryPath: string; snapshotPath: string } {
-	const dir = tmp();
-	const directoryPath = join(dir, 'centres.json');
-	writeFileSync(directoryPath, typeof directory === 'string' ? directory : JSON.stringify(directory));
-	return { dir, directoryPath, snapshotPath: join(dir, 'public', 'snapshot.json') };
-}
+const stored = (centreId: string, startsAt: string, extra: Partial<StoredListing> = {}): StoredListing => ({
+	id: `${centreId}@${startsAt.slice(0, 16)}`,
+	centre_id: centreId,
+	starts_at: startsAt,
+	place: null,
+	address: 'Hauptstraße 1, 80331 München',
+	status: 'free',
+	deadline: null,
+	registration_method: 'online',
+	source_url: `https://${centreId}.de/k/1`,
+	link_ok: true,
+	eligibility: null,
+	first_seen_at: EARLIER,
+	removed_at: null,
+	baseline: true,
+	...extra,
+});
 
-function publish(paths: { directoryPath: string; snapshotPath: string }, runAt = RUN_1) {
-	const logs: string[] = [];
-	const errors: string[] = [];
-	const code = runPublish({
-		...paths,
-		now: () => runAt,
-		log: (line) => logs.push(line),
-		error: (line) => errors.push(line),
+const history = (lastResult: 'ok' | 'failed', listings: StoredListing[] = [], lastSuccess: string | null = EARLIER): CentreState => ({
+	last_result: lastResult,
+	last_checked_at: EARLIER,
+	last_success_at: lastSuccess,
+	listings,
+});
+
+const stateOf = (centres: Record<string, CentreState>): State => ({ ...emptyState(), centres });
+
+const build = (input: Partial<SnapshotInput> = {}): Snapshot =>
+	buildSnapshot({ centres: DIRECTORY, state: emptyState(), outcomes: {}, readers: ['kuferweb', 'itemkg'], runAt: RUN_1, ...input });
+
+const published = (listing: StoredListing): SnapshotListing => {
+	const { removed_at: _removed, ...rest } = listing;
+	return rest;
+};
+
+/** A valid snapshot with one covered centre `k` holding one listing. */
+function withListing(): Snapshot {
+	return build({
+		centres: [...DIRECTORY, kufer('k')],
+		state: stateOf({ k: history('ok', [stored('k', '2026-11-12T10:00:00+01:00')]) }),
 	});
-	return { code, logs, errors };
 }
-
-const valid = (): Snapshot => buildSnapshot(DIRECTORY, RUN_1);
 
 describe('snapshotSchema', () => {
-	it('accepts a built snapshot', () => {
-		expect(snapshotSchema.safeParse(valid()).success).toBe(true);
-	});
-
-	it('accepts a covered centre with a reader that is not opted out, and a system entry', () => {
-		const snapshot = valid();
-		snapshot.centres[1] = { ...snapshot.centres[1]!, reader: 'itemkg', reader_config: { list_url: 'https://x.de/' }, coverage: 'covered', last_result: 'ok', last_checked_at: '2026-10-27T07:00:00Z', last_success_at: '2026-10-27T07:00:00Z' };
-		snapshot.systems = [{ reader: 'itemkg', centres_covered: 1, centres_ok: 1, centres_failed: 0, last_success_at: '2026-10-27T07:00:00Z' }];
-		expect(snapshotSchema.safeParse(snapshot).success).toBe(true);
+	it('accepts a built snapshot, with and without listings', () => {
+		expect(snapshotSchema.safeParse(build()).success).toBe(true);
+		expect(withListing().listings).toHaveLength(1);
+		expect(snapshotSchema.safeParse(withListing()).success).toBe(true);
 	});
 
 	const rejects: [string, (s: Snapshot) => unknown][] = [
-		['another schemaVersion', (s) => ({ ...s, schemaVersion: 2 })],
+		['another schemaVersion', (s) => ({ ...s, schemaVersion: 1 })],
 		['an extra top-level key', (s) => ({ ...s, extra: true })],
-		['an extra centre key', (s) => ({ ...s, centres: [{ ...s.centres[0], extra: 1 }] })],
-		['a listing', (s) => ({ ...s, listings: [{ centre_id: 'alpha' }] })],
-		['covered + opted out', (s) => ({ ...s, centres: [{ ...s.centres[0], coverage: 'covered' }] })],
-		['covered + reader none', (s) => ({ ...s, centres: [{ ...s.centres[1], coverage: 'covered' }] })],
+		['an extra centre key', (s) => ({ ...s, centres: [{ ...s.centres[0], extra: 1 }, ...s.centres.slice(1)] })],
+		['a listing of an unknown centre', (s) => ({ ...s, listings: [{ ...s.listings[0]!, id: 'nope@2026-11-12T10:00', centre_id: 'nope' }] })],
+		['a listing of a not_checked centre', (s) => ({ ...s, centres: s.centres.map((c) => (c.centre_id === 'k' ? { ...c, coverage: 'not_checked' } : c)) })],
+		['a listing with removed_at', (s) => ({ ...s, listings: [{ ...s.listings[0]!, removed_at: null }] })],
+		['a listing without first_seen_at', (s) => ({ ...s, listings: [{ ...s.listings[0]!, first_seen_at: undefined }] })],
+		['a listing whose id names another centre', (s) => ({ ...s, listings: [{ ...s.listings[0]!, id: 'zeta@2026-11-12T10:00' }] })],
+		['duplicate listing ids', (s) => ({ ...s, listings: [s.listings[0]!, s.listings[0]!] })],
+		['covered + opted out', (s) => ({ ...s, centres: s.centres.map((c) => (c.opted_out ? { ...c, coverage: 'covered' } : c)) })],
+		['covered + reader none', (s) => ({ ...s, centres: s.centres.map((c) => (c.reader === 'none' ? { ...c, coverage: 'covered' } : c)) })],
 		['a duplicate centre_id', (s) => ({ ...s, centres: [s.centres[0], s.centres[0]] })],
 		['a non-Z generated_at', (s) => ({ ...s, generated_at: '2026-10-27T09:00:00+02:00' })],
-		['a non-Z last_checked_at', (s) => ({ ...s, centres: [{ ...s.centres[0], last_checked_at: '2026-10-27T09:00:00+02:00' }] })],
-		['an unknown coverage code', (s) => ({ ...s, centres: [{ ...s.centres[0], coverage: 'unknown' }] })],
-		['an unknown last_result code', (s) => ({ ...s, centres: [{ ...s.centres[0], last_result: 'unknown' }] })],
-		['an omitted run field', (s) => ({ ...s, centres: [{ ...s.centres[0], last_success_at: undefined }] })],
-		['a half coordinate pair', (s) => ({ ...s, centres: [{ ...s.centres[0], lat: null }] })],
-		['coordinates outside Bavaria', (s) => ({ ...s, centres: [{ ...s.centres[0], lat: 52.5, lon: 13.4 }] })],
-		['reader_config with reader none', (s) => ({ ...s, centres: [{ ...s.centres[1], reader_config: { list_url: 'https://x.de/' } }] })],
+		['a non-Z last_checked_at', (s) => ({ ...s, centres: [{ ...s.centres[0], last_checked_at: '2026-10-27T09:00:00+02:00' }, ...s.centres.slice(1)] })],
+		['an unknown coverage code', (s) => ({ ...s, centres: [{ ...s.centres[0], coverage: 'unknown' }, ...s.centres.slice(1)] })],
+		['an omitted run field', (s) => ({ ...s, centres: [{ ...s.centres[0], last_success_at: undefined }, ...s.centres.slice(1)] })],
 		['a system for reader none', (s) => ({ ...s, systems: [{ reader: 'none', centres_covered: 0, centres_ok: 0, centres_failed: 0, last_success_at: null }] })],
 	];
 
 	it.each(rejects)('rejects %s', (_name, mutate) => {
-		expect(snapshotSchema.safeParse(mutate(valid())).success).toBe(false);
+		expect(snapshotSchema.safeParse(mutate(withListing())).success).toBe(false);
+	});
+
+	it('rejects unsorted listing ids', () => {
+		const snapshot = build({
+			centres: [...DIRECTORY, kufer('k')],
+			state: stateOf({ k: history('ok', [stored('k', '2026-11-12T10:00:00+01:00'), stored('k', '2026-12-01T10:00:00+01:00')]) }),
+		});
+		expect(snapshotSchema.safeParse(snapshot).success).toBe(true);
+		expect(snapshotSchema.safeParse({ ...snapshot, listings: [...snapshot.listings].reverse() }).success).toBe(false);
+	});
+});
+
+describe('FRESHNESS_MS', () => {
+	it('is 36 h (one daily run plus slack)', () => {
+		expect(FRESHNESS_MS).toBe(36 * 60 * 60 * 1000);
 	});
 });
 
 describe('buildSnapshot', () => {
-	it('lists every centre once, sorted, not_checked with null run fields, after the directory fields', () => {
-		const snapshot = buildSnapshot(DIRECTORY, RUN_1);
-		expect(snapshot.schemaVersion).toBe(1);
+	it('lists every centre once, sorted, with the run fields after the directory fields', () => {
+		const snapshot = build();
+		expect(snapshot.schemaVersion).toBe(SNAPSHOT_SCHEMA_VERSION);
+		expect(SNAPSHOT_SCHEMA_VERSION).toBe(2);
 		expect(snapshot.generated_at).toBe('2026-10-27T07:00:00Z');
-		expect(snapshot.systems).toEqual([]);
-		expect(snapshot.listings).toEqual([]);
 		expect(snapshot.centres.map((c) => c.centre_id)).toEqual(['alpha', 'mid', 'zeta']);
 		for (const c of snapshot.centres) {
-			expect(c).toMatchObject({ coverage: 'not_checked', last_result: null, last_checked_at: null, last_success_at: null });
 			expect(Object.keys(c).slice(-4)).toEqual(['coverage', 'last_result', 'last_checked_at', 'last_success_at']);
 		}
 	});
-});
 
-describe('runPublish', () => {
-	it('publishes a valid minified snapshot with a trailing newline (normal run)', () => {
-		const paths = setup();
-		const { code, errors } = publish(paths);
-		expect(code).toBe(0);
-		expect(errors).toEqual([]);
-		const text = readFileSync(paths.snapshotPath, 'utf8');
-		expect(text).toBe(serializeSnapshot(buildSnapshot(DIRECTORY, RUN_1)));
-		expect(text.endsWith('}\n')).toBe(true);
-		expect(text).not.toContain('\n\t');
-		const snapshot = snapshotSchema.parse(JSON.parse(text));
-		expect(snapshot.centres).toHaveLength(3);
+	it('marks opted-out, reader none and unregistered-reader centres not_checked with null run fields and no listings', () => {
+		const listing = stored('opt', '2026-11-12T10:00:00+01:00');
+		const snapshot = build({
+			centres: [kufer('opt', { opted_out: true }), centre('none'), itemkg('unreg')],
+			readers: ['kuferweb'],
+			state: stateOf({ opt: history('ok', [listing]), unreg: history('ok', [stored('unreg', '2026-11-12T10:00:00+01:00')]) }),
+		});
+		for (const c of snapshot.centres) {
+			expect(c).toMatchObject({ coverage: 'not_checked', last_result: null, last_checked_at: null, last_success_at: null });
+		}
+		expect(snapshot.listings).toEqual([]);
+		expect(snapshot.systems).toEqual([{ reader: 'kuferweb', centres_covered: 0, centres_ok: 0, centres_failed: 0, last_success_at: null }]);
 	});
 
-	it('publishes an opted-out centre once as not_checked', () => {
-		const paths = setup();
-		const { code, errors } = publish(paths);
-		expect(code).toBe(0);
-		expect(errors).toEqual([]);
-		const snapshot = snapshotSchema.parse(JSON.parse(readFileSync(paths.snapshotPath, 'utf8')));
-		const optedOut = snapshot.centres.filter((c) => c.centre_id === 'alpha');
-		expect(optedOut).toHaveLength(1);
-		expect(optedOut[0]).toMatchObject({ opted_out: true, reader: 'kuferweb', coverage: 'not_checked' });
+	it('marks a robots skip not_checked and drops its stored listings; a budget skip stays covered with its listings', () => {
+		const robots = stored('robots', '2026-11-12T10:00:00+01:00');
+		const budget = stored('budget', '2026-11-12T10:00:00+01:00');
+		const outcomes: Record<string, NormalisedOutcome> = {
+			robots: { kind: 'skipped', reason: 'robots' },
+			budget: { kind: 'skipped', reason: 'budget' },
+		};
+		const snapshot = build({
+			centres: [kufer('robots'), kufer('budget')],
+			state: stateOf({ robots: history('ok', [robots]), budget: history('ok', [budget]) }),
+			outcomes,
+		});
+		expect(snapshot.centres.find((c) => c.centre_id === 'robots')).toMatchObject({ coverage: 'not_checked', last_result: null, last_success_at: null });
+		expect(snapshot.centres.find((c) => c.centre_id === 'budget')).toMatchObject({ coverage: 'covered', last_result: 'ok', last_success_at: EARLIER });
+		expect(snapshot.listings).toEqual([published(budget)]);
 	});
 
-	it('publishes an ungeocoded centre with null coordinates', () => {
-		const paths = setup();
-		const { code, errors } = publish(paths);
-		expect(code).toBe(0);
-		expect(errors).toEqual([]);
-		const snapshot = snapshotSchema.parse(JSON.parse(readFileSync(paths.snapshotPath, 'utf8')));
-		expect(snapshot.centres.find((c) => c.centre_id === 'mid')).toMatchObject({ lat: null, lon: null });
+	it('keeps a covered centre with no state covered with null run fields', () => {
+		const snapshot = build({ centres: [kufer('never')] });
+		expect(snapshot.centres[0]).toMatchObject({ coverage: 'covered', last_result: null, last_checked_at: null, last_success_at: null });
+		expect(snapshot.systems.find((s) => s.reader === 'kuferweb')).toEqual({ reader: 'kuferweb', centres_covered: 1, centres_ok: 0, centres_failed: 0, last_success_at: null });
 	});
 
-	it('leaves the file byte-identical on an unchanged rerun', () => {
-		const paths = setup();
-		publish(paths, RUN_1);
-		const before = readFileSync(paths.snapshotPath, 'utf8');
-		const { code, logs } = publish(paths, RUN_2);
-		expect(code).toBe(0);
-		expect(readFileSync(paths.snapshotPath, 'utf8')).toBe(before);
-		expect(logs.join('\n')).toContain('unchanged');
+	it('publishes a failed centre with its old listings and its run fields from state', () => {
+		const listing = stored('f', '2026-11-12T10:00:00+01:00');
+		const snapshot = build({ centres: [itemkg('f')], state: stateOf({ f: history('failed', [listing]) }), outcomes: { f: { kind: 'failed', reason: 'list-page' } } });
+		expect(snapshot.centres[0]).toMatchObject({ coverage: 'covered', last_result: 'failed', last_checked_at: EARLIER, last_success_at: EARLIER });
+		expect(snapshot.listings).toEqual([published(listing)]);
 	});
 
-	it('rewrites the file with a new generated_at when the directory changed', () => {
-		const paths = setup();
-		publish(paths, RUN_1);
-		writeFileSync(paths.directoryPath, JSON.stringify([...DIRECTORY.slice(1), centre('zeta', { name: 'Renamed' })]));
-		expect(publish(paths, RUN_2).code).toBe(0);
-		const snapshot = snapshotSchema.parse(JSON.parse(readFileSync(paths.snapshotPath, 'utf8')));
-		expect(snapshot.generated_at).toBe('2026-10-28T07:00:00Z');
-		expect(snapshot.centres.find((c) => c.centre_id === 'zeta')?.name).toBe('Renamed');
+	it('drops removed and past listings (starts_at not after runAt), drops removed_at, and sorts by id', () => {
+		const future2 = stored('b', '2026-12-01T10:00:00+01:00', { baseline: false, first_seen_at: '2026-10-27T07:00:00.000Z' });
+		const future1 = stored('a', '2026-11-12T10:00:00+01:00');
+		const removed = stored('a', '2026-11-20T10:00:00+01:00', { removed_at: EARLIER });
+		const atRunAt = stored('a', '2026-10-27T08:00:00+01:00');
+		const snapshot = build({
+			centres: [kufer('b'), kufer('a')],
+			state: stateOf({ a: history('ok', [atRunAt, future1, removed]), b: history('ok', [future2]) }),
+		});
+		expect(snapshot.listings).toEqual([published(future1), published(future2)]);
+		expect(Object.keys(snapshot.listings[0]!)).not.toContain('removed_at');
+		expect(snapshotSchema.safeParse(snapshot).success).toBe(true);
 	});
 
-	it.each([
-		['not JSON', '{nope', 'cannot read the directory'],
-		['a schema error', JSON.stringify([centre('alpha', { lat: 52.5, lon: 13.4 })]), 'fails the schema'],
-		['a duplicate id', JSON.stringify([centre('alpha'), centre('alpha')]), 'duplicate centre_id'],
-	])('writes nothing and exits 1 for an invalid directory (%s)', (_name, text, message) => {
-		const paths = setup(text);
-		const { code, errors } = publish(paths);
-		expect(code).toBe(1);
-		expect(errors.join('\n')).toContain(message);
-		expect(existsSync(paths.snapshotPath)).toBe(false);
-	});
-
-	it('leaves an existing snapshot untouched when the directory is invalid', () => {
-		const paths = setup();
-		publish(paths);
-		const before = readFileSync(paths.snapshotPath, 'utf8');
-		writeFileSync(paths.directoryPath, '[{"centre_id":"x"}]');
-		expect(publish(paths, RUN_2).code).toBe(1);
-		expect(readFileSync(paths.snapshotPath, 'utf8')).toBe(before);
-	});
-
-	it('exits 1 when the directory file is missing', () => {
-		const dir = tmp();
-		const { code, errors } = publish({ directoryPath: join(dir, 'missing.json'), snapshotPath: join(dir, 's.json') });
-		expect(code).toBe(1);
-		expect(errors).toHaveLength(1);
-	});
-
-	it('overwrites a corrupt existing snapshot', () => {
-		const paths = setup();
-		publish(paths);
-		writeFileSync(paths.snapshotPath, '{corrupt');
-		expect(publish(paths, RUN_2).code).toBe(0);
-		const snapshot = snapshotSchema.parse(JSON.parse(readFileSync(paths.snapshotPath, 'utf8')));
-		expect(snapshot.generated_at).toBe('2026-10-28T07:00:00Z');
+	it('sums systems per registered reader, sorted, with the latest last_success_at', () => {
+		const snapshot = build({
+			centres: [kufer('k1'), kufer('k2'), kufer('k3'), kufer('k4', { opted_out: true }), itemkg('i1')],
+			state: stateOf({
+				k1: history('ok', [], '2026-10-26T05:17:00.000Z'),
+				k2: history('failed', [], '2026-10-25T05:17:00.000Z'),
+				k4: history('ok', [], '2026-10-27T05:17:00.000Z'),
+				i1: history('failed', [], null),
+			}),
+		});
+		expect(snapshot.systems).toEqual([
+			{ reader: 'itemkg', centres_covered: 1, centres_ok: 0, centres_failed: 1, last_success_at: null },
+			{ reader: 'kuferweb', centres_covered: 3, centres_ok: 1, centres_failed: 1, last_success_at: '2026-10-26T05:17:00.000Z' },
+		]);
 	});
 });
 
 describe('writeSnapshot', () => {
 	it.each<[string, (s: Snapshot) => Snapshot]>([
 		['covered + opted out', (s) => ({ ...s, centres: s.centres.map((c) => (c.opted_out ? { ...c, coverage: 'covered' } : c)) })],
-		['a listing', (s) => ({ ...s, listings: [{ centre_id: 'alpha' }] })],
+		['a listing of a not_checked centre', (s) => ({ ...s, centres: s.centres.map((c) => (c.centre_id === 'k' ? { ...c, coverage: 'not_checked' } : c)) })],
 	])('throws and writes nothing for an invalid snapshot (%s)', (_name, mutate) => {
 		const dir = tmp();
 		const path = join(dir, 'snapshot.json');
-		expect(() => writeSnapshot(mutate(valid()), path)).toThrow(/fails the schema/);
+		expect(() => writeSnapshot(mutate(withListing()), path)).toThrow(/fails the schema/);
 		expect(readdirSync(dir)).toEqual([]);
 	});
 
-	it('leaves no temp file behind after an atomic write', () => {
+	it('writes minified JSON with a trailing newline, then leaves an equal snapshot untouched', () => {
 		const dir = tmp();
 		const path = join(dir, 'snapshot.json');
-		expect(writeSnapshot(valid(), path)).toBe('written');
-		expect(writeSnapshot(buildSnapshot(DIRECTORY, RUN_2), path)).toBe('unchanged');
+		expect(writeSnapshot(withListing(), path)).toBe('written');
+		const text = readFileSync(path, 'utf8');
+		expect(text).toBe(serializeSnapshot(withListing()));
+		expect(text.endsWith('}\n')).toBe(true);
+		expect(text).not.toContain('\n\t');
+		expect(writeSnapshot(build({ centres: [...DIRECTORY, kufer('k')], state: stateOf({ k: history('ok', [stored('k', '2026-11-12T10:00:00+01:00')]) }), runAt: RUN_2 }), path)).toBe('unchanged');
+		expect(readFileSync(path, 'utf8')).toBe(text);
 		expect(readdirSync(dir)).toEqual(['snapshot.json']);
+	});
+
+	it('overwrites a corrupt existing snapshot', () => {
+		const dir = tmp();
+		const path = join(dir, 'snapshot.json');
+		writeFileSync(path, '{corrupt');
+		expect(writeSnapshot(build({ runAt: RUN_2 }), path)).toBe('written');
+		expect(snapshotSchema.parse(JSON.parse(readFileSync(path, 'utf8'))).generated_at).toBe('2026-10-28T07:00:00Z');
 	});
 });
 
 describe('committed data/public/snapshot.json', () => {
-	// Validity and the Epic 1 shape only. It must not compare centre_ids with the directory:
+	// Validity and internal consistency only. It must not compare centre_ids with the directory:
 	// `npm test` runs before `npm run pipeline` in pipeline.yml, and the pipeline is what
 	// reconciles a changed directory with the committed snapshot.
-	it('is valid and holds only not_checked centres with null run fields', () => {
-		const snapshot = snapshotSchema.parse(JSON.parse(readFileSync(SNAPSHOT_PATH, 'utf8')));
+	const snapshot = snapshotSchema.parse(JSON.parse(readFileSync(SNAPSHOT_PATH, 'utf8')));
+
+	it('validates as schemaVersion 2 with centres', () => {
+		expect(snapshot.schemaVersion).toBe(2);
 		expect(snapshot.centres.length).toBeGreaterThan(0);
-		for (const centre of snapshot.centres) {
-			expect(centre).toMatchObject({ coverage: 'not_checked', last_result: null, last_checked_at: null, last_success_at: null });
+	});
+
+	it('has null run fields for every not_checked centre and system counts that match its centres', () => {
+		for (const centre of snapshot.centres.filter((c) => c.coverage === 'not_checked')) {
+			expect(centre).toMatchObject({ last_result: null, last_checked_at: null, last_success_at: null });
 		}
-		expect(snapshot.systems).toEqual([]);
-		expect(snapshot.listings).toEqual([]);
+		for (const system of snapshot.systems) {
+			const covered = snapshot.centres.filter((c) => c.coverage === 'covered' && c.reader === system.reader);
+			expect(system.centres_covered).toBe(covered.length);
+			expect(system.centres_ok).toBe(covered.filter((c) => c.last_result === 'ok').length);
+			expect(system.centres_failed).toBe(covered.filter((c) => c.last_result === 'failed').length);
+		}
 	});
 });

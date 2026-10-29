@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it, vi } from 'vitest';
-import { snapshotSchema } from '../shared/snapshot.ts';
+import { SNAPSHOT_SCHEMA_VERSION, snapshotSchema } from '../shared/snapshot.ts';
 import { SchemaVersionError } from '../web/src/data/load-json.ts';
 import { loadPlaces, PLACES_URL } from '../web/src/data/places.ts';
 import { clearReloadFlag, RELOAD_FLAG, reloadOnce } from '../web/src/data/reload-once.ts';
@@ -35,14 +35,14 @@ describe('loadSnapshot', () => {
 	});
 
 	it('rejects a wrong schemaVersion or shape', async () => {
-		await expect(loadSnapshot(fetchReturning(jsonResponse({ ...snapshotOf([]), schemaVersion: 2 })))).rejects.toThrow('invalid');
+		await expect(loadSnapshot(fetchReturning(jsonResponse({ ...snapshotOf([]), schemaVersion: SNAPSHOT_SCHEMA_VERSION + 1 })))).rejects.toThrow('invalid');
 		await expect(loadSnapshot(fetchReturning(jsonResponse({ centres: [] })))).rejects.toThrow('invalid');
 	});
 });
 
 describe('schemaVersion mismatch', () => {
 	it('throws a SchemaVersionError only for a different schemaVersion', async () => {
-		const newer = loadSnapshot(fetchReturning(jsonResponse({ ...snapshotOf([]), schemaVersion: 2 })));
+		const newer = loadSnapshot(fetchReturning(jsonResponse({ ...snapshotOf([]), schemaVersion: SNAPSHOT_SCHEMA_VERSION + 1 })));
 		await expect(newer).rejects.toBeInstanceOf(SchemaVersionError);
 		const shape = loadSnapshot(fetchReturning(jsonResponse({ ...snapshotOf([]), centres: 'nope' })));
 		await expect(shape).rejects.not.toBeInstanceOf(SchemaVersionError);

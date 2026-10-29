@@ -2,7 +2,7 @@
 import { render } from 'preact';
 import { act } from 'preact/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { SnapshotCentre } from '../shared/snapshot.ts';
+import { SNAPSHOT_SCHEMA_VERSION, type SnapshotCentre } from '../shared/snapshot.ts';
 import { App } from '../web/src/app.tsx';
 import { PLACES_URL } from '../web/src/data/places.ts';
 import { RELOAD_FLAG } from '../web/src/data/reload-once.ts';
@@ -772,7 +772,7 @@ describe('load failure', () => {
 });
 
 describe('schemaVersion mismatch', () => {
-	const newerSnapshot = ok({ ...snapshotOf(CENTRES), schemaVersion: 2 });
+	const newerSnapshot = ok({ ...snapshotOf(CENTRES), schemaVersion: SNAPSHOT_SCHEMA_VERSION + 1 });
 	// A places.json of the old schema version 1, as a stale cache would serve it.
 	const newerPlaces = ok({ ...placesOf([NBG]), schemaVersion: 1 });
 

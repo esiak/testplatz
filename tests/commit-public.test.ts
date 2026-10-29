@@ -17,7 +17,7 @@ function git(cwd: string, ...args: string[]): string {
 	}).trim();
 }
 
-/** A bare "remote" with one commit on main (data/public/snapshot.json + README), and a clone of it. */
+/** A bare "remote" with one commit on main (data/public/snapshot.json, data/state/state.json, README), and a clone of it. */
 function setup(): { root: string; remote: string; work: string } {
 	const root = mkdtempSync(join(tmpdir(), 'bgt-commit-public-'));
 	const remote = join(root, 'remote.git');
@@ -27,6 +27,8 @@ function setup(): { root: string; remote: string; work: string } {
 	git(root, 'init', '--quiet', '--initial-branch=main', seed);
 	mkdirSync(join(seed, 'data', 'public'), { recursive: true });
 	writeFileSync(join(seed, 'data', 'public', 'snapshot.json'), '{"v":1}\n');
+	mkdirSync(join(seed, 'data', 'state'), { recursive: true });
+	writeFileSync(join(seed, 'data', 'state', 'state.json'), '{"s":1}\n');
 	writeFileSync(join(seed, 'README'), 'readme\n');
 	git(seed, 'add', '.');
 	git(seed, 'commit', '--quiet', '-m', 'seed');
@@ -55,6 +57,20 @@ function run(work: string, publishCmd: string, extraEnv: Record<string, string> 
 }
 
 const remoteHead = (remote: string): string => git(remote, 'rev-parse', 'refs/heads/main');
+
+/** Another clone pushes a commit writing `files` (path → content) to main; returns the new upstream SHA. */
+function pushUpstream(root: string, remote: string, files: Record<string, string>, name = 'other'): string {
+	const other = join(root, name);
+	git(root, 'clone', '--quiet', remote, other);
+	for (const [path, content] of Object.entries(files)) {
+		mkdirSync(join(other, path, '..'), { recursive: true });
+		writeFileSync(join(other, path), content);
+	}
+	git(other, 'add', '-A');
+	git(other, 'commit', '--quiet', '-m', 'upstream');
+	git(other, 'push', '--quiet', 'origin', 'HEAD:main');
+	return remoteHead(remote);
+}
 const commitCount = (remote: string): number => Number(git(remote, 'rev-list', '--count', 'refs/heads/main'));
 
 describe('commit-public.sh', () => {
@@ -68,17 +84,19 @@ describe('commit-public.sh', () => {
 		expect(remoteHead(remote)).toBe(before);
 	});
 
-	it('commits only data/public/ once with the bot identity and pushes it', () => {
+	it('commits data/state/ and data/public/ together, once, with the bot identity and pushes it', () => {
 		const { remote, work } = setup();
 		writeFileSync(join(work, 'data', 'public', 'snapshot.json'), '{"v":2}\n');
 		writeFileSync(join(work, 'data', 'public', 'places.json'), '{}\n');
+		writeFileSync(join(work, 'data', 'state', 'state.json'), '{"s":2}\n');
+		writeFileSync(join(work, 'data', 'state', 'visits.json'), '[]\n');
 		writeFileSync(join(work, 'README'), 'local edit, never committed\n');
 		const result = run(work, 'true');
 		expect(result.status).toBe(0);
 		expect(commitCount(remote)).toBe(2);
 		expect(result.sha).toBe(remoteHead(remote));
 		const files = git(remote, 'show', '--name-only', '--format=', 'main').split('\n').sort();
-		expect(files).toEqual(['data/public/places.json', 'data/public/snapshot.json']);
+		expect(files).toEqual(['data/public/places.json', 'data/public/snapshot.json', 'data/state/state.json', 'data/state/visits.json']);
 		expect(git(remote, 'log', '-1', '--format=%an <%ae>|%s', 'main')).toBe(`github-actions[bot] <${BOT_EMAIL}>|data: publish snapshot`);
 		expect(git(work, 'status', '--porcelain')).toBe('M README');
 	});
@@ -105,6 +123,56 @@ describe('commit-public.sh', () => {
 		expect(git(remote, 'show', 'main:README')).toBe('upstream change');
 		// The publish command's environment does not contain the credential.
 		expect(readFileSync(envFile, 'utf8')).not.toMatch(/GIT_AUTH_HEADER|dGVzdA==/);
+	});
+
+	it('rebases onto an upstream that changed only data/state/ and data/public/, without re-publishing', () => {
+		const { root, remote, work } = setup();
+		const upstream = pushUpstream(root, remote, { 'data/state/visits.json': '[1]\n', 'data/public/places.json': '{}\n' });
+		writeFileSync(join(work, 'data', 'public', 'snapshot.json'), '{"v":2}\n');
+		writeFileSync(join(work, 'data', 'state', 'state.json'), '{"s":2}\n');
+		const publishes = join(root, 'publishes');
+		const result = run(work, `echo run >> '${publishes}'`);
+		expect(result.status).toBe(0);
+		expect(existsSync(publishes)).toBe(false);
+		expect(commitCount(remote)).toBe(3);
+		expect(git(remote, 'rev-parse', 'main^')).toBe(upstream);
+		expect(result.sha).toBe(remoteHead(remote));
+		expect(git(remote, 'show', 'main:data/public/snapshot.json')).toBe('{"v":2}');
+		expect(git(remote, 'show', 'main:data/state/state.json')).toBe('{"s":2}');
+		expect(git(remote, 'show', 'main:data/state/visits.json')).toBe('[1]');
+		expect(git(remote, 'log', '-1', '--format=%an <%ae>', 'main')).toBe(`github-actions[bot] <${BOT_EMAIL}>`);
+		expect(result.stderr).toContain('rebasing');
+	});
+
+	it('aborts a conflicting rebase onto a data-only upstream, then resets and re-publishes', () => {
+		const { root, remote, work } = setup();
+		const upstream = pushUpstream(root, remote, { 'data/state/state.json': '{"s":"upstream"}\n' });
+		writeFileSync(join(work, 'data', 'state', 'state.json'), '{"s":"local"}\n');
+		const publishes = join(root, 'publishes');
+		const result = run(work, `echo run >> '${publishes}' && printf '{"s":"replayed"}\\n' > data/state/state.json && printf '{"v":3}\\n' > data/public/snapshot.json`);
+		expect(result.status).toBe(0);
+		expect(readFileSync(publishes, 'utf8').trim().split('\n')).toHaveLength(1);
+		expect(result.stderr).toContain('rebase conflicted');
+		expect(commitCount(remote)).toBe(3);
+		expect(git(remote, 'rev-parse', 'main^')).toBe(upstream);
+		expect(git(remote, 'show', 'main:data/state/state.json')).toBe('{"s":"replayed"}');
+		expect(git(remote, 'show', 'main:data/public/snapshot.json')).toBe('{"v":3}');
+		expect(git(work, 'status', '--porcelain')).toBe('');
+	});
+
+	it('resets and re-publishes when the upstream changed anything outside the data folders (e.g. the directory)', () => {
+		const { root, remote, work } = setup();
+		const upstream = pushUpstream(root, remote, { 'data/directory/centres.json': '[]\n', 'data/state/state.json': '{"s":"upstream"}\n' });
+		writeFileSync(join(work, 'data', 'public', 'snapshot.json'), '{"v":2}\n');
+		const publishes = join(root, 'publishes');
+		const result = run(work, `echo run >> '${publishes}' && printf '{"v":3}\\n' > data/public/snapshot.json`);
+		expect(result.status).toBe(0);
+		expect(readFileSync(publishes, 'utf8').trim().split('\n')).toHaveLength(1);
+		expect(result.stderr).not.toContain('rebasing');
+		expect(git(remote, 'rev-parse', 'main^')).toBe(upstream);
+		expect(git(remote, 'show', 'main:data/public/snapshot.json')).toBe('{"v":3}');
+		expect(git(remote, 'show', 'main:data/state/state.json')).toBe('{"s":"upstream"}');
+		expect(git(remote, 'show', 'main:data/directory/centres.json')).toBe('[]');
 	});
 
 	it('fails without pushing or outputting a sha when the re-publish after a reset fails', () => {
@@ -192,9 +260,64 @@ describe('commit-public.sh', () => {
 		expect(result.status).not.toBe(0);
 		expect(result.sha).toBeNull();
 		expect(readFileSync(attempts, 'utf8').trim().split('\n')).toHaveLength(3);
-		expect(readFileSync(publishes, 'utf8').trim().split('\n')).toHaveLength(2);
+		// The upstream never moved (no commit outside the data folders), so each retry is a no-op rebase.
+		expect(existsSync(publishes)).toBe(false);
 		expect(commitCount(remote)).toBe(1);
 		expect(result.stderr).toContain('rejected 3 times');
+	});
+
+	it('fails after 3 rejected pushes while the upstream keeps moving outside data/, re-publishing on each retry', () => {
+		const { root, remote, work } = setup();
+		const other = join(root, 'other');
+		git(root, 'clone', '--quiet', remote, other);
+		const publishes = join(root, 'publishes');
+		// Each publish first moves the upstream again outside data/, then regenerates the data.
+		const moveUpstream = `cp '${publishes}' '${other}/README' && git -C '${other}' -c user.name=T -c user.email=t@example.com commit --quiet -am upstream && git -C '${other}' push --quiet origin HEAD:main`;
+		writeFileSync(join(other, 'README'), 'upstream change\n');
+		git(other, 'commit', '--quiet', '-am', 'upstream');
+		git(other, 'push', '--quiet', 'origin', 'HEAD:main');
+
+		writeFileSync(join(work, 'data', 'public', 'snapshot.json'), '{"v":2}\n');
+		const result = run(work, `echo run >> '${publishes}' && ${moveUpstream} && printf '{"v":3}\\n' > data/public/snapshot.json`);
+		expect(result.status).not.toBe(0);
+		expect(result.sha).toBeNull();
+		// Every push is rejected because the upstream moved again during the re-publish.
+		expect(result.stderr.match(/! \[rejected\]/g)).toHaveLength(3);
+		expect(readFileSync(publishes, 'utf8').trim().split('\n')).toHaveLength(2);
+		expect(result.stderr.match(/resetting to origin\/main and publishing again/g)).toHaveLength(2);
+		expect(result.stderr).not.toContain('rebasing');
+		expect(result.stderr).toContain('rejected 3 times');
+		expect(git(remote, 'log', '-1', '--format=%s', 'main')).toBe('upstream');
+	});
+
+	it('resets and re-publishes when a merge commit\'s own resolution changes a file outside data/', () => {
+		const { root, remote, work } = setup();
+		const other = join(root, 'other');
+		git(root, 'clone', '--quiet', remote, other);
+		// Both parents change only data/; the merge commit itself edits README.
+		git(other, 'switch', '--quiet', '-c', 'side');
+		writeFileSync(join(other, 'data', 'state', 'state.json'), '{"s":"side"}\n');
+		git(other, 'commit', '--quiet', '-am', 'side data');
+		git(other, 'switch', '--quiet', 'main');
+		writeFileSync(join(other, 'data', 'public', 'places.json'), '{}\n');
+		git(other, 'add', '-A');
+		git(other, 'commit', '--quiet', '-m', 'main data');
+		git(other, 'merge', '--quiet', '--no-ff', '--no-commit', 'side');
+		writeFileSync(join(other, 'README'), 'changed in the merge\n');
+		git(other, 'add', '-A');
+		git(other, 'commit', '--quiet', '-m', 'merge');
+		git(other, 'push', '--quiet', 'origin', 'HEAD:main');
+		const upstream = remoteHead(remote);
+
+		writeFileSync(join(work, 'data', 'public', 'snapshot.json'), '{"v":2}\n');
+		const publishes = join(root, 'publishes');
+		const result = run(work, `echo run >> '${publishes}' && printf '{"v":3}\\n' > data/public/snapshot.json`);
+		expect(result.status).toBe(0);
+		expect(result.stderr).not.toContain('rebasing');
+		expect(readFileSync(publishes, 'utf8').trim().split('\n')).toHaveLength(1);
+		expect(git(remote, 'rev-parse', 'main^')).toBe(upstream);
+		expect(git(remote, 'show', 'main:README')).toBe('changed in the merge');
+		expect(git(remote, 'show', 'main:data/public/snapshot.json')).toBe('{"v":3}');
 	});
 
 	it('is executable', () => {
