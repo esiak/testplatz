@@ -76,6 +76,7 @@
 	"results.unlocated_link": "See which",
 	"card.chip_not_checked": "Not checked",
 	"card.link_label": "{name}, not checked, opens {domain} in a new tab",
+	"card.no_dates_link_label": "{name}, no dates listed, opens {domain} in a new tab",
 	"card.map": "Map",
 	"card.map_label": "Map: {address} (Google Maps, new tab)",
 	"card.why": "Why?",

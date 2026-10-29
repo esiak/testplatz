@@ -14,10 +14,17 @@ export function whyUrl(lang: string): string {
 }
 
 /**
- * A centre with no automatic check. The whole card is one stretched link (the h3's link) to the
- * centre's test page; "Map ↗" and "Why?" sit above the link layer as their own targets.
+ * A centre with no automatic check, or (`rightNow`) a covered centre whose check failed or never
+ * ran. The whole card is one stretched link (the h3's link) to the centre's test page; "Map ↗" and
+ * "Why?" sit above the link layer as their own targets.
  */
-export function UncoveredCard({ item }: { item: { centre: SnapshotCentre; distanceKm: number | null } }) {
+export function UncoveredCard({
+	item,
+	rightNow = false,
+}: {
+	item: { centre: SnapshotCentre; distanceKm: number | null };
+	rightNow?: boolean;
+}) {
 	const { lang, t } = useI18n();
 	const { centre, distanceKm } = item;
 	const distance = distanceKm === null ? t('card.fact.distance_unknown') : t('card.fact.distance_value', { km: Math.round(distanceKm) });
@@ -66,7 +73,7 @@ export function UncoveredCard({ item }: { item: { centre: SnapshotCentre; distan
 				</a>
 			</p>
 
-			<p class="card__body">{t('card.not_checked_automatically')}</p>
+			<p class="card__body">{t(rightNow ? 'card.not_checked_right_now' : 'card.not_checked_automatically')}</p>
 
 			<div class="card__facts">
 				<dl class="key-facts">

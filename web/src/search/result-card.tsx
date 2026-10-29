@@ -30,7 +30,7 @@ const REGISTRATION_WORD: Record<RegistrationMethod, MessageKey> = {
 const MARK = '\u0000';
 
 /** "Checked 2 h ago" / "◷ Checked Tue 14:00": the centre's last successful check, never per date. */
-function FreshnessLine({ lastSuccessAt, now }: { lastSuccessAt: string; now: number }) {
+export function FreshnessLine({ lastSuccessAt, now }: { lastSuccessAt: string; now: number }) {
 	const { lang, t } = useI18n();
 	const state = freshness(lastSuccessAt, now, lang);
 	let text;

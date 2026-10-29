@@ -15,6 +15,18 @@ export interface UndatedResult {
 	distanceKm: number | null;
 }
 
+/**
+ * The card a shown centre without an upcoming date gets, coverage first (AD-8): a checked centre
+ * whose last check succeeded has nothing listed; one whose check failed or never ran is not checked
+ * right now; a centre without a reader is not checked automatically.
+ */
+export type UndatedKind = 'no_dates' | 'not_checked_right_now' | 'not_checked';
+
+export function undatedKind(centre: Pick<SnapshotCentre, 'coverage' | 'last_result'>): UndatedKind {
+	if (centre.coverage === 'not_checked') return 'not_checked';
+	return centre.last_result === 'ok' ? 'no_dates' : 'not_checked_right_now';
+}
+
 export interface Results {
 	dated: DatedResult[];
 	undated: UndatedResult[];

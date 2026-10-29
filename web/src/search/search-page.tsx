@@ -8,7 +8,8 @@ import { loadSnapshot } from '../data/snapshot.ts';
 import { NO_LOCATION_ID } from '../fragment.ts';
 import { useI18n } from '../i18n/i18n.tsx';
 import { ResultCard } from './result-card.tsx';
-import { datedResults, type Results } from './results.ts';
+import { NoDatesCard } from './no-dates-card.tsx';
+import { datedResults, undatedKind, type Results } from './results.ts';
 import { SearchBar } from './search-bar.tsx';
 import { DEFAULT_RADIUS, nextRadius, parseSearchFragment, runSearch, searchFragment, type Outcome, type Radius, type Search } from './search.ts';
 import { aboutSectionUrl, UncoveredCard } from './uncovered-card.tsx';
@@ -40,11 +41,11 @@ const COUNT_KEYS = {
 	dates: { centre: 'results.count_one', centres: 'results.count' },
 } as const;
 
-/** "N dates and M unchecked centres within R km": dated cards shown, and centres shown without one. */
+/** "N dates and M unchecked centres within R km": dated cards shown, and uncovered cards shown (no-dates cards count in neither). */
 function CountLine({ outcome, shown }: { outcome: Extract<Outcome, { kind: 'results' }>; shown: Shown }) {
 	const { t } = useI18n();
 	const dates = shown.dated.length;
-	const unchecked = shown.undated.length;
+	const unchecked = shown.undated.filter((item) => undatedKind(item.centre) !== 'no_dates').length;
 	const key = COUNT_KEYS[dates === 1 ? 'date' : 'dates'][unchecked === 1 ? 'centre' : 'centres'];
 	return <>{t(key, { dates, unchecked, radius: outcome.search.r })}</>;
 }
@@ -292,11 +293,18 @@ export function SearchPage({ services }: { services?: Partial<SearchServices> })
 							<ResultCard result={result} now={shown.now} />
 						</li>
 					))}
-					{shown.undated.map((item) => (
-						<li key={item.centre.centre_id} class="results__item">
-							<UncoveredCard item={item} />
-						</li>
-					))}
+					{shown.undated.map((item) => {
+						const kind = undatedKind(item.centre);
+						return (
+							<li key={item.centre.centre_id} class="results__item">
+								{kind === 'no_dates' ? (
+									<NoDatesCard item={item} now={shown.now} />
+								) : (
+									<UncoveredCard item={item} rightNow={kind === 'not_checked_right_now'} />
+								)}
+							</li>
+						);
+					})}
 				</ul>
 			</>
 		);

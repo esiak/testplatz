@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { SnapshotCentre } from '../shared/snapshot.ts';
-import { datedResults } from '../web/src/search/results.ts';
+import { datedResults, undatedKind } from '../web/src/search/results.ts';
 import type { Outcome } from '../web/src/search/search.ts';
 import { coveredCentre, snapshotCentre, snapshotListing } from './fixtures/snapshot.ts';
 
@@ -91,5 +91,22 @@ describe('datedResults', () => {
 			snapshotListing('far', '2026-12-09T10:00:00+01:00'),
 		];
 		expect(ids(datedResults(outcome([[near, 3], [far, 10]]), listings, NOW))).toEqual(['far@2026-12-09T10:00', 'near@2026-12-10T10:00']);
+	});
+});
+
+describe('undatedKind', () => {
+	it('gives a covered centre whose last check succeeded the no-dates card', () => {
+		expect(undatedKind(coveredCentre('c', 'ok'))).toBe('no_dates');
+	});
+
+	it('gives a covered centre whose check failed or never ran the "not checked right now" card', () => {
+		expect(undatedKind(coveredCentre('c', 'failed'))).toBe('not_checked_right_now');
+		expect(undatedKind(coveredCentre('c', null))).toBe('not_checked_right_now');
+	});
+
+	it('gives a centre without coverage the uncovered card, whatever its last result', () => {
+		expect(undatedKind(snapshotCentre('u'))).toBe('not_checked');
+		expect(undatedKind({ coverage: 'not_checked', last_result: 'ok' })).toBe('not_checked');
+		expect(undatedKind({ coverage: 'not_checked', last_result: 'failed' })).toBe('not_checked');
 	});
 });
