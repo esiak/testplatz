@@ -298,12 +298,14 @@
 		"lat": null,
 		"lon": null,
 		"website": "https://www.mvhs.de/",
-		"test_page_url": "https://www.mvhs.de/kurse/deutsch-integration/integrationskurse-bamf-460-CAT-KAT7712?tx_itemkgconnect_categorys%5Bfilters%5D%5Bbookable%5D=Bookable&tx_itemkgconnect_categorys%5Bpage%5D=0&tx_itemkgconnect_categorys%5Bsword%5D=&cHash=74aae851a4f7a8e24fa7847867513e34",
+		"test_page_url": "https://www.mvhs.de/kurse/deutsch-integration/pruefungen-einbuergerung/einbuergerung-460-CAT-KAT7868",
 		"reader": "itemkg",
-		"reader_config": null,
+		"reader_config": {
+			"list_url": "https://www.mvhs.de/kurse/deutsch-integration/pruefungen-einbuergerung/einbuergerung-460-CAT-KAT7868"
+		},
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": null
+		"verified_at": "2026-10-29T12:00:00.000Z"
 	},
 	{
 		"centre_id": "oberallgaeuer-vhs",
@@ -370,12 +372,14 @@
 		"lat": 48.972251,
 		"lon": 13.127653,
 		"website": "https://www.vhs-arberland.de/",
-		"test_page_url": "https://www.vhs-arberland.de/suche?tx_itemkgconnect_search%5B__referrer%5D%5B%40extension%5D=&tx_itemkgconnect_search%5B__referrer%5D%5B%40controller%5D=Standard&tx_itemkgconnect_search%5B__referrer%5D%5B%40action%5D=default&tx_itemkgconnect_search%5B__referrer%5D%5Barguments%5D=YTowOnt9bb6440284d86114ae8f06ceca05f3087a54b19a3&tx_itemkgconnect_search%5B__referrer%5D%5B%40request%5D=%7B%22%40extension%22%3Anull%2C%22%40controller%22%3A%22Standard%22%2C%22%40action%22%3A%22default%22%7D812c8c542f1ed7ef67706fe377a36c45a3a589ba&tx_itemkgconnect_search%5B__trustedProperties%5D=%7B%22sword%22%3A1%2C%22filters%22%3A%7B%22sort%22%3A%5B1%5D%2C%22reset%22%3A1%7D%7D29b6325eb7da486e1971cf282e63c337b073f2d8&tx_itemkgconnect_search%5Bsword%5D=Einbürgerungstest&tx_itemkgconnect_search%5Bfilters%5D%5Bsort%5D%5B%5D=__EMPTY__&tx_itemkgconnect_search%5Bfilters%5D%5Breset%5D=1",
+		"test_page_url": "https://www.vhs-arberland.de/suche?tx_itemkgconnect_search%5Bsword%5D=Einb%C3%BCrgerungstest",
 		"reader": "itemkg",
-		"reader_config": null,
+		"reader_config": {
+			"list_url": "https://www.vhs-arberland.de/suche?tx_itemkgconnect_search%5Bsword%5D=Einb%C3%BCrgerungstest"
+		},
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": null
+		"verified_at": "2026-10-29T12:00:00.000Z"
 	},
 	{
 		"centre_id": "vhs-aschaffenburg",
@@ -423,13 +427,15 @@
 		},
 		"lat": 50.201018,
 		"lon": 10.075862,
-		"website": null,
-		"test_page_url": null,
-		"reader": "none",
-		"reader_config": null,
+		"website": "https://www.vhs-kisshab.de/",
+		"test_page_url": "https://www.vhs-kisshab.de/p/integration/einbuergerungstest-675-CAT-KAT77",
+		"reader": "itemkg",
+		"reader_config": {
+			"list_url": "https://www.vhs-kisshab.de/p/integration/einbuergerungstest-675-CAT-KAT77"
+		},
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": null
+		"verified_at": "2026-10-29T12:00:00.000Z"
 	},
 	{
 		"centre_id": "vhs-bad-reichenhall",
@@ -444,10 +450,12 @@
 		"website": "https://www.vhs-reichenhall.de/",
 		"test_page_url": "https://www.vhs-reichenhall.de/pruefungen-einbuergerungstest-und-deutsch",
 		"reader": "itemkg",
-		"reader_config": null,
+		"reader_config": {
+			"list_url": "https://www.vhs-reichenhall.de/pruefungen-einbuergerungstest-und-deutsch"
+		},
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": "2026-10-27T07:25:45.068Z"
+		"verified_at": "2026-10-29T12:00:00.000Z"
 	},
 	{
 		"centre_id": "vhs-bamberg",
@@ -462,10 +470,12 @@
 		"website": "https://www.vhs-bamberg.de/",
 		"test_page_url": "https://www.vhs-bamberg.de/einbuergerungstests",
 		"reader": "itemkg",
-		"reader_config": null,
+		"reader_config": {
+			"list_url": "https://www.vhs-bamberg.de/einbuergerungstests"
+		},
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": null
+		"verified_at": "2026-10-29T12:00:00.000Z"
 	},
 	{
 		"centre_id": "vhs-bamberg-land-e-v",
@@ -480,10 +490,12 @@
 		"website": "https://www.vhs-bamberg-land.de/",
 		"test_page_url": "https://www.vhs-bamberg-land.de/p/488-CAT-KAT4512071",
 		"reader": "itemkg",
-		"reader_config": null,
+		"reader_config": {
+			"list_url": "https://www.vhs-bamberg-land.de/p/488-CAT-KAT4512071"
+		},
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": "2026-10-27T07:25:45.068Z"
+		"verified_at": "2026-10-29T12:00:00.000Z"
 	},
 	{
 		"centre_id": "vhs-bayreuth",
@@ -514,12 +526,14 @@
 		"lat": 49.034352,
 		"lon": 11.470594,
 		"website": "https://www.vhs-beilngries.de/",
-		"test_page_url": "https://www.vhs-beilngries.de/p/sprachen/deutsch-integration/einbuergerungstest-641-C-B3021",
+		"test_page_url": "https://www.vhs-beilngries.de/p/sprachen/deutsch-integration-641-CAT-KAT17",
 		"reader": "itemkg",
-		"reader_config": null,
+		"reader_config": {
+			"list_url": "https://www.vhs-beilngries.de/p/sprachen/deutsch-integration-641-CAT-KAT17"
+		},
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": "2026-10-27T07:25:45.068Z"
+		"verified_at": "2026-10-29T12:00:00.000Z"
 	},
 	{
 		"centre_id": "vhs-buchloe-e-v",
@@ -570,10 +584,12 @@
 		"website": "https://www.vhs-coburg.de/",
 		"test_page_url": "https://www.vhs-coburg.net/p//programmbereich/sprachen/deutsch/pruefungen/einbuergerungstest/494-CAT-KAT7323077",
 		"reader": "itemkg",
-		"reader_config": null,
+		"reader_config": {
+			"list_url": "https://www.vhs-coburg.net/p//programmbereich/sprachen/deutsch/pruefungen/einbuergerungstest/494-CAT-KAT7323077"
+		},
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": null
+		"verified_at": "2026-10-29T12:00:00.000Z"
 	},
 	{
 		"centre_id": "vhs-dachau-gmbh",
@@ -622,12 +638,14 @@
 		"lat": null,
 		"lon": null,
 		"website": "https://www.vhs-roth.de/",
-		"test_page_url": null,
+		"test_page_url": "https://www.vhs-roth.de/suche?tx_itemkgconnect_search%5Bsword%5D=Einb%C3%BCrgerungstest",
 		"reader": "itemkg",
-		"reader_config": null,
+		"reader_config": {
+			"list_url": "https://www.vhs-roth.de/suche?tx_itemkgconnect_search%5Bsword%5D=Einb%C3%BCrgerungstest"
+		},
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": null
+		"verified_at": "2026-10-29T12:00:00.000Z"
 	},
 	{
 		"centre_id": "vhs-der-stadt-landsberg-lech",
@@ -696,10 +714,12 @@
 		"website": "https://www.vhs-forchheim.de/",
 		"test_page_url": "https://www.vhs-forchheim.de/p/sprachen/integration-498-CAT-KAT39?tx_itemkgconnect_categorys%5Bpage%5D=0&tx_itemkgconnect_categorys%5Bsword%5D=&cHash=4a1d6151f01f9cac543ca2281b840352",
 		"reader": "itemkg",
-		"reader_config": null,
+		"reader_config": {
+			"list_url": "https://www.vhs-forchheim.de/p/sprachen/integration-498-CAT-KAT39?tx_itemkgconnect_categorys%5Bpage%5D=0&tx_itemkgconnect_categorys%5Bsword%5D=&cHash=4a1d6151f01f9cac543ca2281b840352"
+		},
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": null
+		"verified_at": "2026-10-29T12:00:00.000Z"
 	},
 	{
 		"centre_id": "vhs-des-landkreises-wunsiedel",
@@ -784,12 +804,14 @@
 		"lat": 48.720232,
 		"lon": 10.779956,
 		"website": "https://www.vhs-don.de/",
-		"test_page_url": "https://www.vhs-don.de/einbuergerungstests",
+		"test_page_url": "https://www.vhs-don.de/suche?tx_itemkgconnect_search%5Bsword%5D=Einb%C3%BCrgerungstest",
 		"reader": "itemkg",
-		"reader_config": null,
+		"reader_config": {
+			"list_url": "https://www.vhs-don.de/suche?tx_itemkgconnect_search%5Bsword%5D=Einb%C3%BCrgerungstest"
+		},
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": "2026-10-27T07:25:45.068Z"
+		"verified_at": "2026-10-29T12:00:00.000Z"
 	},
 	{
 		"centre_id": "vhs-ebersberger-land-grafing-bei-muenchen",
@@ -804,10 +826,12 @@
 		"website": "https://www.vhs-ebersberger-land.de/",
 		"test_page_url": "https://www.vhs-ebersberger-land.de/p/sprachen/deutsch/einbuergerungstests-649-CAT-KAT215",
 		"reader": "itemkg",
-		"reader_config": null,
+		"reader_config": {
+			"list_url": "https://www.vhs-ebersberger-land.de/p/sprachen/deutsch/einbuergerungstests-649-CAT-KAT215"
+		},
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": "2026-10-27T07:25:45.068Z"
+		"verified_at": "2026-10-29T12:00:00.000Z"
 	},
 	{
 		"centre_id": "vhs-erlangen",
@@ -840,10 +864,12 @@
 		"website": "https://www.vhs-regensburg-land.de/",
 		"test_page_url": "https://www.vhs-regensburger-land.de/p/deutsch-schule/einbuergerungstest-647-CAT-KAT256",
 		"reader": "itemkg",
-		"reader_config": null,
+		"reader_config": {
+			"list_url": "https://www.vhs-regensburger-land.de/p/deutsch-schule/einbuergerungstest-647-CAT-KAT256"
+		},
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": "2026-10-27T07:25:45.068Z"
+		"verified_at": "2026-10-29T12:00:00.000Z"
 	},
 	{
 		"centre_id": "vhs-fichtelgebirge",
@@ -858,10 +884,12 @@
 		"website": "https://www.vhs-fichtelgebirge.de/",
 		"test_page_url": "https://www.vhs-fichtelgebirge.de/p/integration/einbuergerungstest-644-CAT-KAT223?tx_itemkgconnect_categorys%5Bpage%5D=0&tx_itemkgconnect_categorys%5Bsword%5D=&cHash=e885cf8b12db5f275383bc211595c590",
 		"reader": "itemkg",
-		"reader_config": null,
+		"reader_config": {
+			"list_url": "https://www.vhs-fichtelgebirge.de/p/integration/einbuergerungstest-644-CAT-KAT223?tx_itemkgconnect_categorys%5Bpage%5D=0&tx_itemkgconnect_categorys%5Bsword%5D=&cHash=e885cf8b12db5f275383bc211595c590"
+		},
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": null
+		"verified_at": "2026-10-29T12:00:00.000Z"
 	},
 	{
 		"centre_id": "vhs-freising-e-v",
@@ -894,10 +922,12 @@
 		"website": "https://www.vhs-fuerth.de/",
 		"test_page_url": "https://www.vhs-fuerth.de/p/grundbildung/einbuergerungen/einbuergerungstest-33-fragen-477-CAT-KAT222",
 		"reader": "itemkg",
-		"reader_config": null,
+		"reader_config": {
+			"list_url": "https://www.vhs-fuerth.de/p/grundbildung/einbuergerungen/einbuergerungstest-33-fragen-477-CAT-KAT222"
+		},
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": "2026-10-27T07:25:45.068Z"
+		"verified_at": "2026-10-29T12:00:00.000Z"
 	},
 	{
 		"centre_id": "vhs-garmisch-partenkirchen-e-v",
@@ -1542,10 +1572,12 @@
 		"website": "https://www.vhs-starnberger-see.de/",
 		"test_page_url": "https://www.vhs-starnbergammersee.de/p/sprachen-und-integration/deutsch-als-fremdsprache/pruefungen-pruefungsvorbereitung-einbuergerung/einbuergerungstest-665-CAT-KAT96?tx_itemkgconnect_categorys%5Bfilters%5D%5Bsort%5D%5B0%5D=startDate%2Casc&tx_itemkgconnect_categorys%5Bpage%5D=0&tx_itemkgconnect_categorys%5Bsword%5D=&cHash=e569d94aa4bc8aa65614afb3e67fd1ab",
 		"reader": "itemkg",
-		"reader_config": null,
+		"reader_config": {
+			"list_url": "https://www.vhs-starnbergammersee.de/p/sprachen-und-integration/deutsch-als-fremdsprache/pruefungen-pruefungsvorbereitung-einbuergerung/einbuergerungstest-665-CAT-KAT96?tx_itemkgconnect_categorys%5Bfilters%5D%5Bsort%5D%5B0%5D=startDate%2Casc&tx_itemkgconnect_categorys%5Bpage%5D=0&tx_itemkgconnect_categorys%5Bsword%5D=&cHash=e569d94aa4bc8aa65614afb3e67fd1ab"
+		},
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": null
+		"verified_at": "2026-10-29T12:00:00.000Z"
 	},
 	{
 		"centre_id": "vhs-straubing-bogen",
@@ -1578,10 +1610,12 @@
 		"website": "https://www.vhs-straubing.de/",
 		"test_page_url": "https://www.vhs-straubing.de/p/sprachen/einbuergerungstest-563-CAT-KAT406",
 		"reader": "itemkg",
-		"reader_config": null,
+		"reader_config": {
+			"list_url": "https://www.vhs-straubing.de/p/sprachen/einbuergerungstest-563-CAT-KAT406"
+		},
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": "2026-10-27T07:25:45.068Z"
+		"verified_at": "2026-10-29T12:00:00.000Z"
 	},
 	{
 		"centre_id": "vhs-taufkirchen",
@@ -1774,12 +1808,14 @@
 		"lat": 48.9183,
 		"lon": 11.870051,
 		"website": "https://www.vhs-weiterbildungsakademie.de/",
-		"test_page_url": "https://www.vhs-weiterbildungsakademie.de/suche?tx_itemkgconnect_search%5B__referrer%5D%5B%40extension%5D=&tx_itemkgconnect_search%5B__referrer%5D%5B%40controller%5D=Standard&tx_itemkgconnect_search%5B__referrer%5D%5B%40action%5D=default&tx_itemkgconnect_search%5B__referrer%5D%5Barguments%5D=YTowOnt9bb6440284d86114ae8f06ceca05f3087a54b19a3&tx_itemkgconnect_search%5B__referrer%5D%5B%40request%5D=%7B%22%40extension%22%3Anull%2C%22%40controller%22%3A%22Standard%22%2C%22%40action%22%3A%22default%22%7D812c8c542f1ed7ef67706fe377a36c45a3a589ba&tx_itemkgconnect_search%5B__trustedProperties%5D=%7B%22sword%22%3A1%2C%22filters%22%3A%7B%22sort%22%3A%5B1%5D%2C%22reset%22%3A1%7D%7D29b6325eb7da486e1971cf282e63c337b073f2d8&tx_itemkgconnect_search%5Bsword%5D=Einbürgerungstest&tx_itemkgconnect_search%5Bfilters%5D%5Bsort%5D%5B%5D=__EMPTY__&tx_itemkgconnect_search%5Bfilters%5D%5Breset%5D=1",
+		"test_page_url": "https://www.vhs-weiterbildungsakademie.de/suche?tx_itemkgconnect_search%5Bsword%5D=Einb%C3%BCrgerungstest",
 		"reader": "itemkg",
-		"reader_config": null,
+		"reader_config": {
+			"list_url": "https://www.vhs-weiterbildungsakademie.de/suche?tx_itemkgconnect_search%5Bsword%5D=Einb%C3%BCrgerungstest"
+		},
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": null
+		"verified_at": "2026-10-29T12:00:00.000Z"
 	},
 	{
 		"centre_id": "vhs-wuerzburg",
@@ -1794,10 +1830,12 @@
 		"website": "https://www.vhs-wuerzburg.de/",
 		"test_page_url": "https://www.vhs-wuerzburg.info/p/sprachen-489-CAT-KAT5892356?tx_itemkgconnect_categorys%5Bfilters%5D%5Breset%5D=1&tx_itemkgconnect_categorys%5Bfilters%5D%5Bsort%5D%5B0%5D=__EMPTY__&tx_itemkgconnect_categorys%5Bsword%5D=einbürgerung&cHash=7c429aef482378a0bbc422fcfe4806e7",
 		"reader": "itemkg",
-		"reader_config": null,
+		"reader_config": {
+			"list_url": "https://www.vhs-wuerzburg.info/p/sprachen-489-CAT-KAT5892356?tx_itemkgconnect_categorys%5Bfilters%5D%5Breset%5D=1&tx_itemkgconnect_categorys%5Bfilters%5D%5Bsort%5D%5B0%5D=__EMPTY__&tx_itemkgconnect_categorys%5Bsword%5D=einbürgerung&cHash=7c429aef482378a0bbc422fcfe4806e7"
+		},
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": null
+		"verified_at": "2026-10-29T12:00:00.000Z"
 	},
 	{
 		"centre_id": "vhs-zv-unteres-pegnitztal",
@@ -1992,10 +2030,12 @@
 		"website": "https://www.vhs-cham.de/",
 		"test_page_url": "https://www.vhs-cham.de/p/sprachen/einbuergerungstest-test-leben-in-deutschland-461-CAT-KAT70?tx_itemkgconnect_categorys%5Bpage%5D=0&cHash=d57e7b9c77d9ef12bdcb69d237598ae3",
 		"reader": "itemkg",
-		"reader_config": null,
+		"reader_config": {
+			"list_url": "https://www.vhs-cham.de/p/sprachen/einbuergerungstest-test-leben-in-deutschland-461-CAT-KAT70?tx_itemkgconnect_categorys%5Bpage%5D=0&cHash=d57e7b9c77d9ef12bdcb69d237598ae3"
+		},
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": null
+		"verified_at": "2026-10-29T12:00:00.000Z"
 	},
 	{
 		"centre_id": "volkshochschule-im-landkreis-unterallgaeu-e-v",
@@ -2136,9 +2176,11 @@
 		"website": "https://www.vhs-erding.de/",
 		"test_page_url": "https://www.vhs-erding.de/p/deutsch-integration/pruefungen/einbuergerungstest-664-CAT-KAT329",
 		"reader": "itemkg",
-		"reader_config": null,
+		"reader_config": {
+			"list_url": "https://www.vhs-erding.de/p/deutsch-integration/pruefungen/einbuergerungstest-664-CAT-KAT329"
+		},
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": "2026-10-27T07:25:45.068Z"
+		"verified_at": "2026-10-29T12:00:00.000Z"
 	}
 ]
