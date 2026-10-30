@@ -3,14 +3,14 @@
 	"centres": {
 		"muenchner-vhs-gmbh": {
 			"last_result": "failed",
-			"last_checked_at": "2026-10-30T09:30:16.918Z",
+			"last_checked_at": "2026-10-30T10:11:16.287Z",
 			"last_success_at": null,
 			"listings": []
 		},
 		"vhs-aichach-friedberg-e-v": {
 			"last_result": "ok",
-			"last_checked_at": "2026-10-30T09:30:16.918Z",
-			"last_success_at": "2026-10-30T09:30:16.918Z",
+			"last_checked_at": "2026-10-30T10:11:16.287Z",
+			"last_success_at": "2026-10-30T10:11:16.287Z",
 			"listings": [
 				{
 					"id": "vhs-aichach-friedberg-e-v@2026-11-12T13:00",
@@ -26,7 +26,10 @@
 					"eligibility": "Voraussetzung: Wohnsitz in Bayern!",
 					"first_seen_at": "2026-10-30T09:30:16.918Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 48.355491,
+					"lon": 10.980517,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-aichach-friedberg-e-v@2026-11-12T14:30",
@@ -42,7 +45,10 @@
 					"eligibility": "Voraussetzung: Wohnsitz in Bayern!",
 					"first_seen_at": "2026-10-30T09:30:16.918Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 48.355491,
+					"lon": 10.980517,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-aichach-friedberg-e-v@2026-11-12T16:00",
@@ -58,7 +64,10 @@
 					"eligibility": "Voraussetzung: Wohnsitz in Bayern!",
 					"first_seen_at": "2026-10-30T09:30:16.918Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 48.355491,
+					"lon": 10.980517,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-aichach-friedberg-e-v@2027-01-15T14:00",
@@ -74,7 +83,10 @@
 					"eligibility": "Voraussetzung: Wohnsitz in Bayern!",
 					"first_seen_at": "2026-10-30T09:30:16.918Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 48.45865,
+					"lon": 11.132658,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-aichach-friedberg-e-v@2027-01-15T15:30",
@@ -90,14 +102,17 @@
 					"eligibility": "Voraussetzung: Wohnsitz in Bayern!",
 					"first_seen_at": "2026-10-30T09:30:16.918Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 48.45865,
+					"lon": 11.132658,
+					"location": "venue"
 				}
 			]
 		},
 		"vhs-arberland": {
 			"last_result": "ok",
-			"last_checked_at": "2026-10-30T09:30:16.918Z",
-			"last_success_at": "2026-10-30T09:30:16.918Z",
+			"last_checked_at": "2026-10-30T10:11:16.287Z",
+			"last_success_at": "2026-10-30T10:11:16.287Z",
 			"listings": [
 				{
 					"id": "vhs-arberland@2026-12-10T18:00",
@@ -113,7 +128,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 48.972251,
+					"lon": 13.127653,
+					"location": "centre"
 				},
 				{
 					"id": "vhs-arberland@2027-02-23T09:00",
@@ -129,14 +147,17 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 48.972251,
+					"lon": 13.127653,
+					"location": "centre"
 				}
 			]
 		},
 		"vhs-aschaffenburg": {
 			"last_result": "ok",
-			"last_checked_at": "2026-10-30T09:30:16.918Z",
-			"last_success_at": "2026-10-30T09:30:16.918Z",
+			"last_checked_at": "2026-10-30T10:11:16.287Z",
+			"last_success_at": "2026-10-30T10:11:16.287Z",
 			"listings": [
 				{
 					"id": "vhs-aschaffenburg@2027-06-17T11:00",
@@ -152,14 +173,17 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 49.975849,
+					"lon": 9.144366,
+					"location": "centre"
 				}
 			]
 		},
 		"vhs-bad-kisingen-und-hammelburg": {
 			"last_result": "ok",
-			"last_checked_at": "2026-10-30T09:30:16.918Z",
-			"last_success_at": "2026-10-30T09:30:16.918Z",
+			"last_checked_at": "2026-10-30T10:11:16.287Z",
+			"last_success_at": "2026-10-30T10:11:16.287Z",
 			"listings": [
 				{
 					"id": "vhs-bad-kisingen-und-hammelburg@2026-11-19T14:30",
@@ -175,7 +199,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 50.204702,
+					"lon": 10.100123,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-bad-kisingen-und-hammelburg@2026-12-03T14:30",
@@ -191,14 +218,17 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 50.204702,
+					"lon": 10.100123,
+					"location": "venue"
 				}
 			]
 		},
 		"vhs-bad-reichenhall": {
 			"last_result": "ok",
-			"last_checked_at": "2026-10-30T09:30:16.918Z",
-			"last_success_at": "2026-10-30T09:30:16.918Z",
+			"last_checked_at": "2026-10-30T10:11:16.287Z",
+			"last_success_at": "2026-10-30T10:11:16.287Z",
 			"listings": [
 				{
 					"id": "vhs-bad-reichenhall@2026-11-10T08:00",
@@ -214,7 +244,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 47.723384,
+					"lon": 12.87707,
+					"location": "centre"
 				},
 				{
 					"id": "vhs-bad-reichenhall@2026-12-15T08:00",
@@ -230,7 +263,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 47.723384,
+					"lon": 12.87707,
+					"location": "centre"
 				},
 				{
 					"id": "vhs-bad-reichenhall@2027-01-19T08:00",
@@ -246,7 +282,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 47.723384,
+					"lon": 12.87707,
+					"location": "centre"
 				},
 				{
 					"id": "vhs-bad-reichenhall@2027-02-23T08:00",
@@ -262,7 +301,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 47.723384,
+					"lon": 12.87707,
+					"location": "centre"
 				},
 				{
 					"id": "vhs-bad-reichenhall@2027-04-06T08:00",
@@ -278,7 +320,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 47.723384,
+					"lon": 12.87707,
+					"location": "centre"
 				},
 				{
 					"id": "vhs-bad-reichenhall@2027-05-11T08:00",
@@ -294,7 +339,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 47.723384,
+					"lon": 12.87707,
+					"location": "centre"
 				},
 				{
 					"id": "vhs-bad-reichenhall@2027-06-22T08:00",
@@ -310,7 +358,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 47.723384,
+					"lon": 12.87707,
+					"location": "centre"
 				},
 				{
 					"id": "vhs-bad-reichenhall@2027-07-27T08:00",
@@ -326,26 +377,29 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 47.723384,
+					"lon": 12.87707,
+					"location": "centre"
 				}
 			]
 		},
 		"vhs-bamberg": {
 			"last_result": "ok",
-			"last_checked_at": "2026-10-30T09:30:16.918Z",
-			"last_success_at": "2026-10-30T09:30:16.918Z",
+			"last_checked_at": "2026-10-30T10:11:16.287Z",
+			"last_success_at": "2026-10-30T10:11:16.287Z",
 			"listings": []
 		},
 		"vhs-bamberg-land-e-v": {
 			"last_result": "ok",
-			"last_checked_at": "2026-10-30T09:30:16.918Z",
-			"last_success_at": "2026-10-30T09:30:16.918Z",
+			"last_checked_at": "2026-10-30T10:11:16.287Z",
+			"last_success_at": "2026-10-30T10:11:16.287Z",
 			"listings": []
 		},
 		"vhs-beilngries-e-v": {
 			"last_result": "ok",
-			"last_checked_at": "2026-10-30T09:30:16.918Z",
-			"last_success_at": "2026-10-30T09:30:16.918Z",
+			"last_checked_at": "2026-10-30T10:11:16.287Z",
+			"last_success_at": "2026-10-30T10:11:16.287Z",
 			"listings": [
 				{
 					"id": "vhs-beilngries-e-v@2026-10-30T12:30",
@@ -361,7 +415,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 49.035854,
+					"lon": 11.471575,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-beilngries-e-v@2026-12-08T15:30",
@@ -377,7 +434,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 49.035854,
+					"lon": 11.471575,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-beilngries-e-v@2027-01-15T12:30",
@@ -393,7 +453,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 49.035854,
+					"lon": 11.471575,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-beilngries-e-v@2027-02-26T09:30",
@@ -409,7 +472,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 49.034352,
+					"lon": 11.470594,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-beilngries-e-v@2027-03-16T15:30",
@@ -425,7 +491,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 49.035854,
+					"lon": 11.471575,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-beilngries-e-v@2027-04-23T09:30",
@@ -441,7 +510,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 49.034352,
+					"lon": 11.470594,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-beilngries-e-v@2027-06-01T15:30",
@@ -457,7 +529,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 49.035854,
+					"lon": 11.471575,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-beilngries-e-v@2027-07-16T09:30",
@@ -473,14 +548,17 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 49.034352,
+					"lon": 11.470594,
+					"location": "venue"
 				}
 			]
 		},
 		"vhs-coburg-ggmbh": {
 			"last_result": "ok",
-			"last_checked_at": "2026-10-30T09:30:16.918Z",
-			"last_success_at": "2026-10-30T09:30:16.918Z",
+			"last_checked_at": "2026-10-30T10:11:16.287Z",
+			"last_success_at": "2026-10-30T10:11:16.287Z",
 			"listings": [
 				{
 					"id": "vhs-coburg-ggmbh@2027-01-18T13:30",
@@ -496,7 +574,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 50.260737,
+					"lon": 10.962208,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-coburg-ggmbh@2027-01-18T13:30#2",
@@ -512,7 +593,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 50.260737,
+					"lon": 10.962208,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-coburg-ggmbh@2027-04-12T13:30",
@@ -528,7 +612,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 50.260737,
+					"lon": 10.962208,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-coburg-ggmbh@2027-04-12T13:30#2",
@@ -544,7 +631,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 50.260737,
+					"lon": 10.962208,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-coburg-ggmbh@2027-07-05T13:30",
@@ -560,7 +650,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 50.260737,
+					"lon": 10.962208,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-coburg-ggmbh@2027-07-05T13:30#2",
@@ -576,14 +669,17 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 50.260737,
+					"lon": 10.962208,
+					"location": "venue"
 				}
 			]
 		},
 		"vhs-der-gemeinden-im-landkreis-roth": {
 			"last_result": "ok",
-			"last_checked_at": "2026-10-30T09:30:16.918Z",
-			"last_success_at": "2026-10-30T09:30:16.918Z",
+			"last_checked_at": "2026-10-30T10:11:16.287Z",
+			"last_success_at": "2026-10-30T10:11:16.287Z",
 			"listings": [
 				{
 					"id": "vhs-der-gemeinden-im-landkreis-roth@2026-11-14T09:00",
@@ -599,7 +695,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 49.245351,
+					"lon": 11.100952,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-der-gemeinden-im-landkreis-roth@2026-11-14T10:30",
@@ -615,14 +714,17 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 49.245351,
+					"lon": 11.100952,
+					"location": "venue"
 				}
 			]
 		},
 		"vhs-des-landkreises-forchheim": {
 			"last_result": "ok",
-			"last_checked_at": "2026-10-30T09:30:16.918Z",
-			"last_success_at": "2026-10-30T09:30:16.918Z",
+			"last_checked_at": "2026-10-30T10:11:16.287Z",
+			"last_success_at": "2026-10-30T10:11:16.287Z",
 			"listings": [
 				{
 					"id": "vhs-des-landkreises-forchheim@2026-12-10T18:30",
@@ -638,14 +740,17 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 49.720003,
+					"lon": 11.059937,
+					"location": "venue"
 				}
 			]
 		},
 		"vhs-donauwoerth": {
 			"last_result": "ok",
-			"last_checked_at": "2026-10-30T09:30:16.918Z",
-			"last_success_at": "2026-10-30T09:30:16.918Z",
+			"last_checked_at": "2026-10-30T10:11:16.287Z",
+			"last_success_at": "2026-10-30T10:11:16.287Z",
 			"listings": [
 				{
 					"id": "vhs-donauwoerth@2026-11-20T18:00",
@@ -661,7 +766,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 48.720232,
+					"lon": 10.779956,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-donauwoerth@2026-12-18T18:00",
@@ -677,7 +785,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 48.720232,
+					"lon": 10.779956,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-donauwoerth@2027-01-29T18:00",
@@ -693,14 +804,17 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 48.720232,
+					"lon": 10.779956,
+					"location": "venue"
 				}
 			]
 		},
 		"vhs-ebersberger-land-grafing-bei-muenchen": {
 			"last_result": "ok",
-			"last_checked_at": "2026-10-30T09:30:16.918Z",
-			"last_success_at": "2026-10-30T09:30:16.918Z",
+			"last_checked_at": "2026-10-30T10:11:16.287Z",
+			"last_success_at": "2026-10-30T10:11:16.287Z",
 			"listings": [
 				{
 					"id": "vhs-ebersberger-land-grafing-bei-muenchen@2026-12-15T14:30",
@@ -716,14 +830,17 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 48.074784,
+					"lon": 11.966294,
+					"location": "venue"
 				}
 			]
 		},
 		"vhs-f-d-landkreis-regensburg-e-v": {
 			"last_result": "ok",
-			"last_checked_at": "2026-10-30T09:30:16.918Z",
-			"last_success_at": "2026-10-30T09:30:16.918Z",
+			"last_checked_at": "2026-10-30T10:11:16.287Z",
+			"last_success_at": "2026-10-30T10:11:16.287Z",
 			"listings": [
 				{
 					"id": "vhs-f-d-landkreis-regensburg-e-v@2027-01-15T12:30",
@@ -739,7 +856,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 48.988999,
+					"lon": 12.19213,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-f-d-landkreis-regensburg-e-v@2027-01-15T14:00",
@@ -755,7 +875,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 48.988999,
+					"lon": 12.19213,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-f-d-landkreis-regensburg-e-v@2027-01-29T12:30",
@@ -771,7 +894,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 48.988999,
+					"lon": 12.19213,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-f-d-landkreis-regensburg-e-v@2027-01-29T14:00",
@@ -787,7 +913,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 48.988999,
+					"lon": 12.19213,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-f-d-landkreis-regensburg-e-v@2027-02-19T12:30",
@@ -803,7 +932,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 48.988999,
+					"lon": 12.19213,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-f-d-landkreis-regensburg-e-v@2027-02-19T14:00",
@@ -819,7 +951,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 48.988999,
+					"lon": 12.19213,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-f-d-landkreis-regensburg-e-v@2027-03-05T12:30",
@@ -835,7 +970,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 48.988999,
+					"lon": 12.19213,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-f-d-landkreis-regensburg-e-v@2027-03-05T14:00",
@@ -851,7 +989,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 48.988999,
+					"lon": 12.19213,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-f-d-landkreis-regensburg-e-v@2027-03-19T12:30",
@@ -867,7 +1008,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 48.988999,
+					"lon": 12.19213,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-f-d-landkreis-regensburg-e-v@2027-03-19T14:00",
@@ -883,14 +1027,17 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 48.988999,
+					"lon": 12.19213,
+					"location": "venue"
 				}
 			]
 		},
 		"vhs-fichtelgebirge": {
 			"last_result": "ok",
-			"last_checked_at": "2026-10-30T09:30:16.918Z",
-			"last_success_at": "2026-10-30T09:30:16.918Z",
+			"last_checked_at": "2026-10-30T10:11:16.287Z",
+			"last_success_at": "2026-10-30T10:11:16.287Z",
 			"listings": [
 				{
 					"id": "vhs-fichtelgebirge@2026-11-26T10:00",
@@ -906,7 +1053,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 50.00416,
+					"lon": 12.09583,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-fichtelgebirge@2026-12-08T13:00",
@@ -922,7 +1072,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 50.166326,
+					"lon": 12.142697,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-fichtelgebirge@2027-01-14T13:00",
@@ -938,7 +1091,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 50.00416,
+					"lon": 12.09583,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-fichtelgebirge@2027-02-02T13:00",
@@ -954,7 +1110,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 50.166326,
+					"lon": 12.142697,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-fichtelgebirge@2027-03-18T13:00",
@@ -970,7 +1129,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 50.00416,
+					"lon": 12.09583,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-fichtelgebirge@2027-04-06T13:00",
@@ -986,7 +1148,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 50.166326,
+					"lon": 12.142697,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-fichtelgebirge@2027-05-13T13:00",
@@ -1002,7 +1167,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 50.00416,
+					"lon": 12.09583,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-fichtelgebirge@2027-06-08T13:00",
@@ -1018,7 +1186,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 50.166326,
+					"lon": 12.142697,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-fichtelgebirge@2027-07-08T13:00",
@@ -1034,7 +1205,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 50.00416,
+					"lon": 12.09583,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-fichtelgebirge@2027-08-03T13:00",
@@ -1050,7 +1224,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 50.166326,
+					"lon": 12.142697,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-fichtelgebirge@2027-09-16T13:00",
@@ -1066,7 +1243,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 50.00416,
+					"lon": 12.09583,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-fichtelgebirge@2027-10-12T13:00",
@@ -1082,7 +1262,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 50.166326,
+					"lon": 12.142697,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-fichtelgebirge@2027-11-11T13:00",
@@ -1098,7 +1281,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 50.00416,
+					"lon": 12.09583,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-fichtelgebirge@2027-12-14T13:00",
@@ -1114,14 +1300,17 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 50.166326,
+					"lon": 12.142697,
+					"location": "venue"
 				}
 			]
 		},
 		"vhs-fuerth-ggmbh": {
 			"last_result": "ok",
-			"last_checked_at": "2026-10-30T09:30:16.918Z",
-			"last_success_at": "2026-10-30T09:30:16.918Z",
+			"last_checked_at": "2026-10-30T10:11:16.287Z",
+			"last_success_at": "2026-10-30T10:11:16.287Z",
 			"listings": [
 				{
 					"id": "vhs-fuerth-ggmbh@2026-12-04T09:00",
@@ -1137,7 +1326,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 49.476594,
+					"lon": 10.988654,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-fuerth-ggmbh@2027-02-05T09:00",
@@ -1153,14 +1345,17 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 49.476594,
+					"lon": 10.988654,
+					"location": "venue"
 				}
 			]
 		},
 		"vhs-groebenzell-e-v": {
 			"last_result": "ok",
-			"last_checked_at": "2026-10-30T09:30:16.918Z",
-			"last_success_at": "2026-10-30T09:30:16.918Z",
+			"last_checked_at": "2026-10-30T10:11:16.287Z",
+			"last_success_at": "2026-10-30T10:11:16.287Z",
 			"listings": [
 				{
 					"id": "vhs-groebenzell-e-v@2026-11-30T14:00",
@@ -1176,7 +1371,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-30T09:30:16.918Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 48.193792,
+					"lon": 11.371007,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-groebenzell-e-v@2026-11-30T15:30",
@@ -1192,14 +1390,17 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-30T09:30:16.918Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 48.193792,
+					"lon": 11.371007,
+					"location": "venue"
 				}
 			]
 		},
 		"vhs-im-norden-des-landkreises-muenchen": {
-			"last_result": "failed",
-			"last_checked_at": "2026-10-30T09:30:16.918Z",
-			"last_success_at": "2026-10-29T17:58:35.847Z",
+			"last_result": "ok",
+			"last_checked_at": "2026-10-30T10:11:16.287Z",
+			"last_success_at": "2026-10-30T10:11:16.287Z",
 			"listings": [
 				{
 					"id": "vhs-im-norden-des-landkreises-muenchen@2026-10-30T16:00",
@@ -1215,7 +1416,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 48.250783,
+					"lon": 11.649372,
+					"location": "centre"
 				},
 				{
 					"id": "vhs-im-norden-des-landkreises-muenchen@2026-11-20T15:00",
@@ -1231,7 +1435,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 48.250783,
+					"lon": 11.649372,
+					"location": "centre"
 				},
 				{
 					"id": "vhs-im-norden-des-landkreises-muenchen@2026-11-20T16:30",
@@ -1247,7 +1454,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 48.250783,
+					"lon": 11.649372,
+					"location": "centre"
 				},
 				{
 					"id": "vhs-im-norden-des-landkreises-muenchen@2026-12-04T15:00",
@@ -1263,7 +1473,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 48.250783,
+					"lon": 11.649372,
+					"location": "centre"
 				},
 				{
 					"id": "vhs-im-norden-des-landkreises-muenchen@2027-01-22T15:00",
@@ -1279,7 +1492,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 48.250783,
+					"lon": 11.649372,
+					"location": "centre"
 				},
 				{
 					"id": "vhs-im-norden-des-landkreises-muenchen@2027-02-26T15:00",
@@ -1295,13 +1511,16 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 48.250783,
+					"lon": 11.649372,
+					"location": "centre"
 				}
 			]
 		},
 		"vhs-landshut-e-v": {
-			"last_result": "ok",
-			"last_checked_at": "2026-10-30T09:30:16.918Z",
+			"last_result": "failed",
+			"last_checked_at": "2026-10-30T10:11:16.287Z",
 			"last_success_at": "2026-10-30T09:30:16.918Z",
 			"listings": [
 				{
@@ -1436,8 +1655,8 @@
 		},
 		"vhs-moosburg-e-v": {
 			"last_result": "ok",
-			"last_checked_at": "2026-10-30T09:30:16.918Z",
-			"last_success_at": "2026-10-30T09:30:16.918Z",
+			"last_checked_at": "2026-10-30T10:11:16.287Z",
+			"last_success_at": "2026-10-30T10:11:16.287Z",
 			"listings": [
 				{
 					"id": "vhs-moosburg-e-v@2026-11-26T15:00",
@@ -1453,7 +1672,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-30T09:30:16.918Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 48.468349,
+					"lon": 11.935767,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-moosburg-e-v@2027-02-25T15:00",
@@ -1469,14 +1691,17 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-30T09:30:16.918Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 48.468349,
+					"lon": 11.935767,
+					"location": "venue"
 				}
 			]
 		},
 		"vhs-muehldorf-e-v": {
 			"last_result": "ok",
-			"last_checked_at": "2026-10-30T09:30:16.918Z",
-			"last_success_at": "2026-10-30T09:30:16.918Z",
+			"last_checked_at": "2026-10-30T10:11:16.287Z",
+			"last_success_at": "2026-10-30T10:11:16.287Z",
 			"listings": [
 				{
 					"id": "vhs-muehldorf-e-v@2026-12-11T13:00",
@@ -1492,14 +1717,17 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 48.25594,
+					"lon": 12.526903,
+					"location": "centre"
 				}
 			]
 		},
 		"vhs-starnberger-see-e-v": {
 			"last_result": "ok",
-			"last_checked_at": "2026-10-30T09:30:16.918Z",
-			"last_success_at": "2026-10-30T09:30:16.918Z",
+			"last_checked_at": "2026-10-30T10:11:16.287Z",
+			"last_success_at": "2026-10-30T10:11:16.287Z",
 			"listings": [
 				{
 					"id": "vhs-starnberger-see-e-v@2026-12-11T15:30",
@@ -1515,7 +1743,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 47.996051,
+					"lon": 11.340787,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-starnberger-see-e-v@2026-12-15T18:15",
@@ -1531,7 +1762,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 48.002779,
+					"lon": 11.170307,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-starnberger-see-e-v@2027-01-29T13:30",
@@ -1547,7 +1781,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 47.996051,
+					"lon": 11.340787,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-starnberger-see-e-v@2027-01-29T14:30",
@@ -1563,7 +1800,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 47.996051,
+					"lon": 11.340787,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-starnberger-see-e-v@2027-01-29T15:30",
@@ -1579,7 +1819,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 47.996051,
+					"lon": 11.340787,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-starnberger-see-e-v@2027-02-02T18:15",
@@ -1595,14 +1838,17 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 48.002779,
+					"lon": 11.170307,
+					"location": "venue"
 				}
 			]
 		},
 		"vhs-taufkirchen": {
 			"last_result": "ok",
-			"last_checked_at": "2026-10-30T09:30:16.918Z",
-			"last_success_at": "2026-10-30T09:30:16.918Z",
+			"last_checked_at": "2026-10-30T10:11:16.287Z",
+			"last_success_at": "2026-10-30T10:11:16.287Z",
 			"listings": [
 				{
 					"id": "vhs-taufkirchen@2026-11-11T13:00",
@@ -1618,7 +1864,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 48.048001,
+					"lon": 11.599125,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-taufkirchen@2026-11-11T14:00",
@@ -1634,7 +1883,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 48.048001,
+					"lon": 11.599125,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-taufkirchen@2026-11-11T15:00",
@@ -1650,7 +1902,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 48.048001,
+					"lon": 11.599125,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-taufkirchen@2026-12-02T13:00",
@@ -1666,7 +1921,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 48.048001,
+					"lon": 11.599125,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-taufkirchen@2026-12-02T14:00",
@@ -1682,14 +1940,17 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 48.048001,
+					"lon": 11.599125,
+					"location": "venue"
 				}
 			]
 		},
 		"vhs-traunreut-e-v": {
 			"last_result": "ok",
-			"last_checked_at": "2026-10-30T09:30:16.918Z",
-			"last_success_at": "2026-10-30T09:30:16.918Z",
+			"last_checked_at": "2026-10-30T10:11:16.287Z",
+			"last_success_at": "2026-10-30T10:11:16.287Z",
 			"listings": [
 				{
 					"id": "vhs-traunreut-e-v@2026-11-13T10:00",
@@ -1705,7 +1966,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 47.961829,
+					"lon": 12.589039,
+					"location": "venue"
 				},
 				{
 					"id": "vhs-traunreut-e-v@2026-12-04T10:00",
@@ -1721,14 +1985,23 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 47.961829,
+					"lon": 12.589039,
+					"location": "venue"
 				}
 			]
 		},
+		"volkshochschule-eching-e-v": {
+			"last_result": "failed",
+			"last_checked_at": "2026-10-30T10:11:16.287Z",
+			"last_success_at": null,
+			"listings": []
+		},
 		"volkshochschule-im-landkreis-unterallgaeu-e-v": {
 			"last_result": "ok",
-			"last_checked_at": "2026-10-30T09:30:16.918Z",
-			"last_success_at": "2026-10-30T09:30:16.918Z",
+			"last_checked_at": "2026-10-30T10:11:16.287Z",
+			"last_success_at": "2026-10-30T10:11:16.287Z",
 			"listings": [
 				{
 					"id": "volkshochschule-im-landkreis-unterallgaeu-e-v@2026-11-19T08:00",
@@ -1744,14 +2017,17 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 48.045618,
+					"lon": 10.486929,
+					"location": "venue"
 				}
 			]
 		},
 		"volkshochschule-rottenburg-an-der-laaber-e-v": {
 			"last_result": "ok",
-			"last_checked_at": "2026-10-30T09:30:16.918Z",
-			"last_success_at": "2026-10-30T09:30:16.918Z",
+			"last_checked_at": "2026-10-30T10:11:16.287Z",
+			"last_success_at": "2026-10-30T10:11:16.287Z",
 			"listings": [
 				{
 					"id": "volkshochschule-rottenburg-an-der-laaber-e-v@2027-03-09T16:00",
@@ -1767,14 +2043,17 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 48.703834,
+					"lon": 12.04102,
+					"location": "centre"
 				}
 			]
 		},
 		"volkshochschule-straubing-bogen-ggmbh": {
 			"last_result": "ok",
-			"last_checked_at": "2026-10-30T09:30:16.918Z",
-			"last_success_at": "2026-10-30T09:30:16.918Z",
+			"last_checked_at": "2026-10-30T10:11:16.287Z",
+			"last_success_at": "2026-10-30T10:11:16.287Z",
 			"listings": [
 				{
 					"id": "volkshochschule-straubing-bogen-ggmbh@2026-11-30T09:00",
@@ -1790,7 +2069,10 @@
 					"eligibility": null,
 					"first_seen_at": "2026-10-29T14:03:56.395Z",
 					"removed_at": null,
-					"baseline": true
+					"baseline": true,
+					"lat": 48.917407,
+					"lon": 12.667487,
+					"location": "venue"
 				}
 			]
 		}

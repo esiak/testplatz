@@ -1,0 +1,89 @@
+{
+	"venuesVersion": 1,
+	"entries": {
+		"dr.-wintrich-str 3, 85560 ebersberg": {
+			"fetched_at": "2026-10-30T10:11:16.287Z",
+			"lat": 48.074784,
+			"lon": 11.966294,
+			"reason": null
+		},
+		"fikentscherstr 24, 95615 marktredwitz": {
+			"fetched_at": "2026-10-30T10:11:16.287Z",
+			"lat": 50.00416,
+			"lon": 12.09583,
+			"reason": null
+		},
+		"hauptstr 47, 92339 beilngries": {
+			"fetched_at": "2026-10-30T10:11:16.287Z",
+			"lat": 49.035854,
+			"lon": 11.471575,
+			"reason": null
+		},
+		"hirschenstr 27 / 29, 90762 fürth": {
+			"fetched_at": "2026-10-30T10:11:16.287Z",
+			"lat": 49.476594,
+			"lon": 10.988654,
+			"reason": null
+		},
+		"jahnstr 10, 82211 herrsching": {
+			"fetched_at": "2026-10-30T10:11:16.287Z",
+			"lat": 48.002779,
+			"lon": 11.170307,
+			"reason": null
+		},
+		"johann-strauß-str 1, 91154 roth": {
+			"fetched_at": "2026-10-30T10:11:16.287Z",
+			"lat": 49.245351,
+			"lon": 11.100952,
+			"reason": null
+		},
+		"johann.-hinrich-wichern-str 5, 83301 traunreut": {
+			"fetched_at": "2026-10-30T10:11:16.287Z",
+			"lat": 47.961829,
+			"lon": 12.589039,
+			"reason": null
+		},
+		"klosterhof 1-2, 94327 bogen": {
+			"fetched_at": "2026-10-30T10:11:16.287Z",
+			"lat": 48.917407,
+			"lon": 12.667487,
+			"reason": null
+		},
+		"königsberger str 4, 93073 neutraubling": {
+			"fetched_at": "2026-10-30T10:11:16.287Z",
+			"lat": 48.988999,
+			"lon": 12.19213,
+			"reason": null
+		},
+		"ludwigsmühle 10, 95100 selb": {
+			"fetched_at": "2026-10-30T10:11:16.287Z",
+			"lat": 50.166326,
+			"lon": 12.142697,
+			"reason": null
+		},
+		"martinstr 17 + 19, 86551 aichach": {
+			"fetched_at": "2026-10-30T10:11:16.287Z",
+			"lat": 48.45865,
+			"lon": 11.132658,
+			"reason": null
+		},
+		"maximilianstr 63, 87719 mindelheim": {
+			"fetched_at": "2026-10-30T10:11:16.287Z",
+			"lat": 48.045618,
+			"lon": 10.486929,
+			"reason": null
+		},
+		"pfarrstr 6, 86316 friedberg": {
+			"fetched_at": "2026-10-30T10:11:16.287Z",
+			"lat": 48.355491,
+			"lon": 10.980517,
+			"reason": null
+		},
+		"winkelser str 42, 97688 bad kissingen": {
+			"fetched_at": "2026-10-30T10:11:16.287Z",
+			"lat": 50.204702,
+			"lon": 10.100123,
+			"reason": null
+		}
+	}
+}
