@@ -1,7 +1,7 @@
 # KuferWeb note
 
 Centres read by the KuferWeb reader (`pipeline/readers/kuferweb/`, Story 2.3). Checked on
-2026-10-28 with the bot client (identified user agent, robots.txt respected): every test page
+2026-10-28 (Eching 2026-10-30) with the bot client (identified user agent, robots.txt respected): every test page
 below answered 200 and is a KuferWeb course list.
 
 ## Confirmed
@@ -17,6 +17,7 @@ below answered 200 and is a KuferWeb course list.
 | `vhs-muehldorf-e-v` | https://www.vhs-muehldorf.de/programm/sprachen-verstaendigung/kategorie/Einbuergerung/61#inhalt | 2026-10-28 |
 | `vhs-taufkirchen` | https://www.vhs-taufkirchen.de/kurse/integration-einbuergerung/einbuergerungstest | 2026-10-28 |
 | `vhs-traunreut-e-v` | https://www.vhs-traunreut.de/programm/sprachen/kategorie/Einbuergerungstest/1052 | 2026-10-28 |
+| `volkshochschule-eching-e-v` | https://www.vhs-eching.de/programm/sprachen/kategorie/Einbuergerungstest/364 | 2026-10-30 |
 | `volkshochschule-im-landkreis-unterallgaeu-e-v` | https://www.vhs-ua.de/programm/sprachen-und-verstaendigung/deutsch/kategorie/Einbuergerungspruefung/26 | 2026-10-28 |
 | `volkshochschule-rottenburg-an-der-laaber-e-v` | https://www.vhs-rottenburg-laaber.de/kurse/sprachen | 2026-10-28 |
 | `volkshochschule-straubing-bogen-ggmbh` | https://www.vhs-straubing-bogen.de/programm/sprachen/kategorie/Deutsch+als+Fremdsprache/69#inhalt | 2026-10-28 |
