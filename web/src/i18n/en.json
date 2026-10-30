@@ -100,6 +100,7 @@
 	"card.destination_test_page": "Opens the centre's test page",
 	"card.eligibility_label": "Who may register:",
 	"card.eligibility_unknown": "Who may register: not stated, check the provider page",
+	"card.eligibility_not_stated": "Who may register: not stated",
 	"card.deadline_passed": "Passed",
 	"card.registration.online": "Online",
 	"card.registration.email": "Email",
