@@ -20,9 +20,9 @@ This document provides the complete epic and story breakdown for bgtsearch, deco
 ### Functional Requirements
 
 FR1: A user can search by Bavarian town name or postcode, matched against a built-in place table, with a radius of 10 / 20 / 40 / 60 / 100 km (default 40). (CAP-1)
-FR2: Results contain every directory centre within the radius, by straight-line distance from the centre's coordinates, each appearing exactly once as a result card (one per current date), a no-dates card, or an uncovered card. (CAP-1, CAP-4, CAP-10)
+FR2: Results contain one result card for every current date whose test-address coordinates are within the radius, plus one no-dates or uncovered card for every centre without current dates whose own coordinates are within it; distance is straight-line. A date uses its centre's coordinates only when it has no test address or the address cannot be located. A covered centre whose current dates all lie outside the radius does not appear. (CAP-1, CAP-4, CAP-10)
 FR3: Results sort by Soonest (default: dated cards by date then distance, then a "No dates to show" section with no-dates and uncovered cards by distance) or Nearest (all cards by distance, then date); applied on change. (CAP-1)
-FR4: Each card shows its distance in km and a "Map ↗" link that opens Google Maps for the test address in a new tab; nothing loads from Google until tapped. (CAP-1)
+FR4: Each card shows its distance in km (to the test address on result cards, to the centre on other cards) and a "Map ↗" link that opens Google Maps for the test address in a new tab; nothing loads from Google until tapped. (CAP-1)
 FR5: Past test dates are never listed. (CAP-1)
 FR6: Each test date shows date/time, centre, full test address (falls back to the centre address), status (Free seats / Booked out / Booked out · Waitlist / Status unknown), registration deadline (date / "Passed" / "unknown"), registration method (Online / Email / Post / In person / see website), and links to the provider's page for that date. (CAP-2)
 FR7: Missing source fields show as "unknown", never guessed. (CAP-2)
@@ -54,6 +54,7 @@ FR32: Results never re-sort or refresh while the page is open; reloading fetches
 FR33: The About the data page has six sections: how it works; booking systems status; centres not checked automatically (`#not-checked`, including why: unreadable system, opt-out, or failed check); sources; attribution (OSM/ODbL, Nominatim); contact for centres to be removed.
 FR34: Impressum and Privacy pages exist before public launch, linked from the footer; in private beta the links are hidden.
 FR35: Each test date from a covered centre shows who may register (e.g. MVHS: Munich residents only), extracted by the reader verbatim in German from the date page, else the centre's test page; when none is found the card reads "Who may register: not stated, check the provider page", never "open to all". Display text only: never matched against the searched place, never hides or flags a centre. Documents, fees and payment rules are out of scope. (CAP-11)
+FR36: Each test date's address is geocoded by the pipeline with Nominatim (structured search, ≤ 1 req/s, only addresses not yet cached, capped per run); hits and misses are cached in bot-owned state; a date whose address is missing or cannot be located takes its centre's coordinates and is marked `location: centre`. A lookup failure never fails the run. (CAP-1, CAP-2)
 
 ### NonFunctional Requirements
 
@@ -79,10 +80,10 @@ From ARCHITECTURE-SPINE.md:
 - Stack: Node 26 LTS, TypeScript 6.0 (no project code imports `typescript`), Vite 8.3, Preact 11.0, @preact/preset-vite 2.10, cheerio 1.2, zod 4.6, Vitest 5.0.
 - Repo layout per spine: `shared/`, `pipeline/{fetch,readers/<system>,stages}`, `pipeline/config.ts`, `web/` (with `src/i18n/{de,en}.json`), `tools/`, `data/{directory,state,public}`, `.github/workflows/`; import directions enforced (readers never import fetch/stages; web never imports pipeline/tools).
 - Static snapshot, no backend (AD-1): browser fetches only `snapshot.json` and `places.json`, same-origin.
-- Search state in URL fragment; distance via haversine from centre coordinates in the browser (AD-2).
+- Search state in URL fragment; distance via haversine in the browser, from each listing's coordinates for result cards and from centre coordinates otherwise (AD-2).
 - Reader contract (AD-3): `plan(centre)` + pure `parse(pages, centre, ctx)` returning ok/failed; `RawListing` zod schema in `shared/`; shared `mapStatus` with precedence waitlist > booked_out > free > unknown; `null` for absent fields; cheerio `load()` only; failing schema validation fails only that centre.
 - Zero-dates proof (AD-4): each reader defines its expected-structure check with a "structure missing" fixture that returns failed; non-2xx list page → failed without parsing.
-- Single polite HTTP path (AD-5) in `pipeline/fetch`, also used by `tools/`; per-host visit log in `data/state/`; `link_ok` from detail-page fetches only; charset decoding.
+- Single polite HTTP path (AD-5) in `pipeline/fetch`, also used by `tools/`; Nominatim allowed only from `tools/geocode` (centres, manual) and `pipeline/stages/locate` (new test addresses, cached, capped); per-host visit log in `data/state/`; `link_ok` from detail-page fetches only; charset decoding.
 - Run outcome and merge rules (AD-6): ok / failed / skipped; only merge writes state; tombstones (`removed_at`) until `starts_at` passes; `first_seen_at` immutable; baseline listings not new.
 - Listing identity (AD-7): `<centre_id>@<YYYY-MM-DDTHH:mm>` with `#n` suffix for same-minute sessions, built only in normalise.
 - Directory human-owned (AD-8) with typed `reader_config`; publish emits every centre with `coverage`; card type derived coverage-first.
@@ -132,7 +133,7 @@ UX-DR29: Banned patterns enforced: no filters that drop items with missing data,
 ### FR Coverage Map
 
 FR1: Epic 1 - Search by town or postcode with radius
-FR2: Epic 1 (all centres as cards) + Epic 2 (result and no-dates cards)
+FR2: Epic 1 (all centres as cards) + Epic 2 (result and no-dates cards, per-date location)
 FR3: Epic 2 - Soonest / Nearest sort (Epic 1 ships distance order only)
 FR4: Epic 1 - Distance and Google Maps link
 FR5: Epic 2 - Past dates never listed
@@ -166,6 +167,7 @@ FR32: Epic 1 - No live refresh while open
 FR33: Epic 1 (About page sections) + Epic 3 (system status section)
 FR34: Epic 4 - Impressum and Privacy
 FR35: Epic 2 - Eligibility (who may register) on result cards
+FR36: Epic 2 - Test-address coordinates
 
 ## Epic List
 
@@ -176,8 +178,8 @@ A user enters a Bavarian town, postcode or their location, picks a radius, and s
 
 ### Epic 2: See current test dates from KuferWeb and ITEM KG centres
 About 55 centres switch from "not checked" to real dates with status, deadline, registration method, who may register and a deep link, refreshed once a day and honest about freshness and failures.
-**FRs covered:** FR2 (result and no-dates cards), FR3, FR5, FR6, FR7, FR8, FR9, FR10, FR12, FR13, FR14, FR22 (fetch skips), FR24, FR30 (date count), FR31 (date notices), FR35
-**Notes:** Polite fetch, the reader contract, normalise and merge with history, then the scheduled run that commits and deploys, built with the KuferWeb reader first, end to end. The ITEM KG reader follows as its own story. Result card, no-dates card, freshness line, status chip, key-facts row. Covers UX-DR9, 12–13, 15, 16, 23.
+**FRs covered:** FR2 (result and no-dates cards), FR3, FR5, FR6, FR7, FR8, FR9, FR10, FR12, FR13, FR14, FR22 (fetch skips), FR24, FR30 (date count), FR31 (date notices), FR35, FR36
+**Notes:** Polite fetch, the reader contract, normalise and merge with history, then the scheduled run that commits and deploys, built with the KuferWeb reader first, end to end. The ITEM KG reader follows as its own story. Result card, no-dates card, freshness line, status chip, key-facts row. Covers UX-DR9, 12–13, 15, 16, 23. Stories 2.10–2.11 (added 2026-10-30, sprint change proposal) locate each date by its own test address and make search and distance use it; build 2.10 before 2.11. 2.9 sorts by each card's distance and can land before or after them.
 
 ### Epic 3: Spot new chances fast, and keep the data trustworthy
 Users see what's new since yesterday and can hide booked-out dates. The operator sees each booking system's health and gets alerted when anything breaks, so stale data gets fixed rather than left unnoticed.
@@ -824,6 +826,79 @@ So that I can trade travel for an earlier test.
 **Given** every checked date in range is booked out
 **When** results render
 **Then** the notice "All checked dates are booked out. Other centres may still have seats." shows (FR31)
+
+### Story 2.10: Locate each test date
+
+As a user,
+I want each test date placed at the address where the test happens,
+So that distance and the radius reflect where I actually have to go.
+
+**Acceptance Criteria:**
+
+**Given** the Nominatim lookup in `tools/geocode.ts`
+**When** this story is done
+**Then** the structured `/search` request, the `NominatimHit` parsing and the acceptance rules (street-level, inside Bavaria, matching postcode) live in `pipeline/fetch/nominatim.ts`, `tools/geocode.ts` uses them unchanged in behaviour, and its tests still pass
+
+**Given** normalised listings in a run
+**When** the new stage `pipeline/stages/locate` runs (after normalise, before merge)
+**Then** each listing gets `lat`, `lon` and `location`:
+- a provider address that matches its centre's formatted address (after the shared address normaliser: case, "Str." / "Straße", whitespace) takes the centre's coordinates with `location: venue`, no request;
+- an address found in `data/state/venues.json` uses the cached result, no request;
+- otherwise an address of the form "street, NNNNN city" is looked up once via Nominatim; an accepted hit gives `location: venue`
+(FR36)
+
+**Given** a listing whose address came from the centre fallback, does not parse as "street, NNNNN city", or has no accepted Nominatim hit
+**When** locate runs
+**Then** it takes its centre's `lat`/`lon` (which may be `null`) with `location: centre`; nothing is guessed, and the run log lists each such address once with its reason
+
+**Given** Nominatim lookups in a run
+**When** locate sends them
+**Then** they go through `pipeline/fetch` with the Nominatim exemption only, serially, ≥ 1 s apart, at most `LOCATE_MAX_LOOKUPS_PER_RUN` (in `pipeline/config.ts`, default 50); addresses beyond the cap fall back to the centre this run and are tried next run
+**And** a timeout, non-2xx or invalid response caches nothing, falls back to the centre, and never fails the run or a centre (AD-5)
+
+**Given** this run's lookups
+**When** merge runs
+**Then** it writes them to `data/state/venues.json` (keyed by the normalised address; hit or miss with `fetched_at`), validated by its own schema; a cached miss is retried after 30 days; locate never writes state (AD-6)
+
+**Given** publish
+**When** it writes `snapshot.json`
+**Then** every listing carries `lat`, `lon` and `location`, `schemaVersion` becomes 3, and `web/` is updated in the same commit to accept it (it may keep measuring from the centre until Story 2.11) (AD-9)
+
+**Given** the current snapshot's addresses
+**When** tests run
+**Then** fixtures cover: same-as-centre address (no request), cached hit, new hit, rejected hit (wrong postcode), unparseable address, Nominatim down, cap reached, centre without coordinates
+
+### Story 2.11: Search by test location
+
+As a person searching near my town,
+I want dates to count as nearby when the test is held nearby,
+So that I find dates held in my town by a centre based elsewhere, and don't see faraway dates as close.
+
+**Acceptance Criteria:**
+
+**Given** a search with place and radius
+**When** results are selected
+**Then** each current listing of a covered centre is a result card if its own `lat`/`lon` lie within the radius, with Distance measured from them; a centre without current listings is selected by its own coordinates as today (FR2, AD-2, AD-8)
+
+**Given** a covered centre whose own address is in range but whose current dates are all at addresses outside the radius
+**When** results render
+**Then** the centre does not appear (no result, no-dates or uncovered card)
+
+**Given** a covered centre whose own address is outside the radius but which has a date at an address inside it (e.g. VHS Starnberger See's Herrsching dates for a search from Herrsching, 10 km)
+**When** results render
+**Then** that date appears as a result card with its distance to the Herrsching address
+
+**Given** a listing with `lat`/`lon` `null` (neither venue nor centre located)
+**When** results are selected
+**Then** it follows Story 1.12's rule for its centre (shown with Distance "unknown" when the centre's postcode or city matches the place), so it never disappears silently (NFR5)
+
+**Given** the count line, the "No test centres within R km" state and the date notices
+**When** they compute
+**Then** they count the cards actually selected (dates in range plus centres without dates in range)
+
+**Given** the result card's "Map ↗"
+**When** tapped
+**Then** it still opens the listing's `address` (unchanged); the About page "How it works" text says, in DE and EN, that distance is measured to the address where the test takes place
 
 ## Epic 3: Spot new chances fast, and keep the data trustworthy
 

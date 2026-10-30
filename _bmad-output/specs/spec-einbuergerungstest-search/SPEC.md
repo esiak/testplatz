@@ -21,7 +21,7 @@ Pain to solve. People in Bavaria applying for citizenship must pass the Einbürg
 
 - **CAP-1**
   - **intent:** A user enters a location and radius and sees upcoming test dates from all Bavarian test centres within it, sorted soonest first (default) or nearest first by straight-line distance.
-  - **success:** For a Bavarian town and radius, results include every centre in the directory within that radius; Soonest orders dated results by date then distance, Nearest by distance then date; each result shows its km value and a Google Maps link to its address; past test dates are not listed.
+  - **success:** For a Bavarian town and radius, results include every current test date whose test address is within that radius, and every centre without current dates whose own address is within it; a date's position is its test address, or its centre's address only when the date has no test address or it cannot be located; Soonest orders dated results by date then distance, Nearest by distance then date; each result shows its km value and a Google Maps link to its address; past test dates are not listed.
 - **CAP-2**
   - **intent:** Each test date shows date/time, centre, full address, status (free / booked out / booked out with waitlist / unknown), registration deadline, registration method (online / email / post / in person), and a link to the provider's page for that date.
   - **success:** For a sample of covered dates, every field matches the provider page at the last check; missing source fields show as "unknown", never guessed; a passed deadline shows as "Passed"; if the date's page was unreachable at the last check, the link opens the centre's test page instead.
@@ -30,7 +30,7 @@ Pain to solve. People in Bavaria applying for citizenship must pass the Einbürg
   - **success:** Every centre on a supported system has dates no older than 12 hours; a new date published on a covered site appears within 12 hours.
 - **CAP-4**
   - **intent:** Centres without an automatic reader still appear in results, marked "not checked automatically, see website", with a link. A covered centre whose last check failed (or never ran) and has no dates left appears the same way, marked "not checked right now".
-  - **success:** A search covering an uncovered centre lists it with that marker; no directory centre within the radius is ever absent.
+  - **success:** A search covering an uncovered centre lists it with that marker; no directory centre within the radius is ever absent, except a covered centre whose current dates are all at test addresses outside the radius.
 - **CAP-5**
   - **intent:** Users see how fresh each listing is, and a failing reader is shown as failing.
   - **success:** Each listing shows when its centre was last checked successfully (freshness is per centre, not per date); when a site's collection fails or returns nothing unexpectedly, its listings are flagged stale rather than shown as current or empty, and a failing centre with no dates left shows as "not checked right now", never as "No dates listed".
@@ -90,6 +90,7 @@ Pain to solve. People in Bavaria applying for citizenship must pass the Einbürg
 - The rtpartner.de republication of BAMF data is complete and accurate enough to seed the v1 directory once each entry is checked against the centre's own site.
 
 - Covered centres state their eligibility rules in findable text on their test or date pages; only the MVHS residence rule is known so far.
+- Test addresses published on provider pages can be located by Nominatim's structured search ("street, postcode city"); those that cannot fall back to the centre's position.
 
 ## Open Questions
 

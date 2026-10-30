@@ -18,6 +18,8 @@ Counts come from homepage fingerprints (2026-10-25), not from each site's test p
 | starts_at | yes | date and time, Europe/Berlin |
 | place | no | room, if given; `null` otherwise |
 | address | yes | full street address of the test location; falls back to the centre address |
+| lat, lon | no | coordinates of the test address (geocoded by the pipeline); the centre's coordinates when the date has no address or it cannot be located; `null` only if neither is known |
+| location | yes | `venue` when lat/lon come from the test address, `centre` when they are the centre's placeholder |
 | status | yes | `free` / `booked_out` / `waitlist` / `unknown` |
 | deadline | no | local date, e.g. 3–5 weeks before the test; `null` if not published (shown as "unknown") |
 | registration_method | no | `online` / `email` / `post` / `in_person` (e.g. Bad Kissingen: in person, cash only) |
@@ -60,9 +62,10 @@ A failed run keeps the centre's previous dates (shown stale). "No dates listed" 
 - Refresh: monthly diff for added or removed centres.
 - Each entry: name, address, coordinates, website, test_page_url (the centre's Einbürgerungstest page), reader type, optional reader config, opted_out flag (CAP-8), source (e.g. rtpartner.de, later BAMF), verified_at.
 - Centre coordinates: geocoded once with Nominatim (max 1 req/s, attribution), stored; re-geocode only changed addresses.
+- Test-address coordinates: the daily pipeline geocodes each new test address once with Nominatim (structured search, ≤ 1 req/s, capped per run, attribution), caches hits and misses in bot-owned state, and never re-queries a cached address; a miss is retried after 30 days. An address equal to the centre's reuses the centre's coordinates without a request.
 
 ## User location
 
 - Built-in table of German postcodes and towns with coordinates and state, derived from OpenStreetMap (ODbL, attribution shown). Only Bavarian rows are searchable; others give the "Bavaria only" message. A simplified Bavaria boundary checks device locations.
-- Matching and straight-line distance run in the browser; no runtime geocoding service.
+- Matching and straight-line distance run in the browser; no runtime geocoding service. Distance is measured to each date's test-address coordinates (centre coordinates for centre-only cards); all geocoding of provider addresses happens in the pipeline, never in the browser.
 - Optional: browser geolocation ("use my location"), also client-side only.

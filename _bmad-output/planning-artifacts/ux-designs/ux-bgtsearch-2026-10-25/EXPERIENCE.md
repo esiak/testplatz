@@ -57,7 +57,7 @@ Microcopy. Plain words, short sentences, no exclamation marks. Same meaning in D
 | "No test centres within 20 km. Try 40 km." | "No results" |
 | "Error: We don't know this place. Try a Bavarian town or postcode." | "Invalid input" |
 
-Key-facts values: Distance "24 km"; Status = chip word; Deadline "11 Nov" / "Passed" / "unknown"; Registration "Online" / "Email" / "Post" / "In person" / "see website".
+Key-facts values: Distance "24 km" (straight line to the test address; for no-dates and uncovered cards, to the centre); Status = chip word; Deadline "11 Nov" / "Passed" / "unknown"; Registration "Online" / "Email" / "Post" / "In person" / "see website".
 
 ## Component Patterns
 

@@ -17,6 +17,8 @@ About 55 Bavarian test centres on the two shared booking systems (KuferWeb ~30, 
 - Story 2.7: Result cards with test dates
 - Story 2.8: No-dates and not-checked-right-now cards
 - Story 2.9: Sort by soonest or nearest
+- Story 2.10: Locate each test date
+- Story 2.11: Search by test location
 
 ## Requirements & Constraints
 
@@ -111,7 +113,7 @@ About 55 Bavarian test centres on the two shared booking systems (KuferWeb ~30, 
 
 ## Cross-Story Dependencies
 
-- **Build order:** 2.1 → 2.2 → 2.3 (KuferWeb first, end to end) → 2.5 → 2.6. Story 2.4 (ITEM KG) plugs into the same contract. Stories 2.7–2.9 need snapshot `schemaVersion` 2 from 2.6.
+- **Build order:** 2.1 → 2.2 → 2.3 (KuferWeb first, end to end) → 2.5 → 2.6. Story 2.4 (ITEM KG) plugs into the same contract. Stories 2.7–2.9 need snapshot `schemaVersion` 2 from 2.6. Story 2.10 (pipeline geocodes each test address, snapshot `schemaVersion` 3) comes before 2.11 (search and distance by each date's own coordinates); 2.9 is independent of both. See `planning-artifacts/sprint-change-proposal-2026-10-30.md`.
 - **Epic 1 dependencies:** Epic 2 builds on Epic 1's uncovered card, search, count line, live region, About page and haversine distance.
   - Centres without coordinates must still appear as cards with Distance "unknown" (from Story 1.12) once they become covered.
   - They must also stay listed on About `#no-location` whatever their coverage.

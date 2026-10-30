@@ -7,7 +7,7 @@ paradigm: 'pipes-and-filters batch pipeline publishing a static snapshot; static
 scope: 'bgtsearch v1: collection pipeline, centre directory, published data, web UI, hosting and operations'
 status: final
 created: '2026-10-25'
-updated: '2026-10-26'
+updated: '2026-10-30'
 binds: [CAP-1, CAP-2, CAP-3, CAP-4, CAP-5, CAP-6, CAP-7, CAP-8, CAP-9, CAP-10]
 sources:
   - ../../../specs/spec-einbuergerungstest-search/SPEC.md
@@ -30,12 +30,14 @@ flowchart LR
   subgraph pipeline["pipeline/ (scheduled job)"]
     F[fetch<br/>polite, bounded crawl] --> P[parse<br/>readers/kuferweb · readers/itemkg]
     P --> N[normalise<br/>ids, offsets, link_ok, fallbacks]
-    N --> M[merge<br/>only state writer]
+    N --> L[locate<br/>test-address coordinates]
+    L --> M[merge<br/>only state writer]
     M --> PUB[publish<br/>validate + emit]
   end
   DIR[(data/directory/<br/>human-owned)] --> F
   DIR --> PUB
   ST[(data/state/<br/>bot-owned history)] <--> M
+  ST --> L
   PUB --> SNAP[(data/public/snapshot.json)]
   PLACES[(data/public/places.json)] --> WEB
   SNAP --> WEB[web/ Preact app<br/>search + distance in browser]
@@ -46,7 +48,7 @@ flowchart LR
 | shared | `shared/` | zod schemas, types, enum codes, `mapStatus`, place-name normaliser, haversine. |
 | fetch | `pipeline/fetch/` | The only HTTP client (AD-5). |
 | readers | `pipeline/readers/<system>/` | Pure parsers, one per booking system (AD-3). |
-| stages | `pipeline/stages/` | normalise, merge, publish. |
+| stages | `pipeline/stages/` | normalise, locate, merge, publish. |
 | web | `web/` | Static Preact app. |
 | tools | `tools/` | Operator-run scripts: geocode, build-places, directory-diff. |
 
@@ -76,7 +78,7 @@ Arrows are the only allowed imports. `readers` never imports `fetch` or `stages`
 
 - **Binds:** CAP-1, SPEC constraint "location never leaves the browser"
 - **Prevents:** the host, a geocoder or a log receiving a typed place or coordinates.
-- **Rule:** Place matching and distance (haversine, km, from centre coordinates) run in `web/`. Search state lives in the URL fragment only: `#q=…&r=…&sort=…&lang=…`, never the query string. Coordinates are never put in a URL, request or storage.
+- **Rule:** Place matching and distance (haversine, km) run in `web/`: a result card measures from its listing's coordinates, a no-dates or uncovered card from its centre's coordinates. Search state lives in the URL fragment only: `#q=…&r=…&sort=…&lang=…`, never the query string. Coordinates are never put in a URL, request or storage.
 
 ### AD-3 — Readers are pure functions over a shared shape [ADOPTED]
 
@@ -108,11 +110,12 @@ Arrows are the only allowed imports. `readers` never imports `fetch` or `stages`
   - decodes the charset into strings;
   - refuses a host already visited 4 times in the last 24 h, using the visit log in `data/state/`. This also applies to manual and local reruns. Fetch only reads the log and returns this run's visits; merge persists them (AD-6).
 
-  Detail-page fetch results set each listing's `link_ok`; there are no separate link-check requests. `pipeline/fetch` has exactly two robots exemptions, each an explicit per-client option passed only by its own tool:
-  - `tools/geocode` calls only Nominatim's `/search` (manual, cached, ≤ 1 req/s, never scheduled). Nominatim's robots.txt targets crawlers, and its OSMF usage policy governs API use.
+  Detail-page fetch results set each listing's `link_ok`; there are no separate link-check requests. `pipeline/fetch` has exactly three robots exemptions, each an explicit per-client option passed only by its own tool:
+  - `tools/geocode` calls only Nominatim's `/search` for centre addresses (manual, cached, ≤ 1 req/s, never scheduled). Nominatim's robots.txt targets crawlers, and its OSMF usage policy governs API use.
   - `tools/build-places` calls only Overpass's `https://overpass-api.de/api/interpreter` (manual, cached, serial, ≥ 10 s apart, never scheduled). Overpass's robots.txt disallows `/api/` for all bots; the exemption is an operator decision of 2026-10-27 (amendment, Story 1.5).
+  - `pipeline/stages/locate` calls only Nominatim's `/search` (scheduled, but only for test addresses not yet in the `data/state/venues.json` cache, serial, ≤ 1 req/s, at most `LOCATE_MAX_LOOKUPS_PER_RUN` per run). It uses the same lookup and acceptance rules as `tools/geocode` (`pipeline/fetch/nominatim.ts`). A failed or skipped lookup never fails the run; the listing falls back to its centre's coordinates. Operator decision of 2026-10-30 (amendment, Story 2.10).
 
-  Every other host and path keeps full robots checks. The 4-visits-in-24-h cap and the visit log apply to centre hosts; Nominatim and Overpass are limited by their usage rules instead (manual, cached, paced).
+  Every other host and path keeps full robots checks. The 4-visits-in-24-h cap and the visit log apply to centre hosts; Nominatim and Overpass are limited by their usage rules instead (cached and paced; manual except locate's capped lookups of new test addresses).
 
 ### AD-6 — Run outcome and the single state writer [ADOPTED]
 
@@ -126,6 +129,7 @@ Arrows are the only allowed imports. `readers` never imports `fetch` or `stages`
   - `skipped` sets no timestamps.
   - A listing missing from an `ok` result gets `removed_at`, but stays in state until its `starts_at` passes. If it reappears, `removed_at` is cleared and `first_seen_at` is kept.
   - `first_seen_at` is set once and never changed. Listings found in a centre's first `ok` run are marked `baseline` and never shown as "new".
+  - Merge also persists the test-address cache (`data/state/venues.json`) from locate's new lookups; locate only reads it.
 
 ### AD-7 — Listing identity [ADOPTED]
 
@@ -143,7 +147,7 @@ Arrows are the only allowed imports. `readers` never imports `fetch` or `stages`
   - Publish emits every directory centre with `coverage`: `not_checked` if the reader is `none`, opted out or robots-disallowed; otherwise `covered`. A `not_checked` centre publishes zero listings.
   - The web app picks the card from coverage first:
     - `not_checked` → uncovered card;
-    - `covered` with current listings → result cards;
+    - `covered` with current listings → one result card per listing whose own coordinates are in range (the centre is absent if none are);
     - `covered`, no listings, `last_result=ok` → no-dates card;
     - `covered`, no listings, `failed` or never run → uncovered card with the text "Not checked right now. See the centre's page."
 
@@ -155,7 +159,7 @@ Arrows are the only allowed imports. `readers` never imports `fetch` or `stages`
   - `snapshot.json` contains `{ schemaVersion, generated_at, systems[], centres[], listings[] }`:
     - each centre: directory fields, `coverage`, `last_result`, `last_checked_at`, `last_success_at`;
     - each system: `reader`, `centres_covered`, `centres_ok`, `centres_failed` and `last_success_at` (the latest run in which any of its centres was `ok`);
-    - each listing: the fields in `data-sources.md`, without a per-listing `last_checked_at` (freshness is per centre). Its `address` is already filled from the centre address when the provider gives none.
+    - each listing: the fields in `data-sources.md`, without a per-listing `last_checked_at` (freshness is per centre). Its `address` is already filled from the centre address when the provider gives none, and it carries `lat`, `lon` (nullable) and `location` (`venue` | `centre`) from locate.
   - `places.json` contains rows `{ key, name, postcodes[], district, state, lat, lon }` covering all German municipalities and postcodes, plus a simplified Bavaria boundary polygon. Search only matches rows with `state = BY`; a non-Bavarian match, or a device location outside the polygon, gives the "Bavaria only" message. The nearest-town lookup uses only Bavarian rows. Every name match goes through the one shared normaliser (case, umlauts, ß).
   - A breaking change bumps `schemaVersion` and updates `web/` in the same commit. The app embeds the version it expects; on a mismatch it reloads once, then shows the load-error state.
   - No schema has a field for personal data, so none can be stored.
@@ -285,7 +289,7 @@ bgtsearch/
 
 | Capability | Lives in | Governed by |
 | --- | --- | --- |
-| CAP-1 search, radius, sort | `web/`, `places.json` | AD-1, AD-2, AD-9, AD-11 |
+| CAP-1 search, radius, sort | `web/`, `places.json`, `pipeline/stages/locate` | AD-1, AD-2, AD-5, AD-9, AD-11 |
 | CAP-2 listing fields, link fallback | `shared/`, `pipeline/stages/normalise`, `web/` | AD-3, AD-5, AD-9, AD-10 |
 | CAP-3 automatic collection | `pipeline/`, `pipeline.yml` | AD-3, AD-5, AD-6, AD-12 |
 | CAP-4 uncovered centres | `pipeline/stages/publish`, `web/` | AD-8 |
