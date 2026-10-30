@@ -128,6 +128,8 @@ UX-DR25: Responsive: single column, 16 px gutters on phones, centred max 720 px 
 UX-DR26: Voice and tone: all microcopy from the EXPERIENCE.md Do column, same meaning in DE and EN, no exclamation marks; the strings seed the translation files.
 UX-DR27: First visit: field focused; h1 "Find Einbürgerungstest dates near you in Bavaria."
 UX-DR28: Verify Flow 1 in WhatsApp and Instagram in-app browsers on iOS and Android.
+UX-DR30 (revised 2026-10-30, supersedes UX-DR9, 11, 12, 13, 16, 17 and the card parts of UX-DR1, 10, 14, 23): Result cards use variant B "date tile": date tile left (month, day in `tile-day`, weekday), address in `card-address` with map pin, meta lines "time · distance · deadline", centre name, freshness; status, registration and missing-eligibility icons stacked right; eligibility rule as a full-width line. No key-facts row, status chip or destination line; unknown values still read "unknown" (FR7). No-dates and uncovered cards use the same layout with an icon in the tile. Tokens per DESIGN.md frontmatter (card-address, tile-day, date-tile, status-icon, info-icon, icon-label, eligibility-line, card-meta).
+UX-DR31: Card icons are toggletip buttons: distinct shape per value, `aria-label`, label on hover / focus / tap, one open at a time, Escape or tapping elsewhere closes, never opens the card; visual 28 px, target 36 px.
 UX-DR29: Banned patterns enforced: no filters that drop items with missing data, no separate "Open this date" buttons, no nested links, no infinite scroll, no pop-ups or cookie walls, no carousels, no staleness banners, no custom pickers where a native control exists.
 
 ### FR Coverage Map
@@ -184,7 +186,7 @@ About 55 centres switch from "not checked" to real dates with status, deadline, 
 ### Epic 3: Spot new chances fast, and keep the data trustworthy
 Users see what's new since yesterday and can hide booked-out dates. The operator sees each booking system's health and gets alerted when anything breaks, so stale data gets fixed rather than left unnoticed.
 **FRs covered:** FR15, FR16, FR20, FR29, FR31 (everything-hidden notice), FR33 (system status section)
-**Notes:** "New" badge with baseline rule, hide-booked-out toggle, booking-system status on About, failed-run issues, dead-man ping, monthly directory diff. Covers UX-DR8, 14.
+**Notes:** "New" badge with baseline rule, hide-booked-out toggle, booking-system status on About, failed-run issues, dead-man ping, monthly directory diff, compact date-tile cards (Stories 3.6–3.7, build before 3.1). Covers UX-DR8, 14, 30, 31.
 
 ### Epic 4: Launch publicly
 The site can be announced: legal pages are live, it's indexable, it's tested in the in-app browsers people use to open shared links, and the directory moves to the official BAMF source.
@@ -906,6 +908,8 @@ Users see what's new since yesterday and can hide booked-out dates; the operator
 
 ### Story 3.1: "New" badge on fresh dates
 
+**Depends on:** Stories 3.6 and 3.7 (the badge sits in the new card layout).
+
 As a user checking back every day,
 I want dates that appeared since yesterday marked "New",
 So that I spot new chances without comparing lists.
@@ -914,7 +918,7 @@ So that I spot new chances without comparing lists.
 
 **Given** a listing whose `first_seen_at` is less than 24 h before now and that is not `baseline`
 **When** its result card renders
-**Then** a "New" badge (ink-primary on surface-muted pill, not blue) appears after the date, and the card's link name includes "new" after the date (FR16, UX-DR14, UX-DR23)
+**Then** a "New" badge (ink-primary on surface-muted pill, not blue) appears after the address, and the card's link name includes "new" after the date (FR16, UX-DR14, UX-DR23)
 
 **Given** a listing first seen 24 h or more ago, or found in its centre's first successful check
 **When** its card renders
@@ -1013,6 +1017,95 @@ So that the directory stays complete without manual searching.
 **Given** no differences
 **When** the diff finishes
 **Then** no issue is opened and the run log says so
+
+### Story 3.6: Compact date-tile result cards
+
+**Build before Story 3.1.** UX reference: DESIGN.md Components (Result card, Address line, Eligibility line, No-dates card, Uncovered card), EXPERIENCE.md Result Card Variants, `ux-designs/ux-bgtsearch-2026-10-25/mockups/card-b-states.html`.
+
+As a person scanning dates on a phone,
+I want each card short, with the date and address easy to see,
+So that I can compare dates and places without reading through repeated facts.
+
+**Acceptance Criteria:**
+
+**Given** DESIGN.md frontmatter (revised 2026-10-30)
+**When** `tests/design-tokens.test.ts` runs
+**Then** `web/src/styles/tokens.css` holds every new token (card-address, tile-day, date-tile, status-icon, info-icon, icon-label, eligibility-line, card-meta, tile-width, icon-size, icon-target) and none of the removed ones (card-date, fact, key-facts-row, status-chip, destination-line, fact-cell-min), and the test passes (UX-DR30)
+
+**Given** a current listing
+**When** its result card renders
+**Then** it shows a date tile (month, day, weekday), the address in `card-address` with a map-pin link, a meta line "14:00 · 14 km" plus " · Deadline 13 Nov", the centre name, and the freshness line; there is no key-facts row, status chip, destination line or registration note (UX-DR30)
+**And** the card is still one stretched link to the date's page, new tab, and the map pin keeps its own 44 px target and link name "Map: <address> (Google Maps, new tab)"
+
+**Given** a deadline before today, an unknown deadline or an unknown distance
+**When** the card renders
+**Then** it reads "Deadline passed" in the unknown status colour, "Deadline unknown", or "distance unknown"; the card stays (FR7)
+
+**Given** a listing with `link_ok: false`
+**When** the card renders
+**Then** a last meta line "Opens the centre's test page" in action colour shows and the card opens `test_page_url` (FR8)
+
+**Given** a listing with `eligibility` text
+**When** the card renders
+**Then** a full-width line below the columns shows a house icon and the rule as published, `lang="de"`, selectable above the link layer, with visually hidden "Who may register:" before it; it never hides, reorders or flags a card (FR35, CAP-11)
+
+**Given** a no-dates or uncovered centre
+**When** its card renders
+**Then** it uses the same layout with a calendar icon (no-dates) or question-mark tile on the unknown tint (uncovered) in place of the date; the meta line reads "No dates listed · 32 km" or "Not checked automatically" / "Not checked right now" · distance; uncovered cards keep "Why?" (44 px) and have no freshness line (FR12, FR24)
+
+**Given** a card
+**When** read by a screen reader
+**Then** the link name reads "<date, time>, [new,] <address>, <centre>, <status>, <registration>, opens <domain> in a new tab"; the tile's visible text and glyphs are `aria-hidden` (UX-DR23 revised)
+
+**Given** a 320 px wide screen at 200 % zoom with the longest German strings
+**When** results render
+**Then** tile, text and icon columns stay side by side, the address and meta lines wrap inside the text column, and nothing scrolls sideways (UX-DR25)
+
+**Given** the old card strings and code
+**When** this story is done
+**Then** unused translation keys (key-facts labels, "card.destination", "card.eligibility_unknown", "card.deadline_passed" = "Passed", "card.fact.distance_unknown" = "unknown") are replaced in DE and EN, and the tests for Stories 2.7 and 2.8 are updated to the new layout
+
+### Story 3.7: Status, registration and eligibility icons
+
+**Build together with or right after Story 3.6.**
+
+As a person scanning dates,
+I want status, registration and missing eligibility shown as small icons I can tap for their meaning,
+So that each card says it once, without a block of repeated words.
+
+**Acceptance Criteria:**
+
+**Given** a result card
+**When** it renders
+**Then** icons are stacked top-right in this order: status, registration, and the eligibility icon only when `eligibility` is `null` (UX-DR30)
+
+**Given** status values
+**When** the status icon renders
+**Then** each has its own shape and tint: tick "Free seats" (free), slashed circle "Booked out" (booked), clock "Booked out · Waitlist" (booked), question mark "Status unknown" (unknown); colour is never the only difference (UX-DR31)
+
+**Given** registration values
+**When** the registration icon renders
+**Then** screen "Register online", envelope "Register by email", mailbox "Register by post", person "Register in person", form with question mark "Registration: see website" when `null`
+
+**Given** a listing with `eligibility: null`
+**When** the card renders
+**Then** a person-with-question-mark icon labelled "Who may register: not stated" shows; nothing on the card suggests "open to all" (FR35, CAP-11)
+
+**Given** an icon
+**When** I hover it, focus it with the keyboard, or tap it
+**Then** its label appears above it (icon-label tokens); tap or Enter/Space toggles it, Escape or tapping elsewhere closes it, opening another label closes the first, and tapping an icon never opens the card (UX-DR31)
+
+**Given** a screen reader or keyboard user
+**When** they reach an icon
+**Then** it is a `<button>` with `aria-label` set to its label and `aria-expanded`; the opened label is announced politely; the focus ring sits on the icon only (UX-DR2)
+
+**Given** the icon targets
+**When** measured
+**Then** each is at least 36 × 36 px with the visible icon at 28 px, and targets don't overlap the map pin or each other (WCAG 2.5.8)
+
+**Given** DE and EN
+**When** labels render
+**Then** every label comes from the translation files, with the same meaning in both languages (UX-DR26)
 
 ## Epic 4: Launch publicly
 
