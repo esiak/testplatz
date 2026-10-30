@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { CENTRE_ID_PATTERN, isHttpUrl } from './directory.ts';
+import { BAVARIA_BBOX, CENTRE_ID_PATTERN, isHttpUrl } from './directory.ts';
 
 /** Seat status of one test date (data-sources.md §Status mapping). */
 export const STATUS_CODES = ['free', 'booked_out', 'waitlist', 'unknown'] as const;
@@ -108,6 +108,43 @@ export function checkListing(listing: ListingFields, ctx: z.RefinementCtx): void
 export const listingSchema = listingFieldsSchema.superRefine(checkListing);
 
 export type Listing = z.infer<typeof listingSchema>;
+
+/**
+ * Where a listing's coordinates come from (FR36): `venue` = its own test address, `centre` = the
+ * centre's coordinates as a fallback (no provider address, unparseable, not found, over the cap).
+ */
+export const LOCATIONS = ['venue', 'centre'] as const;
+export type Location = (typeof LOCATIONS)[number];
+
+/** The location fields locate adds: `lat`/`lon` both numbers or both `null`, and `location`. */
+export const locationFields = {
+	lat: z.number().nullable(),
+	lon: z.number().nullable(),
+	location: z.enum(LOCATIONS),
+} as const;
+
+/** Location checks: `lat`/`lon` both numbers inside the Bavaria box or both `null`. */
+export function checkLocation(listing: { lat?: number | null; lon?: number | null }, ctx: z.RefinementCtx): void {
+	const lat = listing.lat ?? null;
+	const lon = listing.lon ?? null;
+	if ((lat === null) !== (lon === null)) {
+		ctx.addIssue({ code: 'custom', path: [lat === null ? 'lat' : 'lon'], message: 'lat and lon must both be numbers or both be null' });
+	}
+	if (lat !== null && (lat < BAVARIA_BBOX.minLat || lat > BAVARIA_BBOX.maxLat)) {
+		ctx.addIssue({ code: 'custom', path: ['lat'], message: `must lie inside Bavaria (${BAVARIA_BBOX.minLat}–${BAVARIA_BBOX.maxLat})` });
+	}
+	if (lon !== null && (lon < BAVARIA_BBOX.minLon || lon > BAVARIA_BBOX.maxLon)) {
+		ctx.addIssue({ code: 'custom', path: ['lon'], message: `must lie inside Bavaria (${BAVARIA_BBOX.minLon}–${BAVARIA_BBOX.maxLon})` });
+	}
+}
+
+/** A listing after locate: the normalised listing plus `lat`, `lon` and `location`. */
+export const locatedListingSchema = listingFieldsSchema.extend(locationFields).superRefine((listing, ctx) => {
+	checkListing(listing, ctx);
+	checkLocation(listing, ctx);
+});
+
+export type LocatedListing = z.infer<typeof locatedListingSchema>;
 
 /**
  * Availability indicators a reader found on a page; absent means not seen. When the provider's

@@ -9,3 +9,5 @@ export const SNAPSHOT_PATH = join(PUBLIC_DIR, SNAPSHOT_FILE);
 export { VISIT_LOG_PATH } from '../fetch/visits.ts';
 /** Merge's history file (AD-6); only `pipeline/stages/merge.ts` writes it. */
 export const STATE_PATH = fileURLToPath(new URL('../../data/state/state.json', import.meta.url));
+/** The venue cache (FR36); only `pipeline/stages/merge.ts` writes it. */
+export const VENUES_PATH = fileURLToPath(new URL('../../data/state/venues.json', import.meta.url));

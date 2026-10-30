@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { CENTRE_ID_PATTERN } from './directory.ts';
-import { checkListing, listingFieldsSchema } from './listing.ts';
+import { checkListing, checkLocation, listingFieldsSchema, locationFields } from './listing.ts';
 import { LAST_RESULTS } from './snapshot.ts';
 
 /**
@@ -23,8 +23,19 @@ export const storedListingSchema = listingFieldsSchema
 		removed_at: utcDatetime.nullable(),
 		/** Seen on the centre's first `ok` run, so it is not "new". */
 		baseline: z.boolean(),
+		/** Located coordinates (Story 2.10). Optional: listings stored before locate lack them. */
+		lat: locationFields.lat.optional(),
+		lon: locationFields.lon.optional(),
+		location: locationFields.location.optional(),
 	})
-	.superRefine(checkListing);
+	.superRefine((listing, ctx) => {
+		checkListing(listing, ctx);
+		checkLocation(listing, ctx);
+		const present = [listing.lat, listing.lon, listing.location].filter((value) => value !== undefined).length;
+		if (present !== 0 && present !== 3) {
+			ctx.addIssue({ code: 'custom', path: ['location'], message: 'lat, lon and location must all be present or all be absent' });
+		}
+	});
 
 const byId = (a: { id: string }, b: { id: string }): number => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
 

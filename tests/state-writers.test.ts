@@ -5,13 +5,13 @@ import { describe, expect, it } from 'vitest';
 
 /**
  * "Only merge writes `data/state/`" (AD-6): a source file that names the state files
- * (`STATE_PATH`, `VISIT_LOG_PATH` or a `data/state` path) and also calls an fs write function must
+ * (`STATE_PATH`, `VISIT_LOG_PATH`, `VENUES_PATH` or a `data/state` path) and also calls an fs write function must
  * be `pipeline/stages/merge.ts`.
  */
 
 const SCANNED_DIRS = ['pipeline', 'tools', 'shared', 'web'];
 const SOURCE_FILE = /\.[mc]?[jt]sx?$/;
-const STATE_REFERENCE = /\bSTATE_PATH\b|\bVISIT_LOG_PATH\b|data\/state/;
+const STATE_REFERENCE = /\bSTATE_PATH\b|\bVISIT_LOG_PATH\b|\bVENUES_PATH\b|data\/state/;
 const FS_WRITE = /\b(?:writeFileSync|writeFile|appendFileSync|appendFile|renameSync|rename|rmSync|rm|unlinkSync|unlink|mkdirSync|mkdir|copyFileSync|copyFile|cpSync|createWriteStream|truncateSync|truncate)\s*\(/;
 const ALLOWED_WRITER = 'pipeline/stages/merge.ts';
 
@@ -56,8 +56,9 @@ describe('state writers checker', () => {
 				{ path: 'pipeline/fetch/visits.ts', source: "const p = 'data/state/visits.json';\nreadFileSync(p, 'utf8');" },
 				{ path: 'pipeline/stages/z.ts', source: "// writeFileSync(STATE_PATH, '')\nconsole.log(STATE_PATH);" },
 				{ path: 'pipeline/stages/publish.ts', source: "writeFileSync(SNAPSHOT_PATH, '');" },
+				{ path: 'pipeline/stages/locate.ts', source: "import { VENUES_PATH } from './paths.ts';\nwriteFileSync(VENUES_PATH, '{}');" },
 			]),
-		).toEqual(['pipeline/stages/y.ts', 'tools/x.ts']);
+		).toEqual(['pipeline/stages/locate.ts', 'pipeline/stages/y.ts', 'tools/x.ts']);
 	});
 });
 

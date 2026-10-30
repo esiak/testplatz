@@ -1,28 +1,34 @@
 /**
- * The pipeline entry point (`npm run pipeline`, AD-1, AD-12): fetch → parse → normalise → merge →
- * publish, with one `runAt` for the whole run. Logs one line per centre (id, reader, outcome,
- * listing count, duration; never page content or URLs) and a summary line. Exits 1 when anything
- * fails; a bad directory, state file, visit log or replay file writes nothing.
+ * The pipeline entry point (`npm run pipeline`, AD-1, AD-12): fetch → parse → normalise → locate →
+ * merge → publish, with one `runAt` for the whole run. Logs one line per centre (id, reader,
+ * outcome, listing count, duration; never page content or URLs), one line per test address that
+ * fell back to its centre, a locate summary and a run summary line. Exits 1 when anything fails; a
+ * bad directory, state file, visit log, venue cache or replay file writes nothing. A failed
+ * address lookup never fails the run.
  *
  *   node pipeline/stages/run.ts                          # collect and publish
  *   node pipeline/stages/run.ts --save-collect <file>    # … and save the replay input after collect
- *   node pipeline/stages/run.ts --from-collect <file>    # no fetch: normalise → merge → publish from the file
+ *   node pipeline/stages/run.ts --from-collect <file>    # no provider fetch: normalise → locate → merge → publish from the file
  *
- * `--from-collect` re-reads the directory, state and visit log from disk and reuses the saved
- * `runAt`, so after a rejected push it applies the same run on top of the newest upstream.
+ * `--from-collect` re-reads the directory, state, visit log and venue cache from disk and reuses
+ * the saved `runAt`, so after a rejected push it applies the same run on top of the newest
+ * upstream. Locate runs on replays too: addresses cached upstream need no lookup, but uncached
+ * test addresses may still be looked up on Nominatim (within the per-run cap).
  */
 import { readFileSync } from 'node:fs';
 import { parseArgs } from 'node:util';
 import { directorySchema, type Centre } from '../../shared/directory.ts';
 import type { State } from '../../shared/state.ts';
+import type { Venues } from '../../shared/venues.ts';
 import type { Visit } from '../../shared/visits.ts';
 import { readVisitLog } from '../fetch/visits.ts';
 import { itemkgReader } from '../readers/itemkg/index.ts';
 import { kuferwebReader } from '../readers/kuferweb/index.ts';
 import { collectRun, type CollectOptions, type ReaderRegistry } from './collect.ts';
-import { mergeRun, readState, serializeState, serializeVisitLog, writeMergeResult } from './merge.ts';
+import { locateRun, type LocateOptions } from './locate.ts';
+import { mergeRun, readState, readVenues, serializeState, serializeVenues, serializeVisitLog, writeMergeResult } from './merge.ts';
 import { normaliseOutcome, type NormalisedOutcome } from './normalise.ts';
-import { DIRECTORY_PATH, SNAPSHOT_PATH, STATE_PATH, VISIT_LOG_PATH } from './paths.ts';
+import { DIRECTORY_PATH, SNAPSHOT_PATH, STATE_PATH, VENUES_PATH, VISIT_LOG_PATH } from './paths.ts';
 import { buildSnapshot, writeSnapshot } from './publish.ts';
 import { loadReplay, saveReplay, type Replay } from './replay.ts';
 
@@ -33,6 +39,7 @@ export interface RunOptions {
 	directoryPath?: string;
 	statePath?: string;
 	visitLogPath?: string;
+	venuesPath?: string;
 	snapshotPath?: string;
 	/** The run's clock (`runAt`); ignored with `fromCollect`, which reuses the saved one. */
 	now?: () => Date;
@@ -40,6 +47,8 @@ export interface RunOptions {
 	clock?: () => number;
 	readers?: ReaderRegistry;
 	clientOptions?: CollectOptions['clientOptions'];
+	/** Nominatim transport and cap for locate (tests pass a fake `fetchImpl` and `sleep`). */
+	locate?: LocateOptions;
 	/** Write this run's replay input here after collect. */
 	saveCollect?: string;
 	/** Skip fetch and replay this file. */
@@ -73,11 +82,13 @@ export async function runPipeline(options: RunOptions = {}): Promise<number> {
 		directoryPath = DIRECTORY_PATH,
 		statePath = STATE_PATH,
 		visitLogPath = VISIT_LOG_PATH,
+		venuesPath = VENUES_PATH,
 		snapshotPath = SNAPSHOT_PATH,
 		now = () => new Date(),
 		clock,
 		readers = READER_REGISTRY,
 		clientOptions,
+		locate,
 		saveCollect,
 		fromCollect,
 		log = console.log,
@@ -92,11 +103,13 @@ export async function runPipeline(options: RunOptions = {}): Promise<number> {
 	let directory: Centre[];
 	let visitLog: Visit[];
 	let state: State;
+	let venues: Venues;
 	let replay: Replay | null = null;
 	try {
 		directory = readDirectory(directoryPath);
 		visitLog = readVisitLog(visitLogPath);
 		state = readState(statePath);
+		venues = readVenues(venuesPath);
 		if (fromCollect !== undefined) replay = loadReplay(fromCollect);
 	} catch (caught) {
 		error(`${(caught as Error).message}\nnothing written`);
@@ -146,12 +159,18 @@ export async function runPipeline(options: RunOptions = {}): Promise<number> {
 		log(`${centre.centre_id} ${centre.reader} ${outcomeCode(outcome)} ${count} ${duration === undefined ? '-' : `${duration}ms`}`);
 	}
 
-	// Merge: only written when this run changed the state or the visit log.
-	const merged = mergeRun({ state, log: visitLog, outcomes, visits: collected.visits, runAt });
-	const stateChanged = serializeState(merged.state) !== serializeState(state) || serializeVisitLog(merged.log) !== serializeVisitLog(visitLog);
+	// Locate: coordinates for every listing; new lookups go to merge. Never fails the run.
+	const located = await locateRun({ directory, outcomes, venues, runAt, log, ...locate });
+
+	// Merge: only written when this run changed the state, the visit log or the venue cache.
+	const merged = mergeRun({ state, log: visitLog, outcomes: located.outcomes, visits: collected.visits, venues, lookups: located.lookups, runAt });
+	const stateChanged =
+		serializeState(merged.state) !== serializeState(state) ||
+		serializeVisitLog(merged.log) !== serializeVisitLog(visitLog) ||
+		serializeVenues(merged.venues) !== serializeVenues(venues);
 	if (stateChanged) {
 		try {
-			writeMergeResult(merged, { statePath, visitLogPath });
+			writeMergeResult(merged, { statePath, visitLogPath, venuesPath });
 		} catch (caught) {
 			error(`cannot write the state, snapshot not published: ${(caught as Error).message}`);
 			return 1;
@@ -163,7 +182,7 @@ export async function runPipeline(options: RunOptions = {}): Promise<number> {
 	let published: 'written' | 'unchanged';
 	let listingCount: number;
 	try {
-		const snapshot = buildSnapshot({ centres: directory, state: merged.state, outcomes, readers: registered, runAt });
+		const snapshot = buildSnapshot({ centres: directory, state: merged.state, outcomes: located.outcomes, readers: registered, runAt });
 		listingCount = snapshot.listings.length;
 		published = writeSnapshot(snapshot, snapshotPath);
 	} catch (caught) {

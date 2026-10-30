@@ -111,22 +111,42 @@ function fakeNetwork(routes: Record<string, () => Response> = ROUTES) {
 	return { calls, fetchImpl };
 }
 
+/**
+ * A fake Nominatim: every structured search finds a street-level match in Bavaria with the
+ * requested postcode, unless `respond` says otherwise. Records every URL.
+ */
+function fakeNominatim(respond?: (url: URL) => Response | undefined) {
+	const calls: string[] = [];
+	const fetchImpl: FetchImpl = async (url) => {
+		calls.push(url);
+		const parsed = new URL(url);
+		const custom = respond?.(parsed);
+		if (custom !== undefined) return custom;
+		const postcode = parsed.searchParams.get('postalcode');
+		const body = [{ lat: '48.0771234', lon: '11.9654321', place_rank: 30, display_name: 'x', address: { 'ISO3166-2-lvl4': 'DE-BY', postcode } }];
+		return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
+	};
+	return { calls, fetchImpl };
+}
+
 interface Paths {
 	dir: string;
 	directoryPath: string;
 	statePath: string;
 	visitLogPath: string;
+	venuesPath: string;
 	snapshotPath: string;
 }
 
 /** A temp tree with the directory, state and visit log (raw text or values; `null` = no file). */
-function setup(files: { directory?: Centre[] | string; state?: State | string | null; log?: Visit[] | string | null } = {}): Paths {
+function setup(files: { directory?: Centre[] | string; state?: State | string | null; log?: Visit[] | string | null; venues?: string } = {}): Paths {
 	const dir = mkdtempSync(join(tmpdir(), 'bgt-run-'));
 	const paths = {
 		dir,
 		directoryPath: join(dir, 'directory', 'centres.json'),
 		statePath: join(dir, 'state', 'state.json'),
 		visitLogPath: join(dir, 'state', 'visits.json'),
+		venuesPath: join(dir, 'state', 'venues.json'),
 		snapshotPath: join(dir, 'public', 'snapshot.json'),
 	};
 	mkdirSync(join(dir, 'directory'));
@@ -137,6 +157,7 @@ function setup(files: { directory?: Centre[] | string; state?: State | string | 
 	if (state !== null) writeFileSync(paths.statePath, text(state));
 	const log = files.log === undefined ? VISIT_LOG : files.log;
 	if (log !== null) writeFileSync(paths.visitLogPath, text(log));
+	if (files.venues !== undefined) writeFileSync(paths.venuesPath, files.venues);
 	return paths;
 }
 
@@ -153,22 +174,24 @@ function tree(dir: string): Record<string, string> {
 	return out;
 }
 
-async function pipeline(paths: Paths, extra: Partial<RunOptions> = {}, net = fakeNetwork()) {
+async function pipeline(paths: Paths, extra: Partial<RunOptions> = {}, net = fakeNetwork(), nominatim = fakeNominatim()) {
 	const logs: string[] = [];
 	const errors: string[] = [];
 	const code = await runPipeline({
 		directoryPath: paths.directoryPath,
 		statePath: paths.statePath,
 		visitLogPath: paths.visitLogPath,
+		venuesPath: paths.venuesPath,
 		snapshotPath: paths.snapshotPath,
 		now: () => RUN_AT,
 		clock: () => 0,
 		clientOptions: { fetchImpl: net.fetchImpl, delayMs: 0, timeoutMs: 1000, sleep: async () => {} },
+		locate: { fetchImpl: nominatim.fetchImpl, timeoutMs: 1000, sleep: async () => {} },
 		log: (line) => logs.push(line),
 		error: (line) => errors.push(line),
 		...extra,
 	});
-	return { code, logs, errors, calls: net.calls };
+	return { code, logs, errors, calls: net.calls, lookups: nominatim.calls };
 }
 
 const readSnapshot = (paths: Paths): Snapshot => snapshotSchema.parse(JSON.parse(readFileSync(paths.snapshotPath, 'utf8')));
@@ -177,16 +200,16 @@ const centreOf = (snapshot: Snapshot, id: string) => snapshot.centres.find((c) =
 const listingIds = (snapshot: Snapshot, id: string) => snapshot.listings.filter((l) => l.centre_id === id).map((l) => l.id);
 
 describe('runPipeline: one collection run end to end', () => {
-	it('collects, merges and publishes snapshot v2 for every row of the matrix', async () => {
+	it('collects, locates, merges and publishes snapshot v3 for every row of the matrix', async () => {
 		const paths = setup();
-		const { code, errors, calls } = await pipeline(paths);
+		const { code, errors, calls, lookups } = await pipeline(paths);
 		expect(errors).toEqual([]);
 		expect(code).toBe(0);
 		const snapshot = readSnapshot(paths);
 		const state = readStateFile(paths);
 		const at = RUN_AT.toISOString();
 
-		expect(snapshot.schemaVersion).toBe(2);
+		expect(snapshot.schemaVersion).toBe(3);
 		expect(snapshot.generated_at).toBe('2026-10-29T05:17:00Z');
 		expect(snapshot.centres.map((c) => c.centre_id)).toEqual(DIRECTORY.map((c) => c.centre_id).sort());
 
@@ -227,6 +250,26 @@ describe('runPipeline: one collection run end to end', () => {
 		]);
 		expect(snapshot.listings.map((l) => l.id)).toEqual([...snapshot.listings.map((l) => l.id)].sort());
 
+		// Locate: every listing has coordinates; this run's dates at their own address (one request
+		// per distinct address, never to a provider host), stored listings without fields filled
+		// from the centre.
+		expect(lookups).toHaveLength(2);
+		expect(lookups.every((url) => url.startsWith('https://nominatim.openstreetmap.org/search?'))).toBe(true);
+		expect(calls.some((url) => url.includes('nominatim'))).toBe(false);
+		for (const listing of snapshot.listings) expect(listing).toHaveProperty('location');
+		for (const id of ['moosburg', 'ebersberg']) {
+			for (const listing of snapshot.listings.filter((l) => l.centre_id === id)) {
+				expect(listing).toMatchObject({ lat: 48.077123, lon: 11.965432, location: 'venue' });
+			}
+		}
+		expect(snapshot.listings.find((l) => l.centre_id === 'failed-centre')).toMatchObject({ lat: 48.137, lon: 11.575, location: 'centre' });
+		const venues = JSON.parse(readFileSync(paths.venuesPath, 'utf8'));
+		expect(venues.venuesVersion).toBe(1);
+		expect(Object.values(venues.entries)).toEqual([
+			{ fetched_at: at, lat: 48.077123, lon: 11.965432, reason: null },
+			{ fetched_at: at, lat: 48.077123, lon: 11.965432, reason: null },
+		]);
+
 		// Visits: this run's hosts appended, the over-budget host not charged again.
 		const log = JSON.parse(readFileSync(paths.visitLogPath, 'utf8')) as Visit[];
 		const thisRun = log.filter((visit) => visit.at === at).map((visit) => visit.host);
@@ -237,7 +280,7 @@ describe('runPipeline: one collection run end to end', () => {
 	it('logs one line per centre sorted by centre_id, then a summary, with no page content or URLs', async () => {
 		const { logs } = await pipeline(setup());
 		const ids = DIRECTORY.map((c) => c.centre_id).sort();
-		expect(logs).toHaveLength(ids.length + 1);
+		expect(logs).toHaveLength(ids.length + 2);
 		expect(logs.slice(0, ids.length).map((line) => line.split(' ')[0])).toEqual(ids);
 		expect(logs).toEqual(
 			expect.arrayContaining([
@@ -251,6 +294,7 @@ describe('runPipeline: one collection run end to end', () => {
 				'never-run kuferweb skipped:budget 0 0ms',
 			]),
 		);
+		expect(logs.at(-2)).toBe('locate: 3 at venue, 0 at centre; 2 requests, 0 cache hits');
 		expect(logs.at(-1)).toBe('run 2026-10-29T05:17:00.000Z: 8 centres, 2 ok, 1 failed, 5 skipped; state written; 5 listings, snapshot written');
 		for (const line of logs) expect(line).not.toMatch(/https?:|<|example\.de|vhs-/);
 	});
@@ -276,6 +320,53 @@ describe('runPipeline: one collection run end to end', () => {
 	});
 });
 
+describe('runPipeline: locate', () => {
+	it('sends no lookups on a second run and leaves venues.json byte-identical', async () => {
+		const paths = setup();
+		const first = await pipeline(paths);
+		expect(first.code).toBe(0);
+		expect(first.lookups).toHaveLength(2);
+		const venues = readFileSync(paths.venuesPath, 'utf8');
+		const second = await pipeline(paths, { now: () => new Date(RUN_AT.getTime() + 25 * HOUR) });
+		expect(second.errors).toEqual([]);
+		expect(second.code).toBe(0);
+		expect(second.lookups).toEqual([]);
+		expect(second.logs).toContain('locate: 3 at venue, 0 at centre; 0 requests, 2 cache hits');
+		expect(readFileSync(paths.venuesPath, 'utf8')).toBe(venues);
+		for (const listing of readSnapshot(paths).listings) expect(listing).toHaveProperty('location');
+	});
+
+	it('places dates at the centre when Nominatim is down, caches nothing and still exits 0', async () => {
+		const paths = setup();
+		const down = fakeNominatim(() => new Response('busy', { status: 503 }));
+		const { code, logs, errors } = await pipeline(paths, {}, fakeNetwork(), down);
+		expect(errors).toEqual([]);
+		expect(code).toBe(0);
+		expect(down.calls).toHaveLength(2);
+		expect(existsSync(paths.venuesPath)).toBe(false);
+		expect(readSnapshot(paths).listings.filter((l) => l.centre_id === 'moosburg').map((l) => l.location)).toEqual(['centre', 'centre']);
+		const fallbacks = logs.filter((line) => line.startsWith('locate ') && line.includes('lookup failed: http-error 503'));
+		expect(fallbacks).toHaveLength(2);
+		for (const line of logs) expect(line).not.toMatch(/https?:/);
+	});
+
+	it.each([
+		['not JSON', '{nope', 'not valid JSON'],
+		['another venuesVersion', JSON.stringify({ venuesVersion: 2, entries: {} }), 'venue cache'],
+		['a half hit', JSON.stringify({ venuesVersion: 1, entries: { a: { fetched_at: '2026-10-01T00:00:00.000Z', lat: 48.1, lon: null, reason: null } } }), 'venue cache'],
+	])('exits 1 for a venue cache with %s, with no fetch and no file written', async (_name, text, message) => {
+		const paths = setup({ venues: text });
+		const before = tree(paths.dir);
+		const { code, errors, calls, lookups } = await pipeline(paths);
+		expect(code).toBe(1);
+		expect(errors.join('\n')).toContain(message);
+		expect(errors.join('\n')).toContain('nothing written');
+		expect(calls).toEqual([]);
+		expect(lookups).toEqual([]);
+		expect(tree(paths.dir)).toEqual(before);
+	});
+});
+
 describe('runPipeline: save and replay', () => {
 	it('replays a saved run to the same state, visit log and snapshot, with no fetch', async () => {
 		const original = setup();
@@ -294,7 +385,7 @@ describe('runPipeline: save and replay', () => {
 		expect(errors).toEqual([]);
 		expect(code).toBe(0);
 		expect(net.calls).toEqual([]);
-		for (const file of ['statePath', 'visitLogPath', 'snapshotPath'] as const) {
+		for (const file of ['statePath', 'visitLogPath', 'venuesPath', 'snapshotPath'] as const) {
 			expect(readFileSync(replayed[file], 'utf8')).toBe(readFileSync(original[file], 'utf8'));
 		}
 		expect(logs).toContain('moosburg kuferweb ok 2 -');
@@ -453,9 +544,11 @@ describe('runPipeline: an invalid snapshot', () => {
 			directoryPath: paths.directoryPath,
 			statePath: paths.statePath,
 			visitLogPath: paths.visitLogPath,
+			venuesPath: paths.venuesPath,
 			snapshotPath: paths.snapshotPath,
 			now: () => new Date(RUN_AT.getTime() + 6 * HOUR),
 			clientOptions: { fetchImpl: net.fetchImpl, delayMs: 0, timeoutMs: 1000, sleep: async () => {} },
+			locate: { fetchImpl: fakeNominatim().fetchImpl, timeoutMs: 1000, sleep: async () => {} },
 			log: () => {},
 			error: (line) => errors.push(line),
 		});

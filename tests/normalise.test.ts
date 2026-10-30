@@ -147,7 +147,37 @@ describe('normaliseOutcome', () => {
 	});
 
 	it('normalises an ok outcome with the pages', () => {
-		expect(normaliseOutcome(C, { kind: 'ok', listings: [raw()] }, [detail('https://a.de/k/1')])).toEqual({ kind: 'ok', listings: normaliseCentre(C, [raw()], [detail('https://a.de/k/1')]) });
+		expect(normaliseOutcome(C, { kind: 'ok', listings: [raw()] }, [detail('https://a.de/k/1')])).toEqual({
+			kind: 'ok',
+			listings: normaliseCentre(C, [raw()], [detail('https://a.de/k/1')]),
+			centreAddressIds: [],
+		});
+	});
+
+	it.each<[string, RawListing[]]>([
+		['fallback first', [raw({ address: null }), raw({ address: 'Hauptstraße 1, 80331 München' })]],
+		['stated first', [raw({ address: 'Hauptstraße 1, 80331 München' }), raw({ address: null })]],
+	])('treats a same-minute duplicate as stated when one row gives the centre address (%s)', (_order, listings) => {
+		const outcome = normaliseOutcome(C, { kind: 'ok', listings }, []);
+		expect(outcome).toMatchObject({ kind: 'ok', centreAddressIds: [] });
+		expect(outcome.kind === 'ok' && outcome.listings).toHaveLength(1);
+	});
+
+	it('names the ids whose address is the centre fallback, not a provider address equal to it', () => {
+		const outcome = normaliseOutcome(
+			C,
+			{
+				kind: 'ok',
+				listings: [
+					raw({ address: null }),
+					raw({ time: '11:00', address: 'Hauptstraße 1, 80331 München' }),
+					raw({ time: '12:00' }),
+					raw({ date: '2026-11-13', address: null }),
+				],
+			},
+			[],
+		);
+		expect(outcome).toMatchObject({ kind: 'ok', centreAddressIds: ['c@2026-11-12T10:00', 'c@2026-11-13T10:00'] });
 	});
 
 	it('fails only this centre as schema when a normalised listing fails listingSchema', () => {

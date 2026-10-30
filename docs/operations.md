@@ -9,19 +9,48 @@ The `publish` job:
 
 1. type-checks and tests the checked-out commit;
 2. runs `npm run pipeline -- --save-collect "$RUNNER_TEMP/collect.json"`: fetch → parse →
-   normalise → merge → publish, saving this run's reader results (outcomes, visits, page
+   normalise → locate → merge → publish, saving this run's reader results (outcomes, visits, page
    summaries; no page bodies) for a retry;
 3. runs `.github/scripts/commit-public.sh`, which commits `data/state/` and `data/public/` in one
    bot commit and pushes it. On a rejected push it rebases when the new upstream commits touch
    only `data/state/` or `data/public/`; otherwise (or when that rebase conflicts) it resets to the
    upstream and runs `PUBLISH_CMD` = type-check + test + `npm run pipeline -- --from-collect
-   "$RUNNER_TEMP/collect.json"`, which replays merge and publish without fetching again. 3 push
-   attempts in all.
+   "$RUNNER_TEMP/collect.json"`, which replays locate, merge and publish without fetching the
+   provider sites again (test addresses not yet in the upstream `venues.json` may still be looked
+   up on Nominatim, within the per-run cap). 3 push attempts in all.
 
 `build` and `deploy` then deploy exactly the pushed SHA. No push, no deploy.
 
 The run log has one line per centre: `<centre_id> <reader> <outcome> <listing count> <duration>`,
 where the outcome is `ok`, `failed:<reason>` or `skipped:<reason>`, then a summary line.
+
+### Test-date addresses (locate)
+
+Each test date is placed at its own address. Locate takes the centre's coordinates when the
+address equals the centre's, then looks in `data/state/venues.json`, then asks Nominatim
+(structured search, one request per new address, ≥ 1 s apart, at most
+`LOCATE_MAX_LOOKUPS_PER_RUN` = 50 per run, set in `pipeline/config.ts`). Merge adds the answers to
+`venues.json` (keyed by the normalised address; a hit with coordinates, or a miss with its reason
+that is retried after 30 days) and commits it with the rest of `data/state/`. A failed request
+caches nothing and is retried on the next run. An invalid `venues.json` stops the run before
+anything is written, like an invalid `state.json`; fix or delete it (a missing file is an empty
+cache, and the next run looks the addresses up again).
+
+A date that cannot be placed at its address takes its centre's coordinates and never fails the
+run. The log has one line per centre and address that fell back, and one summary line before the
+run summary:
+
+```
+locate <centre_id>: "<address>" at the centre (<reason>)
+locate: <n> at venue, <m> at centre; <r> requests, <h> cache hits
+```
+
+Reasons: `no provider address`, `unparseable address` (not `street, NNNNN city`), `no match`,
+`outside Bavaria`, `imprecise match (place_rank …)`, `postcode mismatch (…)`,
+`lookup failed: …` (timeout, HTTP error or a bad body) and `lookup cap reached`. A recurring
+`no match` or rejection for a real venue can be fixed by hand with a hit entry in `venues.json`
+for its normalised address. An `unparseable address` cannot be fixed that way: it is checked
+before the cache, so such an entry is never read.
 
 ## Home-machine fallback
 

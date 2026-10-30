@@ -1,9 +1,9 @@
 import { z } from 'zod';
 import { centreFieldsSchema, checkCentre, READERS } from './directory.ts';
-import { checkListing, listingFieldsSchema } from './listing.ts';
+import { checkListing, checkLocation, listingFieldsSchema, locationFields } from './listing.ts';
 
 /** The `schemaVersion` this contract describes. The app embeds it to detect a mismatch. */
-export const SNAPSHOT_SCHEMA_VERSION = 2;
+export const SNAPSHOT_SCHEMA_VERSION = 3;
 
 /**
  * Freshness threshold (AD-11, amended 2026-10-29 for once-a-day collection): a centre's
@@ -48,15 +48,22 @@ export const systemSchema = z.strictObject({
 	last_success_at: utcDatetime.nullable(),
 });
 
-/** A published test date: the normalised listing plus `first_seen_at` and `baseline` from merge. */
+/**
+ * A published test date: the normalised listing plus `lat`, `lon` and `location` from locate
+ * (schema v3) and `first_seen_at` and `baseline` from merge.
+ */
 export const snapshotListingSchema = listingFieldsSchema
 	.extend({
+		...locationFields,
 		/** The run that first saw this id. */
 		first_seen_at: utcDatetime,
 		/** Seen on the centre's first `ok` run, so it is not "new". */
 		baseline: z.boolean(),
 	})
-	.superRefine(checkListing);
+	.superRefine((listing, ctx) => {
+		checkListing(listing, ctx);
+		checkLocation(listing, ctx);
+	});
 
 export const snapshotSchema = z
 	.strictObject({

@@ -92,13 +92,15 @@ const sameMinuteOrder = (a: Unnamed, b: Unnamed): number =>
 	compareNullable(a.place, b.place) || compare(a.source_url, b.source_url) || compare(a.address, b.address) || compare(contentKey(a), contentKey(b));
 
 /**
- * The centre's listings, ordered by id. Ids are `<centre_id>@<date>T<time>`; same-minute dates
- * collapse exact duplicates, then take `#2`, `#3`, … in `sameMinuteOrder`.
+ * The centre's listings, ordered by id, and the ids whose address is the centre fallback (the
+ * reader gave none). Shared by `normaliseCentre` and `normaliseOutcome`.
  */
-export function normaliseCentre(centre: Centre, raw: readonly RawListing[], pages: readonly PageSummary[]): Listing[] {
+function buildListings(centre: Centre, raw: readonly RawListing[], pages: readonly PageSummary[]): { listings: Listing[]; centreAddressIds: string[] } {
 	const okUrls = okDetailUrls(pages);
 	const fallbackAddress = formatAddress(centre.address);
 	const groups = new Map<string, Unnamed[]>();
+	/** Listings whose address came from the fallback. */
+	const fromCentre = new Set<Unnamed>();
 	for (const item of raw) {
 		const listing: Unnamed = {
 			centre_id: centre.centre_id,
@@ -114,21 +116,41 @@ export function normaliseCentre(centre: Centre, raw: readonly RawListing[], page
 		};
 		const minute = `${item.date}T${item.time}`;
 		const group = groups.get(minute) ?? [];
-		if (!group.some((other) => contentKey(other) === contentKey(listing))) group.push(listing);
+		const same = group.find((other) => contentKey(other) === contentKey(listing));
+		if (same === undefined) {
+			group.push(listing);
+			if (item.address === null) fromCentre.add(listing);
+		} else if (item.address !== null) {
+			// A duplicate whose provider did state the address: not a fallback.
+			fromCentre.delete(same);
+		}
 		groups.set(minute, group);
 	}
 	const listings: Listing[] = [];
+	const centreAddressIds: string[] = [];
 	for (const [minute, group] of groups) {
 		group.sort(sameMinuteOrder).forEach((listing, index) => {
 			const id = `${centre.centre_id}@${minute}${index === 0 ? '' : `#${index + 1}`}`;
 			listings.push({ id, ...listing });
+			if (fromCentre.has(listing)) centreAddressIds.push(id);
 		});
 	}
-	return listings.sort((a, b) => compare(a.id, b.id));
+	return { listings: listings.sort((a, b) => compare(a.id, b.id)), centreAddressIds: centreAddressIds.sort(compare) };
 }
 
-/** A centre's outcome after normalise: `ok` carries `Listing`s; `failed` and `skipped` pass through. */
-export type NormalisedOutcome = Exclude<CentreOutcome, { kind: 'ok' }> | { kind: 'ok'; listings: Listing[] };
+/**
+ * The centre's listings, ordered by id. Ids are `<centre_id>@<date>T<time>`; same-minute dates
+ * collapse exact duplicates, then take `#2`, `#3`, … in `sameMinuteOrder`.
+ */
+export function normaliseCentre(centre: Centre, raw: readonly RawListing[], pages: readonly PageSummary[]): Listing[] {
+	return buildListings(centre, raw, pages).listings;
+}
+
+/**
+ * A centre's outcome after normalise: `ok` carries `Listing`s and `centreAddressIds`, the ids whose
+ * address is the centre fallback (for locate); `failed` and `skipped` pass through.
+ */
+export type NormalisedOutcome = Exclude<CentreOutcome, { kind: 'ok' }> | { kind: 'ok'; listings: Listing[]; centreAddressIds: string[] };
 
 /**
  * Normalises an `ok` outcome with the centre's pages from this run. Output that fails
@@ -136,7 +158,7 @@ export type NormalisedOutcome = Exclude<CentreOutcome, { kind: 'ok' }> | { kind:
  */
 export function normaliseOutcome(centre: Centre, outcome: CentreOutcome, pages: readonly PageSummary[]): NormalisedOutcome {
 	if (outcome.kind !== 'ok') return outcome;
-	const listings = normaliseCentre(centre, outcome.listings, pages);
+	const { listings, centreAddressIds } = buildListings(centre, outcome.listings, pages);
 	if (!listings.every((listing) => listingSchema.safeParse(listing).success)) return { kind: 'failed', reason: 'schema' };
-	return { kind: 'ok', listings };
+	return { kind: 'ok', listings, centreAddressIds };
 }

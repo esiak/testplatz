@@ -15,7 +15,7 @@ export const FETCH_DELAY_MS = 2000;
 /** Default per-request timeout, covering headers and body (pipeline/fetch). */
 export const FETCH_TIMEOUT_MS = 20000;
 
-/** Nominatim structured search, the only Nominatim endpoint used (tools/geocode, AD-5). */
+/** Nominatim structured search, the only Nominatim endpoint used (tools/geocode and stages/locate, AD-5). */
 export const NOMINATIM_SEARCH_URL = 'https://nominatim.openstreetmap.org/search';
 
 /** Pause between two Nominatim requests: ≤ 1 req/s per the OSMF usage policy. */
@@ -23,9 +23,15 @@ export const NOMINATIM_DELAY_MS = 1100;
 
 /**
  * A robots exemption in pipeline/fetch (AD-5): Nominatim's `/search`, governed by the OSMF usage
- * policy rather than its crawler robots.txt. Passed only by tools/geocode.
+ * policy rather than its crawler robots.txt. Passed only by tools/geocode and pipeline/stages/locate.
  */
 export const NOMINATIM_ROBOTS_EXEMPT = { origin: 'https://nominatim.openstreetmap.org', path: '/search' } as const;
+
+/**
+ * At most this many Nominatim requests per pipeline run (stages/locate, FR36). Further uncached
+ * test addresses fall back to the centre's coordinates until a later run.
+ */
+export const LOCATE_MAX_LOOKUPS_PER_RUN = 50;
 
 /** Overpass API interpreter, the only Overpass endpoint used (tools/build-places, AD-5). */
 export const OVERPASS_INTERPRETER_URL = 'https://overpass-api.de/api/interpreter';

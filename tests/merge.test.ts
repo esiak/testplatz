@@ -1,14 +1,16 @@
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { VISIT_WINDOW_MS } from '../pipeline/config.ts';
 import { readVisitLog } from '../pipeline/fetch/visits.ts';
-import { mergeRun, readState, serializeState, writeMergeResult, type MergeResult } from '../pipeline/stages/merge.ts';
-import { normaliseOutcome, type NormalisedOutcome } from '../pipeline/stages/normalise.ts';
+import type { LocatedOutcome } from '../pipeline/stages/locate.ts';
+import { mergeRun, readState, readVenues, serializeState, serializeVenues, writeMergeResult, type MergeResult } from '../pipeline/stages/merge.ts';
+import { normaliseOutcome } from '../pipeline/stages/normalise.ts';
 import type { Centre } from '../shared/directory.ts';
-import { listingSchema, type RawListing } from '../shared/listing.ts';
+import { locatedListingSchema, type RawListing } from '../shared/listing.ts';
 import { emptyState, STATE_VERSION, stateSchema, type State } from '../shared/state.ts';
+import { emptyVenues, type VenueEntry, type Venues } from '../shared/venues.ts';
 import type { Visit } from '../shared/visits.ts';
 
 const HOUR = 60 * 60 * 1000;
@@ -44,14 +46,25 @@ const raw = (date: string, extra: Partial<RawListing> = {}): RawListing => ({
 	...extra,
 });
 
-/** Normalised `ok` outcome for centre `id` with these raw listings (detail pages all 2xx). */
-const ok = (id: string, listings: RawListing[]): NormalisedOutcome =>
-	normaliseOutcome(centre(id), { kind: 'ok', listings }, listings.map((l) => ({ url: l.source_url, role: 'detail', status: 200, finalUrl: l.source_url })));
-const failed: NormalisedOutcome = { kind: 'failed', reason: 'list-page' };
-const skipped: NormalisedOutcome = { kind: 'skipped', reason: 'budget' };
+/** Located `ok` outcome for centre `id` with these raw listings (detail pages all 2xx), placed at the centre. */
+const ok = (id: string, listings: RawListing[]): LocatedOutcome => {
+	const c = centre(id);
+	const outcome = normaliseOutcome(c, { kind: 'ok', listings }, listings.map((l) => ({ url: l.source_url, role: 'detail', status: 200, finalUrl: l.source_url })));
+	if (outcome.kind !== 'ok') return outcome;
+	return { kind: 'ok', listings: outcome.listings.map((listing) => ({ ...listing, lat: c.lat, lon: c.lon, location: 'centre' as const })) };
+};
+const failed: LocatedOutcome = { kind: 'failed', reason: 'list-page' };
+const skipped: LocatedOutcome = { kind: 'skipped', reason: 'budget' };
 
-const merge = (state: State, outcomes: Record<string, NormalisedOutcome>, runAt: Date, log: Visit[] = [], visits: Visit[] = []): MergeResult =>
-	mergeRun({ state, log, outcomes, visits, runAt });
+const merge = (
+	state: State,
+	outcomes: Record<string, LocatedOutcome>,
+	runAt: Date,
+	log: Visit[] = [],
+	visits: Visit[] = [],
+	venues: Venues = emptyVenues(),
+	lookups: Record<string, VenueEntry> = {},
+): MergeResult => mergeRun({ state, log, outcomes, visits, venues, lookups, runAt });
 
 const listingsOf = (state: State, id: string) => state.centres[id]!.listings;
 const byListingId = (state: State, centreId: string, listingId: string) => listingsOf(state, centreId).find((l) => l.id === listingId);
@@ -193,39 +206,39 @@ describe('mergeRun visit log', () => {
 });
 
 describe('listing and state cross-field checks', () => {
-	const listing = () => (ok('a', [raw('2026-11-12')]) as Extract<NormalisedOutcome, { kind: 'ok' }>).listings[0]!;
+	const listing = () => (ok('a', [raw('2026-11-12')]) as Extract<LocatedOutcome, { kind: 'ok' }>).listings[0]!;
 	const stateWith = (key: string, listings: unknown[]) => {
 		const { state } = merge(emptyState(), { a: ok('a', [raw('2026-11-12')]) }, RUN_1);
 		return { ...state, centres: { [key]: { ...state.centres.a!, listings } } };
 	};
 
 	it('accepts the unbroken listing and state', () => {
-		expect(listingSchema.safeParse(listing()).success).toBe(true);
+		expect(locatedListingSchema.safeParse(listing()).success).toBe(true);
 		expect(stateSchema.safeParse(merge(emptyState(), { a: ok('a', [raw('2026-11-12')]) }, RUN_1).state).success).toBe(true);
 	});
 
 	it('rejects an id whose minute differs from starts_at', () => {
-		expect(listingSchema.safeParse({ ...listing(), id: 'a@2026-11-12T10:01' }).success).toBe(false);
+		expect(locatedListingSchema.safeParse({ ...listing(), id: 'a@2026-11-12T10:01' }).success).toBe(false);
 	});
 
 	it('rejects an id whose prefix differs from centre_id', () => {
-		expect(listingSchema.safeParse({ ...listing(), id: 'b@2026-11-12T10:00' }).success).toBe(false);
+		expect(locatedListingSchema.safeParse({ ...listing(), id: 'b@2026-11-12T10:00' }).success).toBe(false);
 	});
 
 	it('rejects a self-consistent listing of centre b stored under key a', () => {
 		const stored = merge(emptyState(), { a: ok('a', [raw('2026-11-12')]) }, RUN_1).state.centres.a!.listings[0]!;
 		const other = { ...stored, id: 'b@2026-11-12T10:00', centre_id: 'b' };
-		expect(listingSchema.safeParse({ ...listing(), id: other.id, centre_id: other.centre_id }).success).toBe(true);
+		expect(locatedListingSchema.safeParse({ ...listing(), id: other.id, centre_id: other.centre_id }).success).toBe(true);
 		expect(stateSchema.safeParse(stateWith('a', [other])).success).toBe(false);
 	});
 });
 
 describe('readState and writeMergeResult', () => {
 	let dir: string;
-	let paths: { statePath: string; visitLogPath: string };
+	let paths: { statePath: string; visitLogPath: string; venuesPath: string };
 	beforeEach(() => {
 		dir = mkdtempSync(join(tmpdir(), 'merge-'));
-		paths = { statePath: join(dir, 'state', 'state.json'), visitLogPath: join(dir, 'state', 'visits.json') };
+		paths = { statePath: join(dir, 'state', 'state.json'), visitLogPath: join(dir, 'state', 'visits.json'), venuesPath: join(dir, 'state', 'venues.json') };
 	});
 	afterEach(() => rmSync(dir, { recursive: true, force: true }));
 
@@ -242,6 +255,8 @@ describe('readState and writeMergeResult', () => {
 			log: readVisitLog(paths.visitLogPath),
 			outcomes: { a: ok('a', [raw('2026-12-01')]), b: ok('b', [raw('2026-12-01')]) },
 			visits: [{ host: 'example.de', at: RUN_2.toISOString() }],
+			venues: readVenues(paths.venuesPath),
+			lookups: {},
 			runAt: RUN_2,
 		});
 		writeMergeResult(two, paths);
@@ -260,7 +275,7 @@ describe('readState and writeMergeResult', () => {
 		const one = merge(emptyState(), { a: ok('a', [raw('2026-11-12')]) }, RUN_1);
 		writeMergeResult(one, paths);
 		const first = readFileSync(paths.statePath, 'utf8');
-		writeMergeResult({ state: readState(paths.statePath), log: readVisitLog(paths.visitLogPath) }, paths);
+		writeMergeResult({ state: readState(paths.statePath), log: readVisitLog(paths.visitLogPath), venues: readVenues(paths.venuesPath) }, paths);
 		expect(readFileSync(paths.statePath, 'utf8')).toBe(first);
 	});
 
@@ -315,5 +330,95 @@ describe('readState and writeMergeResult', () => {
 		expect(() => writeMergeResult({ ...good(), log: [{ host: '', at: 'x' }] }, paths)).toThrow();
 		expect([readFileSync(paths.statePath, 'utf8'), readFileSync(paths.visitLogPath, 'utf8')]).toEqual(before);
 		expect(readdirSync(join(dir, 'state')).sort()).toEqual(['state.json', 'visits.json']);
+	});
+});
+
+describe('venue cache: mergeRun, readVenues and writeMergeResult', () => {
+	let dir: string;
+	let paths: { statePath: string; visitLogPath: string; venuesPath: string };
+	beforeEach(() => {
+		dir = mkdtempSync(join(tmpdir(), 'merge-venues-'));
+		paths = { statePath: join(dir, 'state', 'state.json'), visitLogPath: join(dir, 'state', 'visits.json'), venuesPath: join(dir, 'state', 'venues.json') };
+	});
+	afterEach(() => rmSync(dir, { recursive: true, force: true }));
+
+	const hit: VenueEntry = { fetched_at: RUN_1.toISOString(), lat: 48.0, lon: 11.17, reason: null };
+	const miss: VenueEntry = { fetched_at: RUN_1.toISOString(), lat: null, lon: null, reason: 'no match' };
+
+	it('adds this run\'s lookups to the cache, replacing older entries, keys sorted', () => {
+		const venues: Venues = { venuesVersion: 1, entries: { 'z str 1, 80331 münchen': miss, 'b str 1, 80331 münchen': hit } };
+		const newer: VenueEntry = { fetched_at: RUN_2.toISOString(), lat: 48.1, lon: 11.2, reason: null };
+		const result = merge(emptyState(), {}, RUN_2, [], [], venues, { 'z str 1, 80331 münchen': newer, 'a str 1, 80331 münchen': miss });
+		expect(Object.keys(result.venues.entries)).toEqual(['a str 1, 80331 münchen', 'b str 1, 80331 münchen', 'z str 1, 80331 münchen']);
+		expect(result.venues.entries['z str 1, 80331 münchen']).toEqual(newer);
+		expect(venues.entries['z str 1, 80331 münchen']).toEqual(miss);
+	});
+
+	it('reads a missing file as empty and does not create it for an empty cache', () => {
+		expect(readVenues(paths.venuesPath)).toEqual(emptyVenues());
+		writeMergeResult(merge(emptyState(), { a: ok('a', [raw('2026-11-12')]) }, RUN_1), paths);
+		expect(existsSync(paths.venuesPath)).toBe(false);
+	});
+
+	it('round-trips through the file, tab-indented and sorted, and leaves an unchanged file untouched', () => {
+		const one = merge(emptyState(), {}, RUN_1, [], [], emptyVenues(), { 'b str 1, 80331 münchen': hit, 'a str 1, 80331 münchen': miss });
+		writeMergeResult(one, paths);
+		const text = readFileSync(paths.venuesPath, 'utf8');
+		expect(text).toBe(serializeVenues(one.venues));
+		expect(text).toBe(`${JSON.stringify(JSON.parse(text), null, '\t')}\n`);
+		expect(Object.keys(JSON.parse(text).entries)).toEqual(['a str 1, 80331 münchen', 'b str 1, 80331 münchen']);
+		expect(readVenues(paths.venuesPath)).toEqual(one.venues);
+
+		const mtime = statSync(paths.venuesPath).mtimeMs;
+		const two = merge(emptyState(), {}, RUN_2, [], [], readVenues(paths.venuesPath), {});
+		writeMergeResult(two, paths);
+		expect(readFileSync(paths.venuesPath, 'utf8')).toBe(text);
+		expect(statSync(paths.venuesPath).mtimeMs).toBe(mtime);
+	});
+
+	it.each<[string, string, RegExp]>([
+		['invalid JSON', '{ nope', /not valid JSON/],
+		['another venuesVersion', JSON.stringify({ venuesVersion: 2, entries: {} }), /invalid at venuesVersion/],
+		['a hit without lon', JSON.stringify({ venuesVersion: 1, entries: { a: { ...hit, lon: null } } }), /invalid at entries\.a/],
+		['a miss without a reason', JSON.stringify({ venuesVersion: 1, entries: { a: { ...miss, reason: null } } }), /invalid at entries\.a/],
+		['a hit outside Bavaria', JSON.stringify({ venuesVersion: 1, entries: { a: { ...hit, lat: 52.5, lon: 13.4 } } }), /invalid at entries\.a/],
+		['an extra field', JSON.stringify({ venuesVersion: 1, entries: { a: { ...hit, display_name: 'x' } } }), /invalid at entries\.a/],
+	])('readVenues throws naming the path for %s', (_case, text, message) => {
+		writeFileSync(join(dir, 'bad.json'), text);
+		expect(() => readVenues(join(dir, 'bad.json'))).toThrow(message);
+		expect(() => readVenues(join(dir, 'bad.json'))).toThrow(join(dir, 'bad.json'));
+	});
+
+	it('writes nothing when the venue cache fails its schema', () => {
+		const bad = { ...merge(emptyState(), { a: ok('a', [raw('2026-11-12')]) }, RUN_1), venues: { venuesVersion: 1 as const, entries: { a: { ...hit, reason: 'x' } } } };
+		expect(() => writeMergeResult(bad, paths)).toThrow(/venue cache fails the schema, nothing written/);
+		expect(existsSync(join(dir, 'state'))).toBe(false);
+	});
+});
+
+describe('stored listing location fields', () => {
+	const stored = () => merge(emptyState(), { a: ok('a', [raw('2026-11-12')]) }, RUN_1).state.centres.a!.listings[0]!;
+	const valid = (listing: unknown) => stateSchema.safeParse({ stateVersion: 1, centres: { a: { last_result: 'ok', last_checked_at: RUN_1.toISOString(), last_success_at: RUN_1.toISOString(), listings: [listing] } } }).success;
+
+	it('stores lat, lon and location from locate', () => {
+		expect(stored()).toMatchObject({ lat: 48.137, lon: 11.575, location: 'centre' });
+		expect(valid(stored())).toBe(true);
+	});
+
+	it('accepts a listing stored before locate (no location fields) and null coordinates', () => {
+		const { lat: _lat, lon: _lon, location: _location, ...legacy } = stored();
+		expect(valid(legacy)).toBe(true);
+		expect(valid({ ...stored(), lat: null, lon: null })).toBe(true);
+	});
+
+	it.each<[string, Record<string, unknown>]>([
+		['only lat', { lon: null }],
+		['coordinates outside Bavaria', { lat: 52.5, lon: 13.4 }],
+		['an unknown location', { location: 'home' }],
+		['location without coordinates', { lat: undefined, lon: undefined }],
+	])('rejects %s', (_case, change) => {
+		const listing: Record<string, unknown> = { ...stored(), ...change };
+		for (const key of Object.keys(listing)) if (listing[key] === undefined) delete listing[key];
+		expect(valid(listing)).toBe(false);
 	});
 });

@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { buildSnapshot, serializeSnapshot, writeSnapshot, type SnapshotInput } from '../pipeline/stages/publish.ts';
 import { SNAPSHOT_PATH } from '../pipeline/stages/paths.ts';
-import type { NormalisedOutcome } from '../pipeline/stages/normalise.ts';
+import type { LocatedOutcome } from '../pipeline/stages/locate.ts';
 import { type Centre } from '../shared/directory.ts';
 import { FRESHNESS_MS, SNAPSHOT_SCHEMA_VERSION, snapshotSchema, type Snapshot, type SnapshotListing } from '../shared/snapshot.ts';
 import { emptyState, type CentreState, type State, type StoredListing } from '../shared/state.ts';
@@ -46,6 +46,9 @@ const stored = (centreId: string, startsAt: string, extra: Partial<StoredListing
 	source_url: `https://${centreId}.de/k/1`,
 	link_ok: true,
 	eligibility: null,
+	lat: 48.137,
+	lon: 11.575,
+	location: 'venue',
 	first_seen_at: EARLIER,
 	removed_at: null,
 	baseline: true,
@@ -66,7 +69,7 @@ const build = (input: Partial<SnapshotInput> = {}): Snapshot =>
 
 const published = (listing: StoredListing): SnapshotListing => {
 	const { removed_at: _removed, ...rest } = listing;
-	return rest;
+	return rest as SnapshotListing;
 };
 
 /** A valid snapshot with one covered centre `k` holding one listing. */
@@ -101,6 +104,10 @@ describe('snapshotSchema', () => {
 		['a non-Z last_checked_at', (s) => ({ ...s, centres: [{ ...s.centres[0], last_checked_at: '2026-10-27T09:00:00+02:00' }, ...s.centres.slice(1)] })],
 		['an unknown coverage code', (s) => ({ ...s, centres: [{ ...s.centres[0], coverage: 'unknown' }, ...s.centres.slice(1)] })],
 		['an omitted run field', (s) => ({ ...s, centres: [{ ...s.centres[0], last_success_at: undefined }, ...s.centres.slice(1)] })],
+		['a listing without location fields', (s) => ({ ...s, listings: [{ ...s.listings[0]!, lat: undefined, lon: undefined, location: undefined }] })],
+		['a listing with only lat', (s) => ({ ...s, listings: [{ ...s.listings[0]!, lon: null }] })],
+		['a listing outside the Bavaria box', (s) => ({ ...s, listings: [{ ...s.listings[0]!, lat: 52.52, lon: 13.4 }] })],
+		['an unknown location code', (s) => ({ ...s, listings: [{ ...s.listings[0]!, location: 'home' }] })],
 		['a system for reader none', (s) => ({ ...s, systems: [{ reader: 'none', centres_covered: 0, centres_ok: 0, centres_failed: 0, last_success_at: null }] })],
 	];
 
@@ -128,7 +135,7 @@ describe('buildSnapshot', () => {
 	it('lists every centre once, sorted, with the run fields after the directory fields', () => {
 		const snapshot = build();
 		expect(snapshot.schemaVersion).toBe(SNAPSHOT_SCHEMA_VERSION);
-		expect(SNAPSHOT_SCHEMA_VERSION).toBe(2);
+		expect(SNAPSHOT_SCHEMA_VERSION).toBe(3);
 		expect(snapshot.generated_at).toBe('2026-10-27T07:00:00Z');
 		expect(snapshot.centres.map((c) => c.centre_id)).toEqual(['alpha', 'mid', 'zeta']);
 		for (const c of snapshot.centres) {
@@ -153,7 +160,7 @@ describe('buildSnapshot', () => {
 	it('marks a robots skip not_checked and drops its stored listings; a budget skip stays covered with its listings', () => {
 		const robots = stored('robots', '2026-11-12T10:00:00+01:00');
 		const budget = stored('budget', '2026-11-12T10:00:00+01:00');
-		const outcomes: Record<string, NormalisedOutcome> = {
+		const outcomes: Record<string, LocatedOutcome> = {
 			robots: { kind: 'skipped', reason: 'robots' },
 			budget: { kind: 'skipped', reason: 'budget' },
 		};
@@ -192,6 +199,25 @@ describe('buildSnapshot', () => {
 		expect(snapshot.listings).toEqual([published(future1), published(future2)]);
 		expect(Object.keys(snapshot.listings[0]!)).not.toContain('removed_at');
 		expect(snapshotSchema.safeParse(snapshot).success).toBe(true);
+	});
+
+	it('fills a stored listing without location fields with the centre coordinates and location centre', () => {
+		const legacy = { ...stored('a', '2026-11-12T10:00:00+01:00') } as Partial<StoredListing>;
+		delete legacy.lat;
+		delete legacy.lon;
+		delete legacy.location;
+		const unlocated = { ...legacy, id: 'm@2026-11-12T10:00', centre_id: 'm' } as StoredListing;
+		const placed = stored('a', '2026-11-13T10:00:00+01:00', { lat: 49.4, lon: 11.1, location: 'venue' });
+		const snapshot = build({
+			centres: [kufer('a', { lat: 48.5, lon: 11.2 }), kufer('m', { lat: null, lon: null })],
+			state: stateOf({ a: history('ok', [legacy as StoredListing, placed]), m: history('failed', [unlocated]) }),
+		});
+		expect(snapshotSchema.safeParse(snapshot).success).toBe(true);
+		expect(snapshot.listings.map((l) => [l.id, l.lat, l.lon, l.location])).toEqual([
+			['a@2026-11-12T10:00', 48.5, 11.2, 'centre'],
+			['a@2026-11-13T10:00', 49.4, 11.1, 'venue'],
+			['m@2026-11-12T10:00', null, null, 'centre'],
+		]);
 	});
 
 	it('sums systems per registered reader, sorted, with the latest last_success_at', () => {
@@ -250,8 +276,8 @@ describe('committed data/public/snapshot.json', () => {
 	// reconciles a changed directory with the committed snapshot.
 	const snapshot = snapshotSchema.parse(JSON.parse(readFileSync(SNAPSHOT_PATH, 'utf8')));
 
-	it('validates as schemaVersion 2 with centres', () => {
-		expect(snapshot.schemaVersion).toBe(2);
+	it('validates as schemaVersion 3 with centres', () => {
+		expect(snapshot.schemaVersion).toBe(3);
 		expect(snapshot.centres.length).toBeGreaterThan(0);
 	});
 

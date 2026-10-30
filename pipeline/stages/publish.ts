@@ -11,7 +11,7 @@ import { basename, dirname, join } from 'node:path';
 import { sortDirectory, type Centre, type Reader as ReaderSystem } from '../../shared/directory.ts';
 import { SNAPSHOT_SCHEMA_VERSION, snapshotSchema, type Coverage, type Snapshot, type SnapshotListing, type SnapshotSystem } from '../../shared/snapshot.ts';
 import type { State } from '../../shared/state.ts';
-import type { NormalisedOutcome } from './normalise.ts';
+import type { LocatedOutcome } from './locate.ts';
 
 /** UTC ISO 8601 with `Z`, whole seconds. */
 const isoSeconds = (date: Date): string => date.toISOString().replace(/\.\d{3}Z$/, 'Z');
@@ -23,8 +23,8 @@ export interface SnapshotInput {
 	centres: readonly Centre[];
 	/** Merge's state after this run. */
 	state: State;
-	/** This run's normalised outcome per `centre_id`; a centre without one has none this run. */
-	outcomes: Readonly<Record<string, NormalisedOutcome>>;
+	/** This run's located outcome per `centre_id`; a centre without one has none this run. */
+	outcomes: Readonly<Record<string, LocatedOutcome>>;
 	/** The reader systems registered for this run. */
 	readers: readonly Exclude<ReaderSystem, 'none'>[];
 	runAt: Date;
@@ -35,7 +35,7 @@ export interface SnapshotInput {
  * not registered, or robots.txt kept this run out; otherwise `covered` (a budget skip or a centre
  * with no state yet stays covered).
  */
-export function coverageOf(centre: Centre, readers: ReadonlySet<string>, outcome: NormalisedOutcome | undefined): Coverage {
+export function coverageOf(centre: Centre, readers: ReadonlySet<string>, outcome: LocatedOutcome | undefined): Coverage {
 	if (centre.opted_out || centre.reader === 'none' || !readers.has(centre.reader)) return 'not_checked';
 	if (outcome?.kind === 'skipped' && outcome.reason === 'robots') return 'not_checked';
 	return 'covered';
@@ -45,7 +45,9 @@ export function coverageOf(centre: Centre, readers: ReadonlySet<string>, outcome
  * The snapshot for this run. Every directory centre appears once, sorted by `centre_id`, with run
  * fields from state when `covered` (null when it has no state yet) and null when `not_checked`.
  * `systems[]` has one entry per registered reader. `listings[]` holds the stored listings of
- * covered centres that are not removed and start after `runAt`, without `removed_at`, by id.
+ * covered centres that are not removed and start after `runAt`, without `removed_at`, by id. A
+ * stored listing without location fields (kept from before Story 2.10) takes the centre's
+ * coordinates with `location: centre`.
  */
 export function buildSnapshot({ centres, state, outcomes, readers, runAt }: SnapshotInput): Snapshot {
 	const registered = new Set<string>(readers);
@@ -79,8 +81,14 @@ export function buildSnapshot({ centres, state, outcomes, readers, runAt }: Snap
 		if (success !== null && (system.last_success_at === null || Date.parse(success) > Date.parse(system.last_success_at))) {
 			system.last_success_at = success;
 		}
-		for (const { removed_at, ...listing } of history?.listings ?? []) {
-			if (removed_at === null && Date.parse(listing.starts_at) > now) listings.push(listing);
+		for (const { removed_at, lat, lon, location, first_seen_at, baseline, ...listing } of history?.listings ?? []) {
+			if (removed_at !== null || Date.parse(listing.starts_at) <= now) continue;
+			const placed =
+				lat === undefined || lon === undefined || location === undefined
+					? { lat: centre.lat, lon: centre.lon, location: 'centre' as const }
+					: { lat, lon, location };
+			// Field order as in the schema, so the file and an equal built snapshot serialise alike.
+			listings.push({ ...listing, ...placed, first_seen_at, baseline });
 		}
 	}
 
