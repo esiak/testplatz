@@ -358,11 +358,11 @@ describe('initial language', () => {
 	});
 
 	it('follows a shared link and leaves its fragment unchanged', () => {
-		setBrowser(['de-DE'], '#q=F%C3%BCrth&r=20&lang=en');
+		setBrowser(['de-DE'], '#q=F%C3%BCrth&r=20&sort=soonest&lang=en');
 		mount('search');
 		expect(document.documentElement.lang).toBe('en');
 		expect(h1Text()).toBe(en['search.heading']);
-		expect(location.hash).toBe('#q=F%C3%BCrth&r=20&lang=en');
+		expect(location.hash).toBe('#q=F%C3%BCrth&r=20&sort=soonest&lang=en');
 	});
 
 	it('ignores a bad lang and does not rewrite the fragment', () => {
@@ -399,11 +399,11 @@ describe('language switch', () => {
 	});
 
 	it('switches DE→EN without reload, keeps the other parameters and keeps focus', () => {
-		setBrowser(['de-DE'], '#q=F%C3%BCrth&r=20&lang=de');
+		setBrowser(['de-DE'], '#q=F%C3%BCrth&r=20&sort=soonest&lang=de');
 		mount('search');
 		const historyLength = history.length;
 		const enLink = langLink('en');
-		expect(enLink.getAttribute('href')).toBe('#q=F%C3%BCrth&r=20&lang=en');
+		expect(enLink.getAttribute('href')).toBe('#q=F%C3%BCrth&r=20&sort=soonest&lang=en');
 
 		enLink.focus();
 		act(() => enLink.click());
@@ -411,7 +411,7 @@ describe('language switch', () => {
 		expect(h1Text()).toBe(en['search.heading']);
 		expect(document.documentElement.lang).toBe('en');
 		expect(document.title).toBe(en['search.title']);
-		expect(location.hash).toBe('#q=F%C3%BCrth&r=20&lang=en');
+		expect(location.hash).toBe('#q=F%C3%BCrth&r=20&sort=soonest&lang=en');
 		expect(location.pathname).toBe('/testplatz/');
 		expect(history.length).toBe(historyLength);
 		expect(langLink('en')).toBe(enLink);
@@ -449,15 +449,15 @@ describe('language switch', () => {
 
 describe('language switch links', () => {
 	it('follow a hashchange that changes only q', () => {
-		setBrowser(['de-DE'], '#q=Ulm&r=20&lang=de');
+		setBrowser(['de-DE'], '#q=Ulm&r=20&sort=soonest&lang=de');
 		mount('search');
-		expect(langLink('en').getAttribute('href')).toBe('#q=Ulm&r=20&lang=en');
+		expect(langLink('en').getAttribute('href')).toBe('#q=Ulm&r=20&sort=soonest&lang=en');
 		act(() => {
-			history.replaceState(null, '', '/testplatz/#q=Augsburg&r=20&lang=de');
+			history.replaceState(null, '', '/testplatz/#q=Augsburg&r=20&sort=soonest&lang=de');
 			window.dispatchEvent(new HashChangeEvent('hashchange'));
 		});
-		expect(langLink('en').getAttribute('href')).toBe('#q=Augsburg&r=20&lang=en');
-		expect(langLink('de').getAttribute('href')).toBe('#q=Augsburg&r=20&lang=de');
+		expect(langLink('en').getAttribute('href')).toBe('#q=Augsburg&r=20&sort=soonest&lang=en');
+		expect(langLink('de').getAttribute('href')).toBe('#q=Augsburg&r=20&sort=soonest&lang=de');
 	});
 
 	it('leave modified and middle clicks to the browser', () => {

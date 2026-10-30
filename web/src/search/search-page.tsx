@@ -9,9 +9,21 @@ import { NO_LOCATION_ID } from '../fragment.ts';
 import { useI18n } from '../i18n/i18n.tsx';
 import { ResultCard } from './result-card.tsx';
 import { NoDatesCard } from './no-dates-card.tsx';
-import { datedResults, undatedKind, type Results } from './results.ts';
+import { allBookedOut, datedResults, sortedCards, undatedKind, type Results, type SortedCard } from './results.ts';
 import { SearchBar } from './search-bar.tsx';
-import { DEFAULT_RADIUS, nextRadius, parseSearchFragment, runSearch, searchFragment, type Outcome, type Radius, type Search } from './search.ts';
+import {
+	DEFAULT_RADIUS,
+	nextRadius,
+	parseSearchFragment,
+	parseSort,
+	runSearch,
+	searchFragment,
+	type Outcome,
+	type Radius,
+	type Search,
+	type Sort,
+} from './search.ts';
+import { SortControl } from './sort-control.tsx';
 import { aboutSectionUrl, UncoveredCard } from './uncovered-card.tsx';
 
 /** What the page talks to; tests inject their own. */
@@ -28,7 +40,11 @@ type Shown = Results & { now: number };
 type DataState = { kind: 'loading' } | { kind: 'ready'; snapshot: Snapshot; places: Places } | { kind: 'failed' };
 
 /** What the live region says. Stored as a description so a language switch re-renders it. */
-type Announcement = { kind: 'loading' } | { kind: 'outcome'; outcome: Outcome; shown: Shown | null } | { kind: 'suggestions'; count: number };
+type Announcement =
+	| { kind: 'loading' }
+	| { kind: 'outcome'; outcome: Outcome; shown: Shown | null }
+	| { kind: 'suggestions'; count: number }
+	| { kind: 'sorted'; sort: Sort };
 
 const SKELETON_COUNT = 3;
 
@@ -72,10 +88,62 @@ function AnnouncementText({ announcement }: { announcement: Announcement | null 
 		const { count } = announcement;
 		return <>{t(count === 1 ? 'search.suggestions_count_one' : 'search.suggestions_count', { count })}</>;
 	}
+	if (announcement.kind === 'sorted') return <>{t(announcement.sort === 'soonest' ? 'results.sorted_soonest' : 'results.sorted_nearest')}</>;
 	const { outcome, shown } = announcement;
 	if (outcome.kind === 'results' && shown) return <CountLine outcome={outcome} shown={shown} />;
 	if (outcome.kind === 'no_centres') return <>{t('results.none_in_radius', { radius: outcome.search.r })}</>;
 	return null;
+}
+
+/** One card of any kind, in its list item. */
+function CardItem({ card, now }: { card: SortedCard; now: number }) {
+	if (card.kind === 'dated') {
+		return (
+			<li class="results__item">
+				<ResultCard result={card.result} now={now} />
+			</li>
+		);
+	}
+	const kind = undatedKind(card.item.centre);
+	return (
+		<li class="results__item">
+			{kind === 'no_dates' ? (
+				<NoDatesCard item={card.item} now={now} />
+			) : (
+				<UncoveredCard item={card.item} rightNow={kind === 'not_checked_right_now'} />
+			)}
+		</li>
+	);
+}
+
+const cardKey = (card: SortedCard): string => (card.kind === 'dated' ? `d:${card.result.listing.id}` : `u:${card.item.centre.centre_id}`);
+
+function CardList({ cards, now }: { cards: SortedCard[]; now: number }) {
+	return (
+		<ul class="results">
+			{cards.map((card) => (
+				<CardItem key={cardKey(card)} card={card} now={now} />
+			))}
+		</ul>
+	);
+}
+
+/** Soonest: dates, then (when there are any) "No dates to show" and the other cards. Nearest: one list. */
+function SortedResults({ shown, sort }: { shown: Shown; sort: Sort }) {
+	const { t } = useI18n();
+	const sorted = sortedCards(shown, sort);
+	if (sorted.sort === 'nearest') return <CardList cards={sorted.cards} now={shown.now} />;
+	return (
+		<>
+			{sorted.dated.length > 0 ? <CardList cards={sorted.dated} now={shown.now} /> : null}
+			{sorted.undated.length > 0 ? (
+				<>
+					<h2 class="results-heading">{t('results.no_dates_heading')}</h2>
+					<CardList cards={sorted.undated} now={shown.now} />
+				</>
+			) : null}
+		</>
+	);
 }
 
 function Skeletons() {
@@ -101,6 +169,7 @@ export function SearchPage({ services }: { services?: Partial<SearchServices> })
 
 	const [text, setText] = useState('');
 	const [radius, setRadius] = useState<Radius>(DEFAULT_RADIUS);
+	const [sort, setSort] = useState<Sort>(() => parseSort(hash));
 	const [data, setData] = useState<DataState>({ kind: 'loading' });
 	const [attempt, setAttempt] = useState(0);
 	const [pending, setPending] = useState<Search | null>(null);
@@ -119,6 +188,8 @@ export function SearchPage({ services }: { services?: Partial<SearchServices> })
 	dataRef.current = data;
 	const langRef = useRef(lang);
 	langRef.current = lang;
+	/** The sort every fragment write carries; set from the fragment and by the sort control. */
+	const sortRef = useRef(sort);
 	const announceId = useRef(0);
 	const pendingRef = useRef(pending);
 	pendingRef.current = pending;
@@ -135,7 +206,7 @@ export function SearchPage({ services }: { services?: Partial<SearchServices> })
 			if ((result.kind === 'results' || result.kind === 'no_centres') && result.search.q !== search.q) {
 				lastSearch.current = result.search;
 				setText(result.search.q);
-				replaceHash(searchFragment(result.search.q, result.search.r, langRef.current));
+				replaceHash(searchFragment(result.search.q, result.search.r, sortRef.current, langRef.current));
 			}
 			let resultShown: Shown | null = null;
 			if (result.kind === 'results') {
@@ -164,7 +235,7 @@ export function SearchPage({ services }: { services?: Partial<SearchServices> })
 			setListDismissed(true);
 			if (options.fill) setText(search.q);
 			setRadius(search.r);
-			replaceHash(searchFragment(search.q, search.r, langRef.current));
+			replaceHash(searchFragment(search.q, search.r, sortRef.current, langRef.current));
 			const current = dataRef.current;
 			if (current.kind === 'ready') {
 				setPending(null);
@@ -210,8 +281,11 @@ export function SearchPage({ services }: { services?: Partial<SearchServices> })
 		show(pending, data);
 	}, [data, pending, show]);
 
-	// On mount and on every fragment change: run the fragment's search when it differs from the last one.
+	// On mount and on every fragment change: take its sort, and run its search when it differs from the last one.
 	useEffect(() => {
+		const fromFragment = parseSort(hash);
+		sortRef.current = fromFragment;
+		setSort(fromFragment);
 		const { q, r } = parseSearchFragment(hash);
 		if (!q) return;
 		const search = { q, r };
@@ -236,6 +310,15 @@ export function SearchPage({ services }: { services?: Partial<SearchServices> })
 	};
 
 	const pick = (pickText: string) => requestSearch({ q: pickText, r: radius }, { fill: true, focus: true });
+
+	/** Re-orders the cards already shown: no new search, clock read or fetch. */
+	const chooseSort = (next: Sort) => {
+		sortRef.current = next;
+		setSort(next);
+		const search = outcome?.kind === 'results' ? outcome.search : lastSearch.current;
+		if (search) replaceHash(searchFragment(search.q, search.r, next, langRef.current));
+		announce({ kind: 'sorted', sort: next });
+	};
 
 	const announceSuggestions = useCallback((count: number) => announce({ kind: 'suggestions', count }), [announce]);
 
@@ -285,27 +368,11 @@ export function SearchPage({ services }: { services?: Partial<SearchServices> })
 				<p class="results-count">
 					<CountLine outcome={outcome} shown={shown} />
 				</p>
+				<SortControl sort={sort} onSort={chooseSort} />
 				{shown.dated.length === 0 ? <p class="notice-line">{t('results.notice_no_dates')}</p> : null}
+				{allBookedOut(shown.dated) ? <p class="notice-line">{t('results.notice_all_booked')}</p> : null}
 				<HiddenUnlocatedNotice count={outcome.hiddenUnlocated} />
-				<ul class="results">
-					{shown.dated.map((result) => (
-						<li key={result.listing.id} class="results__item">
-							<ResultCard result={result} now={shown.now} />
-						</li>
-					))}
-					{shown.undated.map((item) => {
-						const kind = undatedKind(item.centre);
-						return (
-							<li key={item.centre.centre_id} class="results__item">
-								{kind === 'no_dates' ? (
-									<NoDatesCard item={item} now={shown.now} />
-								) : (
-									<UncoveredCard item={item} rightNow={kind === 'not_checked_right_now'} />
-								)}
-							</li>
-						);
-					})}
-				</ul>
+				<SortedResults shown={shown} sort={sort} />
 			</>
 		);
 	}
@@ -316,6 +383,7 @@ export function SearchPage({ services }: { services?: Partial<SearchServices> })
 			<SearchBar
 				text={text}
 				radius={radius}
+				sort={sort}
 				error={fieldError}
 				fieldRef={fieldRef}
 				places={data.kind === 'ready' ? data.places.places : null}

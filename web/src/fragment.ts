@@ -1,5 +1,5 @@
 /**
- * The URL fragment holds the shareable page state (`#q=<town>&r=<km>&lang=<lang>`).
+ * The URL fragment holds the shareable page state (`#q=<town>&r=<km>&sort=<sort>&lang=<lang>`).
  * The query string is never used.
  */
 

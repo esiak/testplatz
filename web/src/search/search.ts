@@ -42,9 +42,20 @@ export function parseSearchFragment(hash: string): { q: string | null; r: Radius
 	return { q: q || null, r: snapRadius(params.get('r')) };
 }
 
-/** `#q=<text>&r=<km>&lang=<lang>`. Never coordinates. */
-export function searchFragment(q: string, r: Radius, lang: string): string {
-	return serialiseFragment(new URLSearchParams([['q', q], ['r', String(r)], ['lang', lang]]));
+/** How the result cards are ordered. */
+export const SORTS = ['soonest', 'nearest'] as const;
+export type Sort = (typeof SORTS)[number];
+export const DEFAULT_SORT: Sort = 'soonest';
+
+/** The fragment's `sort`; missing or unknown → soonest. */
+export function parseSort(hash: string): Sort {
+	const value = parseFragment(hash).get('sort');
+	return SORTS.find((sort) => sort === value) ?? DEFAULT_SORT;
+}
+
+/** `#q=<text>&r=<km>&sort=<sort>&lang=<lang>`. Never coordinates. */
+export function searchFragment(q: string, r: Radius, sort: Sort, lang: string): string {
+	return serialiseFragment(new URLSearchParams([['q', q], ['r', String(r)], ['sort', sort], ['lang', lang]]));
 }
 
 export type Resolution =

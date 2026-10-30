@@ -252,7 +252,7 @@ describe('a search with results', () => {
 		const length = history.length;
 		const replace = vi.spyOn(history, 'replaceState');
 		await search('  Nürnberg ', 20);
-		expect(location.hash).toBe('#q=N%C3%BCrnberg&r=20&lang=de');
+		expect(location.hash).toBe('#q=N%C3%BCrnberg&r=20&sort=soonest&lang=de');
 		expect(location.search).toBe('');
 		expect(replace).toHaveBeenCalled();
 		expect(history.length).toBe(length);
@@ -854,6 +854,210 @@ describe('no-dates and not-checked-right-now cards', () => {
 	});
 });
 
+describe('sort by soonest or nearest', () => {
+	// About 111 km per degree of latitude: offsets give the distances in the names.
+	const at = (km: number) => ({ lat: NBG.lat + km / 111.2, lon: NBG.lon });
+	const d30 = coveredCentre('d30', 'ok', { name: 'Dreißig', ...at(30) });
+	const d10 = coveredCentre('d10', 'ok', { name: 'Zehn', ...at(10) });
+	const u5 = coveredCentre('u5', 'ok', { name: 'Fünf', ...at(5) });
+	const unloc = snapshotCentre('unloc', {
+		name: 'Ohne Ort',
+		address: { street: 'Hauptstraße 1', postcode: '90403', city: 'Nürnberg' },
+		lat: null,
+		lon: null,
+	});
+	const early = snapshotListing('d30', '2026-11-20T09:00:00+01:00');
+	const late = snapshotListing('d10', '2026-12-09T10:00:00+01:00');
+	const EARLY = 'Fri 20 Nov, 09:00';
+	const LATE = 'Wed 9 Dec, 10:00';
+	const ALL = [d30, d10, u5, unloc];
+
+	async function showWith(centres: SnapshotCentre[], listings: SnapshotListing[], hash = '', lang: 'en' | 'de' = 'en'): Promise<void> {
+		act(() => render(null, root));
+		serve(ok(snapshotOf(centres, listings)));
+		setBrowser(hash, [lang === 'en' ? 'en-GB' : 'de-DE']);
+		mount();
+		await settle();
+		if (!hash) await search('Nürnberg', 40);
+	}
+
+	const radio = (value: 'soonest' | 'nearest') => root.querySelector<HTMLInputElement>(`input[type="radio"][name="sort"][value="${value}"]`)!;
+	const checked = () => [...root.querySelectorAll<HTMLInputElement>('input[name="sort"]')].filter((r) => r.checked).map((r) => r.value);
+	const headings = () => [...root.querySelectorAll('.search__results h2')].map((h) => h.textContent);
+	/** The results box's children in order: tag plus class. */
+	const layout = () => [...root.querySelector('.search__results')!.children].map((el) => `${el.tagName.toLowerCase()}.${el.className}`);
+	const notices = () => [...root.querySelectorAll('.search__results > p.notice-line')].map((p) => p.textContent);
+
+	function choose(value: 'soonest' | 'nearest'): void {
+		act(() => {
+			radio(value).focus();
+			radio(value).click();
+		});
+	}
+
+	it('shows a "Sort by" group with Soonest checked, dated cards first, then "No dates to show" and the rest by distance', async () => {
+		await showWith(ALL, [early, late], '#q=N%C3%BCrnberg&r=40&lang=en');
+		const group = root.querySelector('fieldset.sort-control')!;
+		expect(group.querySelector('legend')!.textContent).toBe('Sort by');
+		expect([...group.querySelectorAll('label')].map((l) => l.textContent)).toEqual(['Soonest', 'Nearest']);
+		expect(radio('soonest').checked).toBe(true);
+		expect(radio('nearest').checked).toBe(false);
+		expect(cardNames()).toEqual([EARLY, LATE, 'Fünf', 'Ohne Ort']);
+		expect(headings()).toEqual(['No dates to show']);
+		expect(layout()).toEqual(['p.results-count', 'fieldset.sort-control', 'ul.results', 'h2.results-heading', 'ul.results']);
+		expect(location.hash).toBe('#q=N%C3%BCrnberg&r=40&sort=soonest&lang=en');
+	});
+
+	it('soonest with only undated cards: the heading, then the cards, and the no-dates notice', async () => {
+		await showWith([u5, unloc], []);
+		expect(cardNames()).toEqual(['Fünf', 'Ohne Ort']);
+		expect(layout()).toEqual(['p.results-count', 'fieldset.sort-control', 'p.notice-line', 'h2.results-heading', 'ul.results']);
+		expect(notices()).toEqual([en['results.notice_no_dates']]);
+	});
+
+	it('soonest with only dated cards has no heading', async () => {
+		await showWith([d30, d10], [early, late]);
+		expect(cardNames()).toEqual([EARLY, LATE]);
+		expect(headings()).toEqual([]);
+		expect(root.querySelectorAll('ul.results')).toHaveLength(1);
+	});
+
+	it('Nearest merges every card by distance, unknown last, without re-running the search or re-reading the clock', async () => {
+		await showWith(ALL, [early, late]);
+		const countLine = root.querySelector('.results-count')!.textContent;
+		// A re-read clock would hide both dates.
+		clockNow = Date.parse('2027-06-01T00:00:00Z');
+		choose('nearest');
+		expect(cardNames()).toEqual(['Fünf', LATE, EARLY, 'Ohne Ort']);
+		expect(headings()).toEqual([]);
+		expect(root.querySelectorAll('ul.results')).toHaveLength(1);
+		expect(checked()).toEqual(['nearest']);
+		expect(document.activeElement).toBe(radio('nearest'));
+		expect(statusText()).toBe('Sorted by nearest');
+		expect(root.querySelector('.results-count')!.textContent).toBe(countLine);
+		expect(location.hash).toBe('#q=N%C3%BCrnberg&r=40&sort=nearest&lang=en');
+		expect(fetchMock).toHaveBeenCalledTimes(2);
+	});
+
+	it('back to Soonest restores the order and the heading', async () => {
+		await showWith(ALL, [early, late]);
+		choose('nearest');
+		choose('soonest');
+		expect(cardNames()).toEqual([EARLY, LATE, 'Fünf', 'Ohne Ort']);
+		expect(headings()).toEqual(['No dates to show']);
+		expect(statusText()).toBe('Sorted by soonest');
+		expect(location.hash).toBe('#q=N%C3%BCrnberg&r=40&sort=soonest&lang=en');
+	});
+
+	it('Nearest puts dated cards before an undated card at the same distance, by start', async () => {
+		const here = coveredCentre('here', 'ok', { name: 'Hier', ...at(12) });
+		const there = coveredCentre('there', 'ok', { name: 'Dort', ...at(12) });
+		await showWith(
+			[here, there],
+			[snapshotListing('there', '2026-12-09T10:00:00+01:00'), snapshotListing('there', '2026-11-20T09:00:00+01:00')],
+		);
+		choose('nearest');
+		expect(cardNames()).toEqual([EARLY, LATE, 'Hier']);
+	});
+
+	it('follows a hashchange that changes only the sort, without a rerun or fetch', async () => {
+		await showWith(ALL, [early, late]);
+		expect(checked()).toEqual(['soonest']);
+		navigateHash('#q=N%C3%BCrnberg&r=40&sort=nearest&lang=en');
+		await settle();
+		expect(checked()).toEqual(['nearest']);
+		expect(cardNames()).toEqual(['Fünf', LATE, EARLY, 'Ohne Ort']);
+		expect(fetchMock).toHaveBeenCalledTimes(2);
+		navigateHash('#q=N%C3%BCrnberg&r=40&lang=en');
+		await settle();
+		expect(checked()).toEqual(['soonest']);
+		expect(cardNames()).toEqual([EARLY, LATE, 'Fünf', 'Ohne Ort']);
+		expect(fetchMock).toHaveBeenCalledTimes(2);
+	});
+
+	it('shows no "Sort by" group for no centres in range or a field error', async () => {
+		await showWith(ALL, [early, late]);
+		expect(root.querySelector('fieldset.sort-control')).not.toBeNull();
+		await search('München', 10);
+		expect(root.querySelector('.no-centres')).not.toBeNull();
+		expect(root.querySelector('fieldset.sort-control')).toBeNull();
+		await search('Nurnbreg');
+		expect(alerts()).toHaveLength(1);
+		expect(root.querySelector('fieldset.sort-control')).toBeNull();
+	});
+
+	it('a shared link with sort=nearest opens with Nearest checked', async () => {
+		await showWith(ALL, [early, late], '#q=N%C3%BCrnberg&r=40&sort=nearest&lang=de', 'de');
+		expect(checked()).toEqual(['nearest']);
+		expect(root.querySelector('legend')!.textContent).toBe('Sortieren nach');
+		expect(cardNames()[0]).toBe('Fünf');
+		expect(location.hash).toBe('#q=N%C3%BCrnberg&r=40&sort=nearest&lang=de');
+	});
+
+	for (const hash of ['#q=N%C3%BCrnberg&r=40&sort=foo&lang=en', '#q=N%C3%BCrnberg&r=40&lang=en']) {
+		it(`reads ${hash} as Soonest`, async () => {
+			await showWith(ALL, [early, late], hash);
+			expect(checked()).toEqual(['soonest']);
+			expect(location.hash).toBe('#q=N%C3%BCrnberg&r=40&sort=soonest&lang=en');
+		});
+	}
+
+	it('keeps Nearest for a new search and a radius change', async () => {
+		await showWith([...ALL, ...CENTRES], [early, late]);
+		choose('nearest');
+		await search('München');
+		expect(checked()).toEqual(['nearest']);
+		expect(location.hash).toBe('#q=M%C3%BCnchen&r=40&sort=nearest&lang=en');
+		await search('Nürnberg', 20);
+		expect(checked()).toEqual(['nearest']);
+		expect(location.hash).toBe('#q=N%C3%BCrnberg&r=20&sort=nearest&lang=en');
+	});
+
+	it('keeps Nearest on a language switch', async () => {
+		await showWith(ALL, [early, late]);
+		choose('nearest');
+		act(() => root.querySelector<HTMLAnchorElement>('nav a[hreflang="de"]')!.click());
+		await settle();
+		expect(checked()).toEqual(['nearest']);
+		expect(cardNames()[0]).toBe('Fünf');
+		expect(location.hash).toBe('#q=N%C3%BCrnberg&r=40&sort=nearest&lang=de');
+		expect(statusText()).toBe(de['results.sorted_nearest']);
+	});
+
+	it('the "Did you mean" links carry the current sort', async () => {
+		await showWith(ALL, [early, late]);
+		choose('nearest');
+		await search('Nurnbreg');
+		const link = root.querySelector<HTMLAnchorElement>('.field-message__suggestion')!;
+		expect(link.getAttribute('href')).toBe('#q=N%C3%BCrnberg&r=40&sort=nearest&lang=en');
+	});
+
+	describe('booked-out notice', () => {
+		const booked = { ...early, status: 'booked_out' as const };
+		const waiting = { ...late, status: 'waitlist' as const };
+
+		it('shows when every dated card is booked out or waitlist, in either sort', async () => {
+			await showWith(ALL, [booked, waiting]);
+			expect(notices()).toEqual([en['results.notice_all_booked']]);
+			expect(en['results.notice_all_booked']).toBe('All checked dates are booked out. Other centres may still have seats.');
+			choose('nearest');
+			expect(notices()).toEqual([en['results.notice_all_booked']]);
+		});
+
+		for (const status of ['free', 'unknown'] as const) {
+			it(`does not show with one ${status} date`, async () => {
+				await showWith(ALL, [booked, { ...late, status }]);
+				expect(notices()).toEqual([]);
+			});
+		}
+
+		it('does not show without dated cards', async () => {
+			await showWith([u5, unloc], []);
+			expect(notices()).toEqual([en['results.notice_no_dates']]);
+		});
+	});
+});
+
 describe('field errors', () => {
 	it('shows Bavaria only for a place elsewhere, keeps the input and links the message', async () => {
 		setBrowser();
@@ -883,8 +1087,8 @@ describe('field errors', () => {
 		expect(alert!.textContent).toBe(en['error.place_not_found']);
 		const links = [...root.querySelectorAll<HTMLAnchorElement>('.field-message__suggestion')];
 		expect(links.map((a) => a.textContent)).toEqual(['Did you mean Nürnberg?']);
-		expect(links[0]!.getAttribute('href')).toBe('#q=N%C3%BCrnberg&r=20&lang=en');
-		expect(location.hash).toBe('#q=Nurnbreg&r=20&lang=en');
+		expect(links[0]!.getAttribute('href')).toBe('#q=N%C3%BCrnberg&r=20&sort=soonest&lang=en');
+		expect(location.hash).toBe('#q=Nurnbreg&r=20&sort=soonest&lang=en');
 
 		navigateHash(links[0]!.getAttribute('href')!);
 		await settle();
@@ -928,7 +1132,7 @@ describe('field errors', () => {
 		await search('Kiel');
 		act(() => root.querySelector<HTMLAnchorElement>('nav a[hreflang="de"]')!.click());
 		expect(alerts()[0]!.textContent).toBe(de['error.outside_bavaria']);
-		expect(location.hash).toBe('#q=Kiel&r=40&lang=de');
+		expect(location.hash).toBe('#q=Kiel&r=40&sort=soonest&lang=de');
 	});
 });
 
@@ -947,7 +1151,7 @@ describe('no centres in range', () => {
 		await settle();
 		expect(field().value).toBe('Augsburg');
 		expect(select().value).toBe('20');
-		expect(location.hash).toBe('#q=Augsburg&r=20&lang=en');
+		expect(location.hash).toBe('#q=Augsburg&r=20&sort=soonest&lang=en');
 		expect(document.activeElement).toBe(field());
 		expect(root.querySelector('.search__results')!.textContent).toContain('No test centres within 20 km.');
 	});
@@ -1062,7 +1266,7 @@ describe('Bavarian names with a qualifier and places outside Bavaria', () => {
 		await search('Essen');
 		expect(alerts()[0]!.textContent).toBe(en['error.outside_bavaria']);
 		expect(field().value).toBe('Essen');
-		expect(location.hash).toBe('#q=Essen&r=40&lang=en');
+		expect(location.hash).toBe('#q=Essen&r=40&sort=soonest&lang=en');
 		expect(cards()).toEqual([]);
 	});
 });
@@ -1077,7 +1281,7 @@ describe('shared links and the fragment', () => {
 		expect(field().value).toBe('Augsburg');
 		expect(select().value).toBe('20');
 		expect(cardNames()).toEqual(['vhs Augsburg']);
-		expect(location.hash).toBe('#q=Augsburg&r=20&lang=en');
+		expect(location.hash).toBe('#q=Augsburg&r=20&sort=soonest&lang=en');
 	});
 
 	for (const [r, hash] of [
@@ -1091,7 +1295,7 @@ describe('shared links and the fragment', () => {
 			mount();
 			await settle();
 			expect(select().value).toBe('40');
-			expect(location.hash).toBe('#q=Augsburg&r=40&lang=en');
+			expect(location.hash).toBe('#q=Augsburg&r=40&sort=soonest&lang=en');
 		});
 	}
 
@@ -1141,7 +1345,7 @@ describe('shared links and the fragment', () => {
 		act(() => root.querySelector<HTMLAnchorElement>('nav a[hreflang="de"]')!.click());
 		expect(cards()).toEqual(before);
 		expect(status()[0]!.firstElementChild).toBe(announcement);
-		expect(location.hash).toBe('#q=N%C3%BCrnberg&r=20&lang=de');
+		expect(location.hash).toBe('#q=N%C3%BCrnberg&r=20&sort=soonest&lang=de');
 		expect(before[0]!.querySelector('.card__body')!.textContent).toBe(de['card.not_checked_automatically']);
 		expect(root.querySelector('.search__results > p')!.textContent).toBe('0 Termine und 3 nicht geprüfte Testzentren im Umkreis von 20 km');
 		expect(before[0]!.querySelector('.card__why')!.getAttribute('href')).toBe('/about/#not-checked=&lang=de');
@@ -1391,7 +1595,7 @@ describe('place suggestions', () => {
 		submit();
 		await settle();
 		expect(alerts()).toEqual([]);
-		expect(location.hash).toBe('#q=Chiemsee&r=40&lang=en');
+		expect(location.hash).toBe('#q=Chiemsee&r=40&sort=soonest&lang=en');
 	});
 
 	it('moves the highlight with ↓ and ↑, wrapping, via aria-activedescendant', async () => {
@@ -1445,7 +1649,7 @@ describe('place suggestions', () => {
 		await settle();
 		expect(field().value).toBe('92280 Kastl');
 		expect(expanded()).toBe('false');
-		expect(location.hash).toBe('#q=92280+Kastl&r=100&lang=en');
+		expect(location.hash).toBe('#q=92280+Kastl&r=100&sort=soonest&lang=en');
 		expect(replace).toHaveBeenCalled();
 		expect(push).not.toHaveBeenCalled();
 		expect(document.activeElement).toBe(field());
@@ -1472,7 +1676,7 @@ describe('place suggestions', () => {
 		expect(field().value).toBe('84556 Kastl');
 		expect(document.activeElement).toBe(field());
 		expect(expanded()).toBe('false');
-		expect(location.hash).toBe('#q=84556+Kastl&r=100&lang=en');
+		expect(location.hash).toBe('#q=84556+Kastl&r=100&sort=soonest&lang=en');
 		expect(cardNames()).toEqual(['vhs München']);
 	});
 
@@ -1499,11 +1703,11 @@ describe('place suggestions', () => {
 		await settle();
 		expect(alerts()).toEqual([]);
 		expect(field().value).toBe('Augsburg');
-		expect(location.hash).toBe('#q=Augsburg&r=100&lang=en');
+		expect(location.hash).toBe('#q=Augsburg&r=100&sort=soonest&lang=en');
 		// Once for the typed text, once for the pick text; a rerun of "Augsburg" would add a third.
 		expect(replace.mock.calls.map((call) => String(call[2]))).toEqual([
-			'/testplatz/#q=Augs&r=100&lang=en',
-			'/testplatz/#q=Augsburg&r=100&lang=en',
+			'/testplatz/#q=Augs&r=100&sort=soonest&lang=en',
+			'/testplatz/#q=Augsburg&r=100&sort=soonest&lang=en',
 		]);
 		expect(push).not.toHaveBeenCalled();
 		expect(expanded()).toBe('false');
@@ -1522,7 +1726,7 @@ describe('place suggestions', () => {
 			expect(cards()).toEqual([]);
 			expect(expanded()).toBe('true');
 			expect(options().length).toBeGreaterThan(1);
-			expect(location.hash).toBe(`#q=${text}&r=40&lang=en`);
+			expect(location.hash).toBe(`#q=${text}&r=40&sort=soonest&lang=en`);
 		});
 	}
 
@@ -1534,7 +1738,7 @@ describe('place suggestions', () => {
 		await settle();
 		expect(alerts()).toEqual([]);
 		expect(field().value).toBe('Au');
-		expect(location.hash).toBe('#q=Au&r=40&lang=en');
+		expect(location.hash).toBe('#q=Au&r=40&sort=soonest&lang=en');
 		expect(expanded()).toBe('false');
 	});
 
@@ -1550,7 +1754,7 @@ describe('place suggestions', () => {
 		expect(replace.mock.calls.filter((call) => String(call[2]).includes('q=Augsburg'))).toHaveLength(1);
 		expect(alerts()).toEqual([]);
 		expect(field().value).toBe('Augsburg');
-		expect(location.hash).toBe('#q=Augsburg&r=100&lang=en');
+		expect(location.hash).toBe('#q=Augsburg&r=100&sort=soonest&lang=en');
 		expect(cardNames()).toEqual(['vhs München']);
 		expect(expanded()).toBe('false');
 	});
@@ -1559,7 +1763,7 @@ describe('place suggestions', () => {
 		await ready();
 		await search('89231');
 		expect(alerts()).toEqual([]);
-		expect(location.hash).toBe('#q=89231&r=40&lang=en');
+		expect(location.hash).toBe('#q=89231&r=40&sort=soonest&lang=en');
 		expect(expanded()).toBe('false');
 	});
 
@@ -1585,7 +1789,7 @@ describe('place suggestions', () => {
 		await settle();
 		expect(alerts()).toEqual([]);
 		expect(field().value).toBe('92280 Kastl');
-		expect(location.hash).toBe('#q=92280+Kastl&r=100&lang=en');
+		expect(location.hash).toBe('#q=92280+Kastl&r=100&sort=soonest&lang=en');
 		expect(cardNames()).toHaveLength(3);
 	});
 

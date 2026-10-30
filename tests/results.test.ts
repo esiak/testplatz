@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { SnapshotCentre } from '../shared/snapshot.ts';
-import { datedResults, undatedKind } from '../web/src/search/results.ts';
+import { allBookedOut, datedResults, sortedCards, undatedKind, type SortedCard } from '../web/src/search/results.ts';
 import type { Outcome } from '../web/src/search/search.ts';
 import { coveredCentre, snapshotCentre, snapshotListing } from './fixtures/snapshot.ts';
 
@@ -108,5 +108,89 @@ describe('undatedKind', () => {
 		expect(undatedKind(snapshotCentre('u'))).toBe('not_checked');
 		expect(undatedKind({ coverage: 'not_checked', last_result: 'ok' })).toBe('not_checked');
 		expect(undatedKind({ coverage: 'not_checked', last_result: 'failed' })).toBe('not_checked');
+	});
+});
+
+const cardIds = (cards: SortedCard[]) =>
+	cards.map((card) => (card.kind === 'dated' ? card.result.listing.id : card.item.centre.centre_id));
+
+describe('sortedCards', () => {
+	const d30 = coveredCentre('d30', 'ok');
+	const d10 = coveredCentre('d10', 'ok');
+	const u5 = coveredCentre('u5', 'ok');
+	const unloc = snapshotCentre('unloc', { lat: null, lon: null });
+	const listings = [
+		snapshotListing('d30', '2026-12-01T10:00:00+01:00'),
+		snapshotListing('d10', '2026-12-05T10:00:00+01:00'),
+	];
+	const results = datedResults(outcome([[u5, 5], [d10, 10], [d30, 30]], [unloc]), listings, NOW);
+
+	it('soonest: dated cards in date order, then the undated cards in outcome order', () => {
+		const sorted = sortedCards(results, 'soonest');
+		if (sorted.sort !== 'soonest') throw new Error('expected soonest');
+		expect(cardIds(sorted.dated)).toEqual(['d30@2026-12-01T10:00', 'd10@2026-12-05T10:00']);
+		expect(cardIds(sorted.undated)).toEqual(['u5', 'unloc']);
+	});
+
+	it('nearest: one list by distance, unknown last', () => {
+		const sorted = sortedCards(results, 'nearest');
+		if (sorted.sort !== 'nearest') throw new Error('expected nearest');
+		expect(cardIds(sorted.cards)).toEqual(['u5', 'd10@2026-12-05T10:00', 'd30@2026-12-01T10:00', 'unloc']);
+	});
+
+	it('nearest: at one distance, dated before undated, then start, then id; undated ties keep outcome order', () => {
+		const same = coveredCentre('same', 'ok');
+		const other = coveredCentre('other', 'ok');
+		const quiet = coveredCentre('quiet', 'ok');
+		const loose = snapshotCentre('loose', { lat: null, lon: null });
+		const lost = snapshotCentre('lost', { lat: null, lon: null });
+		const tied = datedResults(
+			outcome([[quiet, 12], [same, 12], [other, 12]], [loose, lost]),
+			[
+				snapshotListing('same', '2026-12-09T10:00:00+01:00'),
+				snapshotListing('same', '2026-12-02T10:00:00+01:00'),
+				snapshotListing('other', '2026-12-09T10:00:00+01:00'),
+			],
+			NOW,
+		);
+		const sorted = sortedCards(tied, 'nearest');
+		if (sorted.sort !== 'nearest') throw new Error('expected nearest');
+		expect(cardIds(sorted.cards)).toEqual([
+			'same@2026-12-02T10:00',
+			'other@2026-12-09T10:00',
+			'same@2026-12-09T10:00',
+			'quiet',
+			'loose',
+			'lost',
+		]);
+	});
+
+	it('nearest: an unlocated dated card sorts with the unknown distances, before unlocated undated ones', () => {
+		const loose = snapshotCentre('loose', { lat: null, lon: null });
+		const datedLoose = coveredCentre('datedloose', 'ok', { lat: null, lon: null });
+		const mixed = datedResults(outcome([[u5, 5]], [loose, datedLoose]), [snapshotListing('datedloose', '2026-12-09T10:00:00+01:00')], NOW);
+		const sorted = sortedCards(mixed, 'nearest');
+		if (sorted.sort !== 'nearest') throw new Error('expected nearest');
+		expect(cardIds(sorted.cards)).toEqual(['u5', 'datedloose@2026-12-09T10:00', 'loose']);
+	});
+});
+
+describe('allBookedOut', () => {
+	const dated = (...statuses: Array<'free' | 'booked_out' | 'waitlist' | 'unknown'>) =>
+		datedResults(
+			outcome([[near, 3]]),
+			statuses.map((status, i) => snapshotListing('near', `2026-12-0${i + 1}T10:00:00+01:00`, { status })),
+			NOW,
+		).dated;
+
+	it('is true when every dated card is booked out or waitlist', () => {
+		expect(allBookedOut(dated('booked_out'))).toBe(true);
+		expect(allBookedOut(dated('booked_out', 'waitlist'))).toBe(true);
+	});
+
+	it('is false with a free or unknown date, or no dates at all', () => {
+		expect(allBookedOut(dated('booked_out', 'free'))).toBe(false);
+		expect(allBookedOut(dated('booked_out', 'unknown'))).toBe(false);
+		expect(allBookedOut([])).toBe(false);
 	});
 });

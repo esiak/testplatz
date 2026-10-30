@@ -4,7 +4,7 @@
 
 ## Goal
 
-About 55 Bavarian test centres on the two shared booking systems (KuferWeb ~30, ITEM KG ~25) switch from "not checked" to real test dates. Each date shows its status, deadline, registration method, who may register, and a deep link. A scheduled pipeline reads the provider sites politely once a day, keeps history across runs, and publishes a static snapshot. The UI shows result cards, no-dates cards and "not checked right now" cards, and is honest about freshness and failures, so a gap in data never reads as "nothing available".
+About 55 Bavarian test centres on the KuferWeb and ITEM KG booking systems switch from "not checked" to real test dates: status, deadline, registration method, who may register and a deep link to each date's page. A polite pipeline collects them once a day, keeps history, and publishes a static snapshot. The site stays honest about freshness and failures, so a gap never reads as "nothing available". Each date is placed at its own test address, which can differ from the centre's address. Search radius and distance use that address, so dates held in a user's town by a centre based elsewhere are found, and dates held far away don't look close.
 
 ## Stories
 
@@ -22,105 +22,92 @@ About 55 Bavarian test centres on the two shared booking systems (KuferWeb ~30, 
 
 ## Requirements & Constraints
 
-- **Listing fields:** `centre_id`, `starts_at`, `place` (room), `address` (falls back to the centre address), `status` (`free`/`booked_out`/`waitlist`/`unknown`), `deadline` (local date), `registration_method` (`online`/`email`/`post`/`in_person`), `source_url`, `link_ok`, `eligibility`, `first_seen_at`. Every absent optional field is `null` and shows as "unknown", never guessed. A deadline before today shows "Passed" and the card stays. Past dates are never listed: publish drops them, and the browser hides them again.
-- **Eligibility (who may register):** the reader copies the paragraph that states the rule verbatim in German, length-capped. It takes it from the date page, else from the centre's test page. Match by keywords such as "Wohnsitz", "wohnhaft", "Hauptwohnsitz", "nur für", "Teilnehmende". The known example is MVHS (München): Munich residents only. No rule found → `null` → "Who may register: not stated, check the provider page", never "open to all". The rule is display text only: it is never matched against the searched place, and it never hides, reorders or flags a card. Scope covers residence area, own-course participants and age. Documents, fees and payment rules are out of scope, and centres without a reader get no eligibility. Each reader's fixtures include at least one page with a rule and one without. Coverage is an assumption: only the MVHS rule is confirmed so far.
-- **Status mapping:** a waitlist offer ("Warteliste") on any system → `waitlist`. KuferWeb: "AUSGEBUCHT" or a full traffic light → `booked_out`, a free light → `free`, no indicator → `unknown`. ITEM KG: `bookable` true → `free`, false → `booked_out`, absent or in-person-only → `unknown`. Precedence: waitlist > booked_out > free > unknown.
-- **Collection:** runs once a day (05:17 UTC). Every covered centre's last successful check must be under 36 h old (one daily run plus slack for a late or failed run), and a new published date must appear within 36 h.
-- **About copy:** the "How it works" text says, in both languages, that the centres' websites are read once a day.
-- **Politeness:** the bot sends an identified user agent and respects robots.txt. Each site gets at most 4 visits per rolling 24 h, manual and local reruns included. Requests to a host are serial, with a delay and a timeout. Opted-out centres and centres with reader `none` get no request at all.
-- **Data minimisation:** store only date, time, place, status, deadline, registration method, eligibility text and link. No personal data such as instructor names; no schema has a field for it.
-- **Honesty:**
-  - A failed run keeps the centre's previous dates, shown as stale.
-  - "No dates listed" appears only when the last check was `ok`.
-  - A covered centre whose check failed or never ran, and that has no dates left, shows "Not checked right now. See the centre's page."
-- **Freshness:** freshness is per centre, never per date, and always shows `last_success_at`.
-- **Count line:** reads "N dates and M unchecked centres within R km".
-- **Notices:** when only no-dates or uncovered cards are in range: "No dates found nearby. These centres may still have dates on their own pages." When every date is booked out: "All checked dates are booked out. Other centres may still have seats."
-- **Search only:** no booking, no provider accounts, no form submission on provider sites. Running cost stays at €0.
+- **Card selection:** each current date whose own coordinates lie within the radius is one result card. A covered centre without current dates is selected by the centre's coordinates. A covered centre whose current dates all lie outside the radius does not appear. A centre outside the radius does appear if one of its dates is inside. Distance is straight-line: to the test address on result cards, to the centre on other cards. "Map ↗" opens the listing's `address`.
+- **Date fields:** date/time, centre, full test address (falls back to the centre address), status, deadline, registration method, who may register, and the provider link. A missing field shows as "unknown", never a guess. A deadline before today shows "Passed" and the card stays. Past dates are never listed.
+- **Status mapping:** any system: a waitlist offer → `waitlist`. KuferWeb: "AUSGEBUCHT" or full light → `booked_out`, free light → `free`, no indicator → `unknown`. ITEM KG: `bookable` true → `free`, false → `booked_out`, absent or in-person-only → `unknown`.
+- **Who may register:** verbatim German paragraph, length-capped, found by keywords (Wohnsitz, wohnhaft, Hauptwohnsitz, nur für, Teilnehmende). Taken from the date page, else the centre's test page. `null` shows "not stated, check the provider page", never "open to all". It is display text only: it never filters, reorders or flags a card.
+- **Dead deep link:** when `link_ok` is false, the card opens the centre's `test_page_url` and the destination line reads "Opens the centre's test page".
+- **Freshness:** collection runs once a day. Covered centres' data must be ≤ 36 h old. Each result card and no-dates card shows the centre's `last_success_at`: relative ("Checked 2 h ago") under 36 h, exact time ("◷ Checked Tue 14:00") when older. A failed check keeps the previous dates, which age visibly.
+- **Honesty:** "No dates listed" is shown only when the last check was `ok`. A covered centre that failed or never ran and has no dates left shows "Not checked right now. See the centre's page."
+- **Politeness:** identified bot user agent, robots.txt respected, at most 4 visits per site per rolling 24 h (manual and local reruns included), serial requests per host with a delay and a timeout. No request goes to opted-out or reader-`none` centres.
+- **Data minimisation:** store only date, time, place, status, deadline, registration method, eligibility, address and link. No personal data such as instructor names. No schema field can hold it.
+- **Cost and reliability:** €0. A failed run never breaks the live site. Nominatim lookups never send anything about users.
+- **Count line:** "N dates and M unchecked centres within R km". It counts the cards actually selected. The no-centres state and the date notices count the same way.
 
 ## Technical Decisions
 
-- **Pipeline:** fetch → parse → normalise → merge → publish (`npm run pipeline`). Allowed imports: readers → shared only; stages → readers, fetch, shared; web never imports pipeline or tools.
-- **Reader contract:**
-  - A reader lives in `pipeline/readers/<system>/` with `index.ts`, `fixtures/` and `*.test.ts`.
-  - It exports `plan(centre)`, which gives list-page URLs, detail-page selection and a per-centre page cap.
-  - It also exports a pure `parse(pages, centre, ctx)`, which returns `{kind:'ok', listings}` or `{kind:'failed', reason}`. `ctx.runAt` is its only clock.
-  - Readers parse with cheerio `load()` only and do no I/O. Failures are values and are never thrown.
-  - Output that fails `RawListing` (zod, in `shared/`) marks only that centre `failed('schema')`.
-- **Zero dates needs proof:** each reader defines an expected-structure check. A "structure missing" fixture must return `failed`, never `ok` with zero listings. A non-2xx or timed-out list page fails the centre without calling `parse`.
-- **Single HTTP path:** all requests go through `pipeline/fetch`.
-  - User agent: `bgtsearch-bot/<version> (+<About URL>)`.
-  - robots.txt is checked once per host per run, and charset is decoded.
-  - The per-host visit log in `data/state/` is read by fetch, which returns this run's visits; merge persists them and drops entries older than 24 h.
-  - `link_ok` comes only from detail-page fetches; there are no separate link checks.
-- **Run outcomes:** each centre ends a run as `ok`, `failed` or `skipped`. `skipped` covers opt-out, reader `none`, robots and an exhausted budget.
-  - `ok`: sets `last_checked_at`, `last_success_at` and `last_result=ok`, and replaces the listings.
-  - `failed`: sets `last_checked_at` and `last_result=failed`, and keeps the listings.
-  - `skipped`: sets nothing.
-- **Merge history:**
-  - Only merge writes `data/state/`, with atomic writes and its own schema with a `stateVersion`.
-  - A listing missing from an `ok` run gets `removed_at`, but stays in state until `starts_at` passes. If it reappears, it keeps its original `first_seen_at`.
-  - `first_seen_at` is set once and never changed.
-  - The first `ok` run's listings are marked `baseline`.
-- **Listing id:** normalise builds `<centre_id>@<YYYY-MM-DDTHH:mm local>`. Same-minute sessions get `#2`, `#3`, ordered by `place`. The id never uses the provider URL.
-- **Time:** `starts_at` is ISO 8601 with the Europe/Berlin offset, `deadline` is a local date or `null`, and run timestamps are UTC `Z`. The 36 h freshness and 24 h "New" thresholds are constants in `shared/` (`FRESHNESS_HOURS = 36`), and freshness is computed in the browser.
-- **Snapshot:**
-  - `snapshot.json` holds `{schemaVersion, generated_at, systems[], centres[], listings[]}`.
-  - Centres carry `coverage` (`covered`/`not_checked`), `last_result`, `last_checked_at` and `last_success_at`.
-  - `systems[]` has `reader`, `centres_covered`, `centres_ok`, `centres_failed` and `last_success_at`.
-  - `schemaVersion` bumps to 2, with `web/` updated in the same commit; the app reloads once on a mismatch.
-  - Publish refuses invalid output, so the last good site stays deployed.
-  - Removed listings, past listings and the listings of `not_checked` centres are excluded.
-- **Card type (coverage first):**
+- **Pipeline stages:** fetch → parse → normalise → locate → merge → publish. Allowed imports: readers never import fetch or stages; web never imports pipeline or tools; tools may import fetch.
+- **Reader contract:** a reader exports `plan(centre)`, which gives the list URLs, how to pick detail pages and a per-centre page cap. It also exports a pure `parse(pages, centre, ctx)` returning `{kind:'ok',listings}` or `{kind:'failed',reason}`. Rules:
+  - `ctx.runAt` is the only clock.
+  - Parse with cheerio `load()` only.
+  - The `RawListing` zod schema lives in `shared/`. A validation failure marks only that centre `failed('schema')`.
+  - Use the shared `mapStatus`, with precedence waitlist > booked_out > free > unknown.
+- **Zero dates need proof:** `ok` with zero listings is allowed only when the reader found its expected structure. Each reader has a "structure missing" fixture that must return `failed`. A non-2xx or timed-out list page fails the centre without calling `parse`.
+- **Fetch:** `pipeline/fetch` is the only HTTP client.
+  - It reads robots.txt once per host per run and decodes charsets.
+  - It reads the per-host visit log in `data/state/` but never writes it. It returns this run's visits.
+  - Detail-page fetches set `link_ok`; there are no separate link checks.
+- **Nominatim exemptions:** only `tools/geocode` (centres, manual) and `pipeline/stages/locate` may call Nominatim. Both use the shared lookup and acceptance rules in `pipeline/fetch/nominatim.ts`: street-level hit, inside Bavaria, matching postcode.
+- **Locate stage:** for each listing, in order:
+  1. An address equal to the centre's (after the shared address normaliser) takes the centre's coordinates, with no request.
+  2. Otherwise the address is looked up in the `data/state/venues.json` cache. A miss is retried after 30 days.
+  3. Otherwise a "street, NNNNN city" address is looked up on Nominatim. Lookups are serial, ≥ 1 s apart, at most `LOCATE_MAX_LOOKUPS_PER_RUN` per run (default 50, in `pipeline/config.ts`).
+  4. If the lookup fails, is over the cap or the address doesn't parse, the listing gets the centre's coordinates, which may be null, with `location: centre`. The run log shows the reason. The run never fails because of this.
+- **Merge is the only state writer:**
+  - `ok` sets `last_checked_at`, `last_success_at` and `last_result=ok`, and replaces the centre's listings. `failed` sets `last_checked_at` and `last_result=failed` and keeps the listings. `skipped` sets nothing.
+  - A listing missing from an `ok` result is tombstoned with `removed_at` until its `starts_at` passes.
+  - `first_seen_at` is immutable. Listings from a centre's first `ok` run are marked `baseline`.
+  - Merge also writes the visit log (entries kept 24 h) and `venues.json`.
+  - Writes are atomic, and state is schema-validated with a `stateVersion`.
+- **Listing id:** `<centre_id>@<YYYY-MM-DDTHH:mm>` in Berlin local time. Same-minute sessions get `#2`, `#3` in order of place. Only normalise builds the id, and it never uses the provider URL.
+- **Snapshot:** `{schemaVersion, generated_at, systems[], centres[], listings[]}`, a zod contract; publish refuses invalid output.
+  - Centres carry `coverage` (`covered` or `not_checked`), `last_result`, `last_checked_at` and `last_success_at`.
+  - Systems carry `centres_covered`, `centres_ok`, `centres_failed` and `last_success_at`.
+  - Listings carry `lat`, `lon` (nullable) and `location` (`venue` | `centre`). Freshness is per centre, not per listing.
+  - `schemaVersion` is 3 (after 2.10). A breaking change updates `web/` in the same commit. The app reloads once on a version mismatch.
+  - Publish drops listings with `starts_at ≤ runAt`, tombstoned listings and listings of `not_checked` centres.
+- **Card type, coverage first:**
   - `not_checked` → uncovered card.
-  - `covered` with listings → result cards.
-  - `covered` with no listings and `ok` → no-dates card.
-  - `covered` with no listings and `failed` or never run → uncovered card, "Not checked right now".
-- **Directory:** `data/directory/centres.json` is human-owned and the pipeline never writes it. The reader stories verify each centre's `test_page_url`, add a typed `reader_config`, and record which centres are confirmed on each system.
-- **Codes and words:** data carries codes only. All words come from `web/src/i18n/{de,en}.json`, and CI fails on missing or extra keys. Provider free text (place, room, eligibility) is shown as published and marked `lang="de"` in the English UI.
-- **Git as the database:**
-  - Each run makes one commit for `data/state/` and `data/public/`, then deploys from the pushed SHA. A failed push means no deploy.
-  - `pipeline.yml` runs on a daily schedule at 05:17 UTC (one cron entry, `17 5 * * *`), on push to main and on dispatch. It uses one concurrency group with no cancel-in-progress.
-  - On a rejected push: if only the bot's own folders changed, rebase. Otherwise re-run merge and publish from the saved reader results, with no refetch.
-  - A home-machine cron with a fine-grained token is the fallback.
-- **Logging:** one line per centre per run (id, reader, outcome, count, duration), with no page content.
-- **Tests:** readers run against committed HTML fixtures, at least 3 centres per system plus "structure missing". Merge tests cover tombstones, baseline, same-minute ids and failed-run retention. `npm test` gates publishing, so committed-data tests must derive their expectations from the files.
+  - `covered` with current listings → one result card per in-range listing.
+  - `covered`, no listings, last result `ok` → no-dates card.
+  - `covered`, no listings, failed or never run → uncovered card with the "right now" text.
+- **Time:** `starts_at` is ISO with its Berlin offset. `deadline` is a local date or null. Run timestamps are UTC (`Z`). The 36 h and 24 h thresholds are constants in `shared/`. The browser computes freshness and hides `starts_at ≤ now` again.
+- **Missing coordinates:** a listing with null `lat`/`lon` follows the rule for centres without coordinates. It shows with Distance "unknown" when its centre's postcode or city matches the place, so it never disappears silently.
+- **Codes and words:** data holds lowercase codes only (status, registration_method, reader, coverage, last_result). All UI words come from `web/src/i18n/{de,en}.json`; CI fails on missing or extra keys. Provider text is shown as published, marked `lang="de"` in the English UI.
+- **Operations:**
+  - `pipeline.yml` runs daily at 05:17 UTC, on push to main and on dispatch. It uses one concurrency group, without cancel-in-progress.
+  - Each run makes one commit of `data/state/` and `data/public/`, then deploys from the pushed SHA, and never if the push failed.
+  - If the push is rejected, the bot rebases when only its own folders conflict. Otherwise it re-runs merge and publish from this run's saved reader results, without refetching.
+  - The run logs one line per centre (id, reader, outcome, count, duration) and no page content.
+  - Home-cron fallback: a home machine runs `npm run pipeline` and pushes with a fine-grained token.
 
 ## UX & Interaction Patterns
 
-- **Result card:** the whole card is one stretched link that opens in a new tab with `rel=noopener noreferrer`, and has no nested links. From top to bottom:
-  - top row: date and time (card-date), "New" badge slot, status chip;
+- **Result card:** the whole card is one stretched link that opens in a new tab with `rel=noopener noreferrer`, and it contains no nested links. It shows:
+  - top row: date and time (card-date style), then the status chip;
   - centre name;
-  - address line with "Map ↗";
-  - key facts as a `dl`, always in the order Distance, Status, Deadline, Registration;
-  - optional registration note;
-  - "Who may register" line;
-  - bottom row: destination domain and freshness line.
-
-  The address, the registration note and the eligibility line sit above the link layer: they are selectable and tapping them does nothing. If `link_ok` is false, the card opens `test_page_url` and the destination reads "Opens the centre's test page".
-- **Status chip text:** "Free seats", "Booked out", "Booked out · Waitlist" (spoken "Booked out, waitlist open"), "Status unknown", "No dates listed", "Not checked". The chip is `aria-hidden` on result cards.
-- **Card link name:** starts with the visible date: "<date, time>, <centre>, <status>, opens <domain> in a new tab". The glyphs ↗ ◷ · are `aria-hidden`.
-- **Freshness line:** meta size in ink-secondary, using `<time datetime>`. Under 36 h it reads "Checked 2 h ago"; older, it reads "◷ Checked Tue 14:00". No banner and no colour change.
+  - address line with "Map ↗" (44 px target, 8 px dead zone);
+  - key-facts `dl`: Distance, Status, Deadline, Registration, on `surface-muted`, four across when cells are ≥ 9em, else 2×2;
+  - optional registration note and the "Who may register" line, both selectable above the link layer;
+  - bottom row: destination domain + ↗, then the freshness line (`<time datetime>`).
+- **Status chip words:** Free seats, Booked out, Booked out · Waitlist (spoken "Booked out, waitlist open"), Status unknown. Also "No dates listed" with the booked tint and "Not checked" with the unknown tint.
 - **No-dates card:** centre name in card-date style and a "No dates listed" chip. Key facts: Deadline "unknown", Registration as known. It has a freshness line and opens the test page.
-- **Uncovered "right now" card:** same layout as Epic 1's uncovered card, with the "Not checked right now" line and a "Why?" link to About `#not-checked`. It has no freshness line.
-- **Sort:**
-  - A radio group "Sort by" styled as two segments, Soonest (default) | Nearest.
-  - Soonest: dated cards by date, then distance, followed by an h2 "No dates to show" with no-dates and uncovered cards by distance.
-  - Nearest: all cards by distance, then date, with no heading.
-  - On change, "Sorted by soonest/nearest" is announced through the existing `role=status` region and `sort` updates in the URL fragment.
-  - Results never re-sort or refresh while the page is open.
-- **UX docs gap:** DESIGN.md and EXPERIENCE.md do not yet describe the "Who may register" line. Use the story ACs and keep it consistent with the registration note's style.
+- **Uncovered card (right now):** "Not checked" chip and the explanation line. Key facts: Deadline and Registration "see website". It has a "Why?" link to About `#not-checked` and no freshness line.
+- **Card link name** starts with the visible date: "<date, time>, <centre>, <status>, opens <domain> in a new tab". The chip, the destination line and the glyphs ↗ ◷ · are `aria-hidden`.
+- **Sort:** a radio group "Sort by" styled as two segments, Soonest | Nearest.
+  - Soonest: dated cards by date then distance, then an h2 "No dates to show" with the other cards by distance.
+  - Nearest: all cards by distance then date, with no heading.
+  - Sorting applies on change, announces "Sorted by nearest" and updates `sort` in the URL fragment. Results never re-sort while the page is open.
+- **Notices:** plain body text with no background:
+  - "No dates found nearby. These centres may still have dates on their own pages."
+  - "All checked dates are booked out. Other centres may still have seats."
+- **No staleness banners and no colour change for old data.** Microcopy uses no exclamation marks and means the same in DE and EN.
+- **"How it works"** on About says the sites are read once a day and that distance is measured to the address where the test takes place.
 
 ## Cross-Story Dependencies
 
-- **Build order:** 2.1 → 2.2 → 2.3 (KuferWeb first, end to end) → 2.5 → 2.6. Story 2.4 (ITEM KG) plugs into the same contract. Stories 2.7–2.9 need snapshot `schemaVersion` 2 from 2.6. Story 2.10 (pipeline geocodes each test address, snapshot `schemaVersion` 3) comes before 2.11 (search and distance by each date's own coordinates); 2.9 is independent of both. See `planning-artifacts/sprint-change-proposal-2026-10-30.md`.
-- **Epic 1 dependencies:** Epic 2 builds on Epic 1's uncovered card, search, count line, live region, About page and haversine distance.
-  - Centres without coordinates must still appear as cards with Distance "unknown" (from Story 1.12) once they become covered.
-  - They must also stay listed on About `#no-location` whatever their coverage.
-  - About `#not-checked` must also list centres whose check failed.
-- **Epic 3 dependencies:**
-  - The "New" badge (24 h window) needs `first_seen_at` and `baseline` from 2.5.
-  - The stale-system check uses the same 36 h freshness constant.
-  - Booking-system status on About reads `systems[]` from 2.6.
-  - The hide-booked-out toggle depends on the sort and notices from 2.7–2.9.
-- **Place table:** the place table is still partial, because Stories 1.10 and 1.11 are deferred. Epic 2 must not assume a complete `places.json`.
+- The build order is 2.1 → 2.2 → 2.3/2.4 → 2.5 → 2.6 → 2.7 → 2.8. Stories 2.1–2.8 are implemented.
+- Story 2.10 must land before 2.11. Until 2.11 lands, `web/` accepts schema v3 but may still measure from the centre.
+- Story 2.9 sorts by each card's distance. It can land before or after 2.10 and 2.11.
+- The rule for centres without coordinates comes from Epic 1 Story 1.12 and covers listings with null `lat`/`lon`.
+- Epic 3 builds on this epic: the "New" badge uses `first_seen_at` and `baseline`, hide-booked-out uses status, and the system status uses `systems[]`.

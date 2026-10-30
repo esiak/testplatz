@@ -2,7 +2,7 @@ import type { RefObject } from 'preact';
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import type { PlaceRow } from '../../../shared/places.ts';
 import { useI18n } from '../i18n/i18n.tsx';
-import { RADII, searchFragment, snapRadius, suggestPlaces, type FieldErrorCode, type PlaceSuggestion, type Radius } from './search.ts';
+import { RADII, searchFragment, snapRadius, suggestPlaces, type FieldErrorCode, type PlaceSuggestion, type Radius, type Sort } from './search.ts';
 
 export const FIELD_ID = 'search-place';
 export const FIELD_LABEL_ID = 'search-place-label';
@@ -22,6 +22,8 @@ export interface FieldError {
 export interface SearchBarProps {
 	text: string;
 	radius: Radius;
+	/** The current sort, carried by the "Did you mean …?" links. */
+	sort: Sort;
 	error: FieldError | null;
 	fieldRef: RefObject<HTMLInputElement | null>;
 	/** The place rows once the data is ready; null before. No suggestions until then. */
@@ -67,7 +69,7 @@ function SuggestionMeta({ meta }: { meta: PlaceSuggestion['meta'] }) {
  * the search button. Changing the select alone never searches.
  */
 export function SearchBar(props: SearchBarProps) {
-	const { text, radius, error, fieldRef, places, dismissed, openId, onText, onRadius, onSubmit, onDismiss, onReopen, onPick, onSuggestions } =
+	const { text, radius, sort, error, fieldRef, places, dismissed, openId, onText, onRadius, onSubmit, onDismiss, onReopen, onPick, onSuggestions } =
 		props;
 	const { lang, t } = useI18n();
 	const [focused, setFocused] = useState(false);
@@ -204,7 +206,7 @@ export function SearchBar(props: SearchBarProps) {
 							<ul class="field-message__suggestions">
 								{error.suggestions.map((name) => (
 									<li key={name}>
-										<a class="field-message__suggestion" href={searchFragment(name, radius, lang)}>
+										<a class="field-message__suggestion" href={searchFragment(name, radius, sort, lang)}>
 											{t('error.did_you_mean', { name })}
 										</a>
 									</li>

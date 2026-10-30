@@ -17,6 +17,7 @@ import {
 	mapsUrl,
 	nextRadius,
 	parseSearchFragment,
+	parseSort,
 	pickText,
 	RADII,
 	resolveSearch,
@@ -65,9 +66,18 @@ describe('snapRadius', () => {
 });
 
 describe('search fragment', () => {
-	it('writes q, r and lang in that order', () => {
-		expect(searchFragment('Nürnberg', 20, 'de')).toBe('#q=N%C3%BCrnberg&r=20&lang=de');
-		expect(searchFragment('Neu-Ulm', 40, 'en')).toBe('#q=Neu-Ulm&r=40&lang=en');
+	it('writes q, r, sort and lang in that order', () => {
+		expect(searchFragment('Nürnberg', 20, 'nearest', 'de')).toBe('#q=N%C3%BCrnberg&r=20&sort=nearest&lang=de');
+		expect(searchFragment('Neu-Ulm', 40, 'soonest', 'en')).toBe('#q=Neu-Ulm&r=40&sort=soonest&lang=en');
+	});
+
+	it('reads sort, with missing or unknown values as soonest', () => {
+		expect(parseSort('#q=Ulm&r=40&sort=nearest&lang=de')).toBe('nearest');
+		expect(parseSort('#q=Ulm&r=40&sort=soonest&lang=de')).toBe('soonest');
+		expect(parseSort('#q=Ulm&r=40&sort=foo&lang=en')).toBe('soonest');
+		expect(parseSort('#q=Ulm&r=40&sort=Nearest')).toBe('soonest');
+		expect(parseSort('#q=Ulm&r=40&lang=en')).toBe('soonest');
+		expect(parseSort('')).toBe('soonest');
 	});
 
 	it('reads q trimmed and r snapped', () => {
@@ -84,7 +94,9 @@ describe('search fragment', () => {
 	});
 
 	it('round-trips', () => {
-		expect(parseSearchFragment(searchFragment('Bad Tölz', 60, 'de'))).toEqual({ q: 'Bad Tölz', r: 60 });
+		const hash = searchFragment('Bad Tölz', 60, 'nearest', 'de');
+		expect(parseSearchFragment(hash)).toEqual({ q: 'Bad Tölz', r: 60 });
+		expect(parseSort(hash)).toBe('nearest');
 	});
 });
 

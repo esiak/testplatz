@@ -392,6 +392,92 @@ a {
 	min-height: var(--space-target-min);
 }
 
+/* "Sort by": two native radios drawn as joined segments, Soonest | Nearest. */
+.sort-control {
+	margin: var(--space-2) 0;
+	padding: 0;
+	border: 0;
+	min-width: 0;
+}
+
+.sort-control__legend {
+	padding: 0;
+	margin-block-end: var(--space-1);
+	font: var(--font-meta);
+	color: var(--color-ink-secondary);
+}
+
+.sort-control__segments {
+	display: inline-flex;
+}
+
+.sort-control__segment {
+	position: relative;
+	display: inline-flex;
+	cursor: pointer;
+}
+
+/* The span draws the segment, so checked and focus states key on the radio's sibling (no :has()). */
+.sort-control__label {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: var(--sort-control-min-height);
+	padding-inline: var(--space-4);
+	font: var(--font-body);
+	color: var(--color-ink-primary);
+	background: var(--color-surface-base);
+	border: thin solid var(--sort-control-border);
+}
+
+.sort-control__segment:first-child > .sort-control__label {
+	border-start-start-radius: var(--sort-control-rounded);
+	border-end-start-radius: var(--sort-control-rounded);
+}
+
+.sort-control__segment:last-child > .sort-control__label {
+	border-inline-start: 0;
+	border-start-end-radius: var(--sort-control-rounded);
+	border-end-end-radius: var(--sort-control-rounded);
+}
+
+.sort-control__input:checked + .sort-control__label {
+	color: var(--sort-control-selected-color);
+	background: var(--sort-control-selected-background);
+	border-color: var(--sort-control-selected-background);
+}
+
+/* The native radio stays in the tab order and accessibility tree; the span draws it. */
+.sort-control__input {
+	position: absolute;
+	inset: 0;
+	margin: 0;
+	opacity: 0;
+	cursor: pointer;
+}
+
+.sort-control__input:focus-visible + .sort-control__label {
+	position: relative;
+	z-index: 1;
+	outline: var(--focus-ring-width) solid var(--focus-ring-color);
+	outline-offset: var(--focus-ring-offset);
+}
+
+/* Forced colours drop the selected fill: mark the checked segment with system colours. */
+@media (forced-colors: active) {
+	.sort-control__input:checked + .sort-control__label {
+		color: HighlightText;
+		background: Highlight;
+		forced-color-adjust: none;
+	}
+}
+
+/* Soonest's "No dates to show": sits between the two result lists. */
+.results-heading {
+	font: var(--font-section);
+	margin-block: var(--space-5) 0;
+}
+
 .load-failure__text {
 	color: var(--color-error);
 }
