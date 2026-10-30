@@ -46,7 +46,7 @@
 		"lat": null,
 		"lon": null,
 		"website": "https://www.brk-muenchen.de/",
-		"test_page_url": null,
+		"test_page_url": "https://www.brk-muenchen.de/start/angebote/migration-integration/einbuergerungstests-muenchen.html",
 		"reader": "none",
 		"reader_config": null,
 		"opted_out": false,
