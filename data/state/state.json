@@ -402,25 +402,6 @@
 			"last_success_at": "2026-10-30T10:11:16.287Z",
 			"listings": [
 				{
-					"id": "vhs-beilngries-e-v@2026-10-30T12:30",
-					"centre_id": "vhs-beilngries-e-v",
-					"starts_at": "2026-10-30T12:30:00+01:00",
-					"place": "Spielzeugmuseum 1. OG, Raum 2",
-					"address": "Hauptstr. 47, 92339 Beilngries",
-					"status": "unknown",
-					"deadline": null,
-					"registration_method": "in_person",
-					"source_url": "https://www.vhs-beilngries.de/p/sprachen/deutsch-integration/einbuergerungstest-641-C-B3021",
-					"link_ok": true,
-					"eligibility": null,
-					"first_seen_at": "2026-10-29T14:03:56.395Z",
-					"removed_at": null,
-					"baseline": true,
-					"lat": 49.035854,
-					"lon": 11.471575,
-					"location": "venue"
-				},
-				{
 					"id": "vhs-beilngries-e-v@2026-12-08T15:30",
 					"centre_id": "vhs-beilngries-e-v",
 					"starts_at": "2026-12-08T15:30:00+01:00",
@@ -1994,7 +1975,7 @@
 		},
 		"volkshochschule-eching-e-v": {
 			"last_result": "failed",
-			"last_checked_at": "2026-10-30T11:23:37.411Z",
+			"last_checked_at": "2026-10-30T12:38:53.211Z",
 			"last_success_at": null,
 			"listings": []
 		},
