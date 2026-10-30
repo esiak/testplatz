@@ -30,7 +30,7 @@ import {
 } from '../web/src/search/search.ts';
 import { unlocatedCentres } from '../web/src/data/snapshot.ts';
 import { OTHER_PLACES, PLACE_ROWS, placeRow, smallPlaces } from './fixtures/places.ts';
-import { snapshotCentre } from './fixtures/snapshot.ts';
+import { coveredCentre, snapshotCentre, snapshotListing } from './fixtures/snapshot.ts';
 
 const places = smallPlaces().places;
 const others = smallPlaces().others;
@@ -440,39 +440,83 @@ describe('centresInRange', () => {
 	});
 });
 
+const NOW = Date.parse('2026-11-01T09:00:00Z');
+
 describe('runSearch', () => {
 	const centres = [snapshotCentre('nbg', { lat: 49.45, lon: 11.08 }), snapshotCentre('muc', { lat: 48.137, lon: 11.575 })];
+	const run = (search: Parameters<typeof runSearch>[0], list = centres, listings: Parameters<typeof runSearch>[3] = [], extra = others) =>
+		runSearch(search, places, list, listings, NOW, extra);
 
 	it('returns results for a found place', () => {
-		const outcome = runSearch({ q: 'Nürnberg', r: 20 }, places, centres);
+		const outcome = run({ q: 'Nürnberg', r: 20 });
 		expect(outcome.kind).toBe('results');
-		if (outcome.kind === 'results') expect(outcome.items.map((i) => i.centre.centre_id)).toEqual(['nbg']);
+		if (outcome.kind === 'results') {
+			expect(outcome.undated.map((i) => i.centre.centre_id)).toEqual(['nbg']);
+			expect(outcome.dated).toEqual([]);
+		}
 	});
 
 	it('returns no centres when nothing is in range', () => {
-		expect(runSearch({ q: 'Augsburg', r: 10 }, places, centres)).toEqual({
+		expect(run({ q: 'Augsburg', r: 10 })).toEqual({ kind: 'no_centres', search: { q: 'Augsburg', r: 10 }, hiddenUnlocated: 0 });
+	});
+
+	it('selects dates by their own position: a date in town of a centre far away is a result', () => {
+		const munich = coveredCentre('muc', 'ok', { lat: 48.137, lon: 11.575 });
+		const inNbg = snapshotListing('muc', '2026-12-09T10:00:00+01:00', { lat: 49.4539, lon: 11.0773 });
+		const outcome = run({ q: 'Nürnberg', r: 10 }, [munich], [inNbg]);
+		expect(outcome).toMatchObject({ kind: 'results', undated: [] });
+		if (outcome.kind !== 'results') return;
+		expect(outcome.dated.map((d) => d.listing.id)).toEqual([inNbg.id]);
+		expect(outcome.dated[0]!.distanceKm).toBeLessThan(0.01);
+	});
+
+	it('returns no centres when the only centre in range has all its current dates outside the radius', () => {
+		const munich = coveredCentre('muc', 'ok', { lat: 48.137, lon: 11.575 });
+		const inNbg = snapshotListing('muc', '2026-12-09T10:00:00+01:00', { lat: 49.4539, lon: 11.0773 });
+		expect(run({ q: 'München', r: 10 }, [munich], [inNbg])).toEqual({
 			kind: 'no_centres',
-			search: { q: 'Augsburg', r: 10 },
-			unlocated: [],
+			search: { q: 'München', r: 10 },
 			hiddenUnlocated: 0,
 		});
 	});
 
+	it('gives a centre with only past dates its undated card by the centre\'s position', () => {
+		const munich = coveredCentre('muc', 'ok', { lat: 48.137, lon: 11.575 });
+		const past = snapshotListing('muc', '2026-10-30T10:00:00+01:00', { lat: 49.4539, lon: 11.0773 });
+		const outcome = run({ q: 'München', r: 10 }, [munich], [past]);
+		expect(outcome).toMatchObject({ kind: 'results', dated: [], undated: [{ centre: munich }] });
+	});
+
+	it('counts the selected dates and centres: two dates in range and one uncovered centre', () => {
+		const munich = coveredCentre('muc', 'ok', { lat: 48.137, lon: 11.575 });
+		const uncovered = snapshotCentre('muc2', { lat: 48.14, lon: 11.58 });
+		const listings = [
+			snapshotListing('muc', '2026-12-09T10:00:00+01:00'),
+			snapshotListing('muc', '2026-12-10T10:00:00+01:00'),
+			snapshotListing('muc', '2026-12-11T10:00:00+01:00', { lat: 49.4539, lon: 11.0773 }),
+		];
+		const outcome = run({ q: 'München', r: 10 }, [munich, uncovered], listings);
+		expect(outcome.kind).toBe('results');
+		if (outcome.kind !== 'results') return;
+		expect(outcome.dated).toHaveLength(2);
+		expect(outcome.undated.map((u) => u.centre.centre_id)).toEqual(['muc2']);
+	});
+
 	it('searches a single suggestion and reports its pick text as the search', () => {
-		expect(runSearch({ q: 'Nürnb', r: 20 }, places, centres)).toMatchObject({ kind: 'results', search: { q: 'Nürnberg', r: 20 } });
-		expect(runSearch({ q: 'Augs', r: 10 }, places, centres)).toMatchObject({ kind: 'no_centres', search: { q: 'Augsburg', r: 10 } });
-		expect(runSearch({ q: 'Ober', r: 40 }, places, centres)).toEqual({ kind: 'field_error', code: 'several_places', suggestions: [] });
+		expect(run({ q: 'Nürnb', r: 20 })).toMatchObject({ kind: 'results', search: { q: 'Nürnberg', r: 20 } });
+		expect(run({ q: 'Augs', r: 10 })).toMatchObject({ kind: 'no_centres', search: { q: 'Augsburg', r: 10 } });
+		expect(run({ q: 'Ober', r: 40 })).toEqual({ kind: 'field_error', code: 'several_places', suggestions: [] });
 	});
 
 	it('reports Lindau as the Bavarian town and Essen as outside Bavaria', () => {
-		expect(runSearch({ q: 'Lindau', r: 40 }, places, centres, others)).toMatchObject({ kind: 'no_centres', search: { q: 'Lindau', r: 40 } });
-		expect(runSearch({ q: 'Essen', r: 40 }, places, centres, others)).toEqual({ kind: 'field_error', code: 'outside_bavaria', suggestions: [] });
+		expect(run({ q: 'Lindau', r: 40 })).toMatchObject({ kind: 'no_centres', search: { q: 'Lindau', r: 40 } });
+		expect(run({ q: 'Essen', r: 40 })).toEqual({ kind: 'field_error', code: 'outside_bavaria', suggestions: [] });
 	});
 
 	it('returns field errors as codes', () => {
-		expect(runSearch({ q: 'Kiel', r: 40 }, places, centres)).toEqual({ kind: 'field_error', code: 'outside_bavaria', suggestions: [] });
-		expect(runSearch({ q: 'Kastl', r: 40 }, places, centres)).toEqual({ kind: 'field_error', code: 'several_places', suggestions: [] });
-		expect(runSearch({ q: 'Atlantis', r: 40 }, places, centres)).toMatchObject({ kind: 'field_error', code: 'place_not_found' });
+		expect(run({ q: 'Kiel', r: 40 }, centres, [], [])).toEqual({ kind: 'field_error', code: 'outside_bavaria', suggestions: [] });
+		expect(run({ q: 'Kastl', r: 40 }, centres, [], [])).toEqual({ kind: 'field_error', code: 'several_places', suggestions: [] });
+		expect(run({ q: 'Atlantis', r: 40 }, centres, [], [])).toMatchObject({ kind: 'field_error', code: 'place_not_found' });
 	});
 });
 
@@ -494,23 +538,40 @@ describe('centres without coordinates', () => {
 	});
 
 	it('show after the distanced cards, once each, and count the rest as hidden', () => {
-		const outcome = runSearch({ q: 'Augsburg', r: 40 }, places, [byCity, elsewhere, byPostcode, located]);
-		expect(outcome).toMatchObject({ kind: 'results', hiddenUnlocated: 1 });
+		const outcome = runSearch({ q: 'Augsburg', r: 40 }, places, [byCity, elsewhere, byPostcode, located], [], NOW);
+		expect(outcome).toMatchObject({ kind: 'results', hiddenUnlocated: 1, dated: [] });
 		if (outcome.kind !== 'results') return;
-		expect(outcome.items.map((i) => i.centre.centre_id)).toEqual(['aug']);
-		expect(outcome.unlocated.map((c) => c.centre_id)).toEqual(['by-postcode', 'by-city']);
+		expect(outcome.undated.map((i) => [i.centre.centre_id, i.distanceKm === null])).toEqual([
+			['aug', false],
+			['by-postcode', true],
+			['by-city', true],
+		]);
 	});
 
 	it('make a results outcome on their own', () => {
-		const outcome = runSearch({ q: 'Augsburg', r: 10 }, places, [byCity]);
-		expect(outcome).toEqual({ kind: 'results', search: { q: 'Augsburg', r: 10 }, items: [], unlocated: [byCity], hiddenUnlocated: 0 });
+		const outcome = runSearch({ q: 'Augsburg', r: 10 }, places, [byCity], [], NOW);
+		expect(outcome).toEqual({
+			kind: 'results',
+			search: { q: 'Augsburg', r: 10 },
+			dated: [],
+			undated: [{ centre: byCity, distanceKm: null }],
+			hiddenUnlocated: 0,
+		});
+	});
+
+	it('give their current dates distance unknown in the place, and show none of them elsewhere', () => {
+		const dateOf = (centre: typeof byCity) =>
+			snapshotListing(centre.centre_id, '2026-12-09T10:00:00+01:00', { lat: null, lon: null, location: 'centre' });
+		const outcome = runSearch({ q: 'Augsburg', r: 10 }, places, [byPostcode, elsewhere], [dateOf(byPostcode), dateOf(elsewhere)], NOW);
+		expect(outcome).toMatchObject({ kind: 'results', undated: [], hiddenUnlocated: 1 });
+		if (outcome.kind !== 'results') return;
+		expect(outcome.dated.map((d) => [d.listing.centre_id, d.distanceKm])).toEqual([['by-postcode', null]]);
 	});
 
 	it('are counted as hidden in a no-centres outcome', () => {
-		expect(runSearch({ q: 'Augsburg', r: 10 }, places, [elsewhere, unlocated('x', 'X', '1', 'Y')])).toEqual({
+		expect(runSearch({ q: 'Augsburg', r: 10 }, places, [elsewhere, unlocated('x', 'X', '1', 'Y')], [], NOW)).toEqual({
 			kind: 'no_centres',
 			search: { q: 'Augsburg', r: 10 },
-			unlocated: [],
 			hiddenUnlocated: 2,
 		});
 	});
@@ -674,6 +735,8 @@ describe('the committed data files', () => {
 	it('list every centre without coordinates for About, and show each one when its postcode is searched', () => {
 		const ids = snapshot.centres.filter((c) => c.lat === null || c.lon === null).map((c) => c.centre_id);
 		const listed = unlocatedCentres(snapshot);
+		// Every date of the committed snapshot is still upcoming at its generation time.
+		const now = Date.parse(snapshot.generated_at);
 		expect(listed.map((c) => c.centre_id).sort()).toEqual([...ids].sort());
 		let searched = 0;
 		for (const centre of listed) {
@@ -681,13 +744,20 @@ describe('the committed data files', () => {
 			if (resolution.kind !== 'found') continue;
 			searched++;
 			for (const r of RADII) {
-				const outcome = runSearch({ q: centre.address.postcode, r }, placeFile.places, snapshot.centres, placeFile.others);
+				const outcome = runSearch({ q: centre.address.postcode, r }, placeFile.places, snapshot.centres, snapshot.listings, now, placeFile.others);
 				expect(outcome.kind, centre.centre_id).toBe('results');
 				if (outcome.kind !== 'results') continue;
-				const shown = [...outcome.items.map((i) => i.centre.centre_id), ...outcome.unlocated.map((c) => c.centre_id)];
-				expect(new Set(shown).size, centre.centre_id).toBe(shown.length);
-				expect(shown.filter((id) => id === centre.centre_id), centre.centre_id).toHaveLength(1);
-				expect(outcome.unlocated.length + outcome.hiddenUnlocated, centre.centre_id).toBe(listed.length);
+				const undated = outcome.undated.map((i) => i.centre.centre_id);
+				const dated = new Set(outcome.dated.map((d) => d.centre.centre_id));
+				// Each centre gets undated cards at most once, and never alongside result cards.
+				expect(new Set(undated).size, centre.centre_id).toBe(undated.length);
+				expect(undated.filter((id) => dated.has(id)), centre.centre_id).toEqual([]);
+				// A centre whose current dates all have their own position may be placed elsewhere (Story 2.11).
+				const current = snapshot.listings.filter((l) => l.centre_id === centre.centre_id && Date.parse(l.starts_at) >= now);
+				const placedElsewhere = current.length > 0 && current.every((l) => typeof l.lat === 'number' && typeof l.lon === 'number');
+				expect(dated.has(centre.centre_id) || undated.includes(centre.centre_id) || placedElsewhere, centre.centre_id).toBe(true);
+				const inPlace = unlocatedInPlace(snapshot.centres, resolution.place).length;
+				expect(inPlace + outcome.hiddenUnlocated, centre.centre_id).toBe(listed.length);
 			}
 		}
 		// Every listed centre's own postcode is in the table.

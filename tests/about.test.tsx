@@ -103,7 +103,10 @@ describe('About page structure', () => {
 	}
 
 	it('uses the specified English copy', () => {
-		expect(en['about.how.body']).toBe("We read the centres' websites once a day. Always check the centre's page before you register.");
+		expect(en['about.how.body']).toBe("We read the centres' websites once a day. Distance is measured in a straight line to the address where the test takes place. Always check the centre's page before you register.");
+		expect(de['about.how.body']).toBe(
+			'Wir lesen die Websites der Testzentren einmal am Tag. Die Entfernung messen wir in Luftlinie bis zur Adresse, an der der Test stattfindet. Sehen Sie vor der Anmeldung immer auf der Seite des Testzentrums nach.',
+		);
 		expect(en['about.attribution.osm']).toBe('Place data © OpenStreetMap contributors (ODbL)');
 		expect(en['about.attribution.nominatim']).toBe('Centre locations found with Nominatim');
 		expect(en['about.opt_out.link']).toBe('Ask to be removed');
@@ -114,6 +117,11 @@ describe('About page structure', () => {
 	it('says in both languages that the websites are read once a day', () => {
 		expect(en['about.how.body']).toMatch(/^We read the centres' websites once a day\. /);
 		expect(de['about.how.body']).toMatch(/^Wir lesen die Websites der Testzentren einmal am Tag\. /);
+	});
+
+	it('says in both languages that distance is measured to the test address', () => {
+		expect(en['about.how.body']).toContain('Distance is measured in a straight line to the address where the test takes place.');
+		expect(de['about.how.body']).toContain('Die Entfernung messen wir in Luftlinie bis zur Adresse, an der der Test stattfindet.');
 	});
 });
 

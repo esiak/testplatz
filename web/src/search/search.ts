@@ -1,8 +1,9 @@
 import { haversineKm } from '../../../shared/geo.ts';
 import { normalizePlaceName, type OtherPlace, type PlaceRow } from '../../../shared/places.ts';
-import type { SnapshotCentre } from '../../../shared/snapshot.ts';
+import type { SnapshotCentre, SnapshotListing } from '../../../shared/snapshot.ts';
 import { isUnlocated } from '../data/snapshot.ts';
 import { parseFragment, serialiseFragment } from '../fragment.ts';
+import type { DatedResult, Results, UndatedResult } from './results.ts';
 
 /** The allowed search radii in km, ascending. */
 export const RADII = [10, 20, 40, 60, 100] as const;
@@ -341,6 +342,67 @@ export function unlocatedInPlace(centres: readonly SnapshotCentre[], place: Plac
 		.sort(byNameThenId);
 }
 
+const byText = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
+
+/**
+ * The cards a search shows (FR2, AD-8), by test address.
+ *
+ * Dated: every listing starting at or after `now`, placed at its own coordinates when both are
+ * numbers, else at its centre's when the centre is located. A placed listing is a card when it lies
+ * within `radiusKm`, with that distance; an unplaced one is a card with distance unknown when its
+ * centre is in the place (`unlocatedInPlace`), otherwise it is not shown. Ordered by start, then
+ * distance (unknown last), then listing id.
+ *
+ * Undated: centres with no current listing, selected by their own coordinates as in Epic 1: in
+ * range nearest first, then unlocated centres in the place. A centre with a current listing never
+ * gets an undated card, even when none of its listings is selected.
+ */
+export function selectCards(
+	centres: readonly SnapshotCentre[],
+	listings: readonly SnapshotListing[],
+	place: PlaceRow,
+	radiusKm: number,
+	now: number,
+): Results {
+	const byId = new Map(centres.map((centre) => [centre.centre_id, centre]));
+	const inPlace = new Set(unlocatedInPlace(centres, place).map((centre) => centre.centre_id));
+	const withCurrent = new Set<string>();
+
+	const dated: Array<DatedResult & { start: number }> = [];
+	for (const listing of listings) {
+		const centre = byId.get(listing.centre_id);
+		if (!centre) continue;
+		const start = Date.parse(listing.starts_at);
+		if (!(start >= now)) continue;
+		withCurrent.add(centre.centre_id);
+		const position =
+			typeof listing.lat === 'number' && typeof listing.lon === 'number'
+				? { lat: listing.lat, lon: listing.lon }
+				: centre.lat !== null && centre.lon !== null
+					? { lat: centre.lat, lon: centre.lon }
+					: null;
+		if (position) {
+			const distanceKm = haversineKm(place.lat, place.lon, position.lat, position.lon);
+			if (distanceKm <= radiusKm) dated.push({ listing, centre, distanceKm, start });
+		} else if (inPlace.has(centre.centre_id)) {
+			dated.push({ listing, centre, distanceKm: null, start });
+		}
+	}
+	dated.sort(
+		(a, b) =>
+			a.start - b.start ||
+			(a.distanceKm ?? Number.POSITIVE_INFINITY) - (b.distanceKm ?? Number.POSITIVE_INFINITY) ||
+			byText(a.listing.id, b.listing.id),
+	);
+
+	const withoutCurrent = centres.filter((centre) => !withCurrent.has(centre.centre_id));
+	const undated: UndatedResult[] = [
+		...centresInRange(withoutCurrent, place, radiusKm),
+		...unlocatedInPlace(withoutCurrent, place).map((centre) => ({ centre, distanceKm: null })),
+	];
+	return { dated: dated.map(({ listing, centre, distanceKm }) => ({ listing, centre, distanceKm })), undated };
+}
+
 export type FieldErrorCode = 'place_not_found' | 'outside_bavaria' | 'several_places';
 
 /** What a search shows. Field errors are codes so a language switch re-renders them. */
@@ -349,14 +411,14 @@ export type Outcome =
 	| {
 			kind: 'results';
 			search: Search;
-			/** Centres in range, nearest first. */
-			items: CentreInRange[];
-			/** Centres without coordinates in the searched place, shown after `items` with distance unknown. */
-			unlocated: SnapshotCentre[];
-			/** Centres without coordinates not shown as cards. */
+			/** Result cards, by start, then distance (unknown last), then listing id. */
+			dated: DatedResult[];
+			/** Centres without a current date: in range nearest first, then unlocated centres in the place. */
+			undated: UndatedResult[];
+			/** Centres without coordinates whose address does not match the place. */
 			hiddenUnlocated: number;
 	  }
-	| { kind: 'no_centres'; search: Search; unlocated: []; hiddenUnlocated: number };
+	| { kind: 'no_centres'; search: Search; hiddenUnlocated: number };
 
 export type SearchResolution = Resolution | { kind: 'suggested'; place: PlaceRow; text: string };
 
@@ -376,14 +438,16 @@ export function resolveSearch(input: string, places: readonly PlaceRow[], others
 }
 
 /**
- * Runs a search. When a single suggestion decides, the outcome's `search.q` is its pick text.
- * Centres without coordinates in the searched place count as results; the rest are counted in
- * `hiddenUnlocated`.
+ * Runs a search against the clock reading `now`. When a single suggestion decides, the outcome's
+ * `search.q` is its pick text. The cards come from `selectCards`; `no_centres` exactly when there
+ * are none. Centres without coordinates outside the searched place are counted in `hiddenUnlocated`.
  */
 export function runSearch(
 	search: Search,
 	places: readonly PlaceRow[],
 	centres: readonly SnapshotCentre[],
+	listings: readonly SnapshotListing[],
+	now: number,
 	others: readonly OtherPlace[] = [],
 ): Outcome {
 	const resolution = resolveSearch(search.q, places, others);
@@ -391,12 +455,11 @@ export function runSearch(
 	if (resolution.kind === 'outside_bavaria') return { kind: 'field_error', code: 'outside_bavaria', suggestions: [] };
 	if (resolution.kind === 'not_found') return { kind: 'field_error', code: 'place_not_found', suggestions: resolution.suggestions };
 	const searched = resolution.kind === 'suggested' ? { q: resolution.text, r: search.r } : search;
-	const items = centresInRange(centres, resolution.place, search.r);
-	const unlocated = unlocatedInPlace(centres, resolution.place);
-	const hiddenUnlocated = centres.filter(isUnlocated).length - unlocated.length;
-	return items.length > 0 || unlocated.length > 0
-		? { kind: 'results', search: searched, items, unlocated, hiddenUnlocated }
-		: { kind: 'no_centres', search: searched, unlocated: [], hiddenUnlocated };
+	const { dated, undated } = selectCards(centres, listings, resolution.place, search.r, now);
+	const hiddenUnlocated = centres.filter(isUnlocated).length - unlocatedInPlace(centres, resolution.place).length;
+	return dated.length > 0 || undated.length > 0
+		? { kind: 'results', search: searched, dated, undated, hiddenUnlocated }
+		: { kind: 'no_centres', search: searched, hiddenUnlocated };
 }
 
 /** The hostname a URL opens, without a leading `www.`; null for an unparsable URL. */

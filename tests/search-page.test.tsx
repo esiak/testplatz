@@ -9,7 +9,7 @@ import { RELOAD_FLAG } from '../web/src/data/reload-once.ts';
 import { SNAPSHOT_URL } from '../web/src/data/snapshot.ts';
 import de from '../web/src/i18n/de.json' with { type: 'json' };
 import en from '../web/src/i18n/en.json' with { type: 'json' };
-import { PLACE_ROWS, placesOf, smallPlaces } from './fixtures/places.ts';
+import { PLACE_ROWS, placeRow, placesOf, smallPlaces } from './fixtures/places.ts';
 import { coveredCentre, jsonResponse, snapshotCentre, snapshotListing, snapshotOf } from './fixtures/snapshot.ts';
 
 // ---------- fixtures ----------
@@ -50,6 +50,10 @@ const CENTRES: SnapshotCentre[] = [
 	}),
 	snapshotCentre('muc', { name: 'vhs München', lat: 48.1374, lon: 11.5755 }),
 ];
+
+/** A listing of `centre` held at the centre's own coordinates. */
+const listingOf = (centre: SnapshotCentre, startsAt: string, extra: Partial<SnapshotListing> = {}): SnapshotListing =>
+	snapshotListing(centre.centre_id, startsAt, { lat: centre.lat, lon: centre.lon, ...extra });
 
 // ---------- harness ----------
 
@@ -437,7 +441,7 @@ describe('result cards', () => {
 	});
 	const akademie = CENTRES.find((centre) => centre.centre_id === 'nbg')!;
 
-	const waitlist = snapshotListing('kufer', '2026-12-09T10:00:00+01:00', {
+	const waitlist = listingOf(kufer, '2026-12-09T10:00:00+01:00', {
 		address: 'Gewerbemuseumsplatz 1, 90403 Nürnberg',
 		status: 'waitlist',
 		deadline: '2026-11-11',
@@ -445,7 +449,7 @@ describe('result cards', () => {
 		source_url: 'https://www.vhs-nuernberg.de/kurs/123',
 		eligibility: 'Nur für Personen mit Hauptwohnsitz in Nürnberg.',
 	});
-	const deadLink = snapshotListing('item', '2026-11-20T09:00:00+01:00', {
+	const deadLink = listingOf(item, '2026-11-20T09:00:00+01:00', {
 		address: 'Königstraße 1, 90762 Fürth',
 		status: 'free',
 		deadline: '2026-10-28',
@@ -453,8 +457,8 @@ describe('result cards', () => {
 		link_ok: false,
 	});
 	// Started an hour before NOW.
-	const pastSameCentre = snapshotListing('kufer', '2026-10-29T12:00:00+01:00');
-	const pastOnly = snapshotListing('stale', '2026-10-20T10:00:00+02:00');
+	const pastSameCentre = listingOf(kufer, '2026-10-29T12:00:00+01:00');
+	const pastOnly = listingOf(stale, '2026-10-20T10:00:00+02:00');
 
 	async function show(listings = [waitlist, deadLink, pastSameCentre, pastOnly], lang: 'en' | 'de' = 'en'): Promise<HTMLElement[]> {
 		return showWith([kufer, item, stale, akademie], listings, lang);
@@ -514,8 +518,8 @@ describe('result cards', () => {
 	});
 
 	it('shows "Booked out" and the email and post registration words', async () => {
-		const booked = snapshotListing('kufer', '2026-12-01T18:30:00+01:00', { status: 'booked_out', registration_method: 'email' });
-		const byPost = snapshotListing('kufer', '2026-12-02T18:30:00+01:00', { registration_method: 'post' });
+		const booked = listingOf(kufer, '2026-12-01T18:30:00+01:00', { status: 'booked_out', registration_method: 'email' });
+		const byPost = listingOf(kufer, '2026-12-02T18:30:00+01:00', { registration_method: 'post' });
 		const [first, second] = await showWith([kufer], [booked, byPost]);
 		const chip = first!.querySelector('.chip')!;
 		expect(chip.textContent).toBe('Booked out');
@@ -535,7 +539,7 @@ describe('result cards', () => {
 			lat: null,
 			lon: null,
 		});
-		const [card] = await showWith([unplaced], [snapshotListing('unplaced', '2026-12-01T18:30:00+01:00')]);
+		const [card] = await showWith([unplaced], [listingOf(unplaced, '2026-12-01T18:30:00+01:00')]);
 		expect(card!.querySelector('h3 a')!.textContent).toBe('Tue 1 Dec, 18:30');
 		expect(facts(card!)[0]).toEqual(['Distance', 'unknown']);
 	});
@@ -645,7 +649,7 @@ describe('result cards', () => {
 	});
 
 	it('shows "Status unknown" and in-person registration, and no freshness line without a successful check', async () => {
-		const unknown = snapshotListing('kufer', '2026-12-01T18:30:00+01:00', { status: 'unknown', registration_method: 'in_person' });
+		const unknown = listingOf(kufer, '2026-12-01T18:30:00+01:00', { status: 'unknown', registration_method: 'in_person' });
 		serve(ok(snapshotOf([{ ...kufer, last_success_at: null, last_result: 'failed' }], [unknown])));
 		setBrowser();
 		mount();
@@ -775,7 +779,7 @@ describe('no-dates and not-checked-right-now cards', () => {
 	});
 
 	it('gives a checked centre with only past dates a no-dates card', async () => {
-		const [card] = await showWith([checked], [snapshotListing('checked', '2026-10-20T10:00:00+02:00')]);
+		const [card] = await showWith([checked], [listingOf(checked, '2026-10-20T10:00:00+02:00')]);
 		expect(card!.querySelector('.chip')!.textContent).toBe('No dates listed');
 		expect(card!.querySelector('.card__freshness')).not.toBeNull();
 	});
@@ -802,7 +806,7 @@ describe('no-dates and not-checked-right-now cards', () => {
 	});
 
 	it('keeps the result cards of a centre whose last check failed but still has dates, with its exact freshness time', async () => {
-		const [card, ...rest] = await showWith([failed], [snapshotListing('failed', '2026-11-20T09:00:00+01:00')]);
+		const [card, ...rest] = await showWith([failed], [listingOf(failed, '2026-11-20T09:00:00+01:00')]);
 		expect(rest).toEqual([]);
 		expect(card!.querySelector('h3 a')!.textContent).toBe('Fri 20 Nov, 09:00');
 		expect(card!.querySelector('.card__freshness time')!.textContent).toBe('◷ Checked Tue 21:00');
@@ -866,8 +870,8 @@ describe('sort by soonest or nearest', () => {
 		lat: null,
 		lon: null,
 	});
-	const early = snapshotListing('d30', '2026-11-20T09:00:00+01:00');
-	const late = snapshotListing('d10', '2026-12-09T10:00:00+01:00');
+	const early = listingOf(d30, '2026-11-20T09:00:00+01:00');
+	const late = listingOf(d10, '2026-12-09T10:00:00+01:00');
 	const EARLY = 'Fri 20 Nov, 09:00';
 	const LATE = 'Wed 9 Dec, 10:00';
 	const ALL = [d30, d10, u5, unloc];
@@ -954,7 +958,7 @@ describe('sort by soonest or nearest', () => {
 		const there = coveredCentre('there', 'ok', { name: 'Dort', ...at(12) });
 		await showWith(
 			[here, there],
-			[snapshotListing('there', '2026-12-09T10:00:00+01:00'), snapshotListing('there', '2026-11-20T09:00:00+01:00')],
+			[listingOf(there, '2026-12-09T10:00:00+01:00'), listingOf(there, '2026-11-20T09:00:00+01:00')],
 		);
 		choose('nearest');
 		expect(cardNames()).toEqual([EARLY, LATE, 'Hier']);
@@ -1164,6 +1168,58 @@ describe('no centres in range', () => {
 		await search('München', 100);
 		expect(root.querySelector('.search__results')!.textContent).toBe('No test centres within 100 km.');
 		expect(root.querySelector('.search__results button')).toBeNull();
+	});
+});
+
+describe('search by test location', () => {
+	// About 12.6 km apart: more than the 10 km radius.
+	const HERRSCHING = placeRow('09188127', 'Herrsching a.Ammersee', { postcodes: ['82211'], lat: 47.9993, lon: 11.1716 });
+	const STARNBERG = placeRow('09188139', 'Starnberg', { postcodes: ['82319'], lat: 47.9973, lon: 11.3398 });
+	const starnberg = coveredCentre('starnberg', 'ok', {
+		name: 'vhs Starnberg',
+		address: { street: 'Hauptstraße 1', postcode: '82319', city: 'Starnberg' },
+		lat: STARNBERG.lat,
+		lon: STARNBERG.lon,
+		last_success_at: '2026-10-29T10:00:00Z',
+	});
+	const inHerrsching = listingOf(starnberg, '2026-12-09T10:00:00+01:00', {
+		address: 'Schulstraße 2, 82211 Herrsching a.Ammersee',
+		lat: HERRSCHING.lat,
+		lon: HERRSCHING.lon,
+	});
+	const facts = (card: HTMLElement) => [...card.querySelectorAll('dt')].map((dt) => [dt.textContent, dt.nextElementSibling!.textContent]);
+
+	async function showWith(centres: SnapshotCentre[], listings: SnapshotListing[], place: string): Promise<void> {
+		serve(ok(snapshotOf(centres, listings)), ok(placesOf([HERRSCHING, STARNBERG])));
+		setBrowser();
+		mount();
+		await settle();
+		await search(place, 10);
+	}
+
+	it('shows a date held in town by a centre based elsewhere, with the distance to the test address and no other card for it', async () => {
+		await showWith([starnberg], [inHerrsching], 'Herrsching a.Ammersee');
+		expect(cards()).toHaveLength(1);
+		expect(cardNames()).toEqual(['Wed 9 Dec, 10:00']);
+		expect(facts(cards()[0]!)[0]).toEqual(['Distance', '0 km']);
+		expect(cards()[0]!.querySelector('.card__address-text')!.textContent).toBe('Schulstraße 2, 82211 Herrsching a.Ammersee');
+		expect(root.querySelector('.results-count')!.textContent).toBe('1 date and 0 unchecked centres within 10 km');
+	});
+
+	it('shows no centres in the centre\'s own town when its only date is held far away', async () => {
+		await showWith([starnberg], [inHerrsching], 'Starnberg');
+		expect(cards()).toEqual([]);
+		expect(root.querySelector('.search__results')!.textContent).toContain('No test centres within 10 km.');
+		expect(statusText()).toBe('No test centres within 10 km.');
+	});
+
+	it('counts only the selected cards in the count line', async () => {
+		const uncovered = snapshotCentre('herrsching', { name: 'Bildungswerk Herrsching', lat: HERRSCHING.lat, lon: HERRSCHING.lon });
+		const second = listingOf(starnberg, '2026-12-10T10:00:00+01:00', { lat: HERRSCHING.lat + 0.01, lon: HERRSCHING.lon });
+		const inStarnberg = listingOf(starnberg, '2026-12-11T10:00:00+01:00');
+		await showWith([starnberg, uncovered], [inHerrsching, second, inStarnberg], 'Herrsching a.Ammersee');
+		expect(cardNames()).toEqual(['Wed 9 Dec, 10:00', 'Thu 10 Dec, 10:00', 'Bildungswerk Herrsching']);
+		expect(root.querySelector('.results-count')!.textContent).toBe('2 dates and 1 unchecked centre within 10 km');
 	});
 });
 

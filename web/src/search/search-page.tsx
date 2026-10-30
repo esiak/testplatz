@@ -9,7 +9,7 @@ import { NO_LOCATION_ID } from '../fragment.ts';
 import { useI18n } from '../i18n/i18n.tsx';
 import { ResultCard } from './result-card.tsx';
 import { NoDatesCard } from './no-dates-card.tsx';
-import { allBookedOut, datedResults, sortedCards, undatedKind, type Results, type SortedCard } from './results.ts';
+import { allBookedOut, sortedCards, undatedKind, type Results, type SortedCard } from './results.ts';
 import { SearchBar } from './search-bar.tsx';
 import {
 	DEFAULT_RADIUS,
@@ -30,7 +30,7 @@ import { aboutSectionUrl, UncoveredCard } from './uncovered-card.tsx';
 export interface SearchServices extends ReloadServices {
 	/** Used for the two data requests; defaults to the global `fetch` at call time. */
 	fetch?: typeof fetch;
-	/** The clock, read once per shown outcome; defaults to `Date.now`. */
+	/** The clock, read once per search; defaults to `Date.now`. */
 	now?: () => number;
 }
 
@@ -201,18 +201,15 @@ export function SearchPage({ services }: { services?: Partial<SearchServices> })
 
 	const show = useCallback(
 		(search: Search, ready: Extract<DataState, { kind: 'ready' }>) => {
-			const result = runSearch(search, ready.places.places, ready.snapshot.centres, ready.places.others);
+			const now = clock();
+			const result = runSearch(search, ready.places.places, ready.snapshot.centres, ready.snapshot.listings, now, ready.places.others);
 			// A single suggestion was searched: the field and the fragment take its pick text.
 			if ((result.kind === 'results' || result.kind === 'no_centres') && result.search.q !== search.q) {
 				lastSearch.current = result.search;
 				setText(result.search.q);
 				replaceHash(searchFragment(result.search.q, result.search.r, sortRef.current, langRef.current));
 			}
-			let resultShown: Shown | null = null;
-			if (result.kind === 'results') {
-				const now = clock();
-				resultShown = { ...datedResults(result, ready.snapshot.listings, now), now };
-			}
+			const resultShown: Shown | null = result.kind === 'results' ? { dated: result.dated, undated: result.undated, now } : null;
 			setOutcome(result);
 			setShown(resultShown);
 			setOutcomeId((n) => n + 1);
