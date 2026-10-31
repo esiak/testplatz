@@ -931,6 +931,8 @@ So that I spot new chances without comparing lists.
 
 ### Story 3.2: Hide booked-out dates
 
+**Default ticked** (operator decision 2026-10-31, after the story was built): booked-out dates are hidden on the first search, and unticking shows them.
+
 As a user who only wants dates I can still book,
 I want to hide booked-out dates with one switch,
 So that the list shows my real options without losing anything.

@@ -196,8 +196,11 @@ export function SearchPage({ services }: { services?: Partial<SearchServices> })
 	/** The suggestions list starts dismissed: only typing (or a several-places outcome) opens it. */
 	const [listDismissed, setListDismissed] = useState(true);
 	const [listOpenId, setListOpenId] = useState(0);
-	/** Page state, not in the fragment: stays as set across new searches until unticked or reload. */
-	const [hideBooked, setHideBooked] = useState(false);
+	/**
+	 * Page state, not in the fragment: ticked by default (operator decision 2026-10-31), stays as set
+	 * across new searches until changed or the page reloads.
+	 */
+	const [hideBooked, setHideBooked] = useState(true);
 
 	const fieldRef = useRef<HTMLInputElement>(null);
 	const hideBookedInput = useRef<HTMLInputElement>(null);

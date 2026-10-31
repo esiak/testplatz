@@ -31,7 +31,7 @@ deferred: []
 - All words come from `web/src/i18n/{en,de}.json`, same meaning in both, no exclamation marks.
 
 **Never:**
-- No new fragment parameter: the shareable fragment stays `#q&r&sort&lang` (`web/src/fragment.ts`). The toggle is page state; it stays as set across new searches until unticked or the page reloads.
+- No new fragment parameter: the shareable fragment stays `#q&r&sort&lang` (`web/src/fragment.ts`). The toggle is page state, ticked by default (operator decision 2026-10-31); it stays as set across new searches until changed or the page reloads.
 - No re-search, clock read or fetch when toggling (same as sorting).
 - No change to `runSearch`/`selectCards` selection.
 
@@ -68,11 +68,17 @@ deferred: []
 - `tests/results.test.ts` -- unit tests for the two helpers; `tests/search-page.test.tsx` -- one test per I/O matrix row plus focus and the 320 px wrap class check -- covers the matrix.
 
 **Acceptance Criteria:**
-- Given results, when they render, then the toggle appears unticked after the Soonest | Nearest control in the same `results-controls` row, and the page has no horizontal scroll at 320 px wide in German.
+- Given results, when they render, then the toggle appears ticked (booked-out dates already hidden and announced) after the Soonest | Nearest control in the same `results-controls` row, and the page has no horizontal scroll at 320 px wide in German.
 - Given the toggle is ticked or unticked by keyboard (Space) or click, when the list updates, then `document.activeElement` is the checkbox.
 - Given the built site, when searching "Herrsching", 10 km and ticking the toggle, then the "Booked out" VHS Starnberger See date disappears, "1 booked-out date hidden · Show" shows, and the count line still reads "2 dates and 1 unchecked centre within 10 km".
 
 ## Spec Change Log
+
+### 2026-10-31 — Default ticked (operator request)
+- Trigger: Eleni asked after completion to make "Hide booked-out" the default.
+- Amended: intent contract (Never: page-state rule; AC: toggle appears ticked) — renegotiated by the human. Code: `useState(true)` in `search-page.tsx`.
+- Known-bad state avoided: none; the first search already announced the hidden count when the toggle was on, so a ticked start says "<count line>. N booked-out dates hidden".
+- KEEP: every I/O matrix row still holds from an unticked box; the tests reach that state by unticking first (`showUnticked`).
 
 ## Review Triage Log
 

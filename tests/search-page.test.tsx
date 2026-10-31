@@ -520,7 +520,10 @@ describe('result cards', () => {
 	it('shows "Booked out" and the email and post registration words', async () => {
 		const booked = listingOf(kufer, '2026-12-01T18:30:00+01:00', { status: 'booked_out', registration_method: 'email' });
 		const byPost = listingOf(kufer, '2026-12-02T18:30:00+01:00', { registration_method: 'post' });
-		const [first, second] = await showWith([kufer], [booked, byPost]);
+		await showWith([kufer], [booked, byPost]);
+		// Booked-out dates are hidden by default: untick to see the card.
+		act(() => root.querySelector<HTMLInputElement>('.hide-booked__input')!.click());
+		const [first, second] = cards();
 		const chip = first!.querySelector('.chip')!;
 		expect(chip.textContent).toBe('Booked out');
 		expect(chip.classList.contains('chip--booked')).toBe(true);
@@ -1087,17 +1090,34 @@ describe('sort by soonest or nearest', () => {
 			});
 		}
 
-		it('sits unticked after Soonest | Nearest in one results-controls row', async () => {
+		/** The scenarios below start from an unticked box: shows the results, then unticks it. */
+		async function showUnticked(...args: Parameters<typeof showWith>): Promise<void> {
+			await showWith(...args);
+			act(() => {
+				toggle().click();
+				// The untick moved focus to the box; start each scenario without it.
+				toggle().blur();
+			});
+		}
+
+		it('sits ticked by default after Soonest | Nearest in one results-controls row', async () => {
 			await showWith(ALL, MIXED);
 			const row = root.querySelector('.results-controls')!;
 			expect([...row.children].map((el) => el.className)).toEqual(['sort-control', 'hide-booked']);
-			expect(toggle().checked).toBe(false);
+			expect(toggle().checked).toBe(true);
 			expect(toggle().closest('label')!.textContent).toBe('Hide booked-out');
-			expect(hiddenLine()).toBeNull();
+		});
+
+		it('a first search hides booked-out dates and says so, with the count line counting them all', async () => {
+			await showWith(ALL, MIXED);
+			expect(cardNames()).toEqual(['Tue 1 Dec, 10:00', LATE, 'Fünf', 'Ohne Ort']);
+			expect(hiddenLine()!.textContent).toBe('2 booked-out dates hidden · Show');
+			expect(statusText()).toBe(`${countLine()}. 2 booked-out dates hidden`);
+			expect(countLine()).toContain('4 dates');
 		});
 
 		it('hides only booked-out dates, keeps the count line, and announces the number hidden', async () => {
-			await showWith(ALL, MIXED);
+			await showUnticked(ALL, MIXED);
 			const before = cardNames();
 			const counted = countLine();
 			expect(before).toEqual([EARLY, 'Wed 25 Nov, 09:00', 'Tue 1 Dec, 10:00', LATE, 'Fünf', 'Ohne Ort']);
@@ -1115,7 +1135,7 @@ describe('sort by soonest or nearest', () => {
 		});
 
 		it('"Show" unticks, brings every card back and moves focus to the checkbox', async () => {
-			await showWith(ALL, MIXED);
+			await showUnticked(ALL, MIXED);
 			const before = cardNames();
 			tick();
 			const show = buttonByText('Show')!;
@@ -1130,7 +1150,7 @@ describe('sort by soonest or nearest', () => {
 		});
 
 		it('unticking the checkbox itself announces the dates shown and keeps focus', async () => {
-			await showWith(ALL, MIXED);
+			await showUnticked(ALL, MIXED);
 			tick();
 			tick();
 			expect(toggle().checked).toBe(false);
@@ -1146,7 +1166,7 @@ describe('sort by soonest or nearest', () => {
 				{ ...late, status: 'booked_out' as const },
 				listingOf(d30, '2026-12-01T10:00:00+01:00', { status: 'booked_out' }),
 			];
-			await showWith(ALL, all);
+			await showUnticked(ALL, all);
 			expect(notices()).toEqual([en['results.notice_all_booked']]);
 			tick();
 			expect(notices()).toEqual(['All 4 dates here are booked out and hidden. Show them']);
@@ -1165,7 +1185,7 @@ describe('sort by soonest or nearest', () => {
 		});
 
 		it('booked-out and waitlist only: the waitlist date stays and the all-booked notice keeps showing', async () => {
-			await showWith(ALL, [booked1, waiting]);
+			await showUnticked(ALL, [booked1, waiting]);
 			tick();
 			expect(notices()).toEqual([en['results.notice_all_booked']]);
 			expect(cardNames()).toHaveLength(3);
@@ -1174,7 +1194,7 @@ describe('sort by soonest or nearest', () => {
 		});
 
 		it('nothing to hide: no card hidden, no hidden line, and "0 booked-out dates hidden"', async () => {
-			await showWith(ALL, [early, late]);
+			await showUnticked(ALL, [early, late]);
 			const before = cardNames();
 			tick();
 			expect(cardNames()).toEqual(before);
@@ -1183,7 +1203,7 @@ describe('sort by soonest or nearest', () => {
 		});
 
 		it('Nearest keeps the hidden cards hidden in the single list', async () => {
-			await showWith(ALL, MIXED);
+			await showUnticked(ALL, MIXED);
 			tick();
 			const kept = cardNames();
 			choose('nearest');
@@ -1193,7 +1213,7 @@ describe('sort by soonest or nearest', () => {
 		});
 
 		it('stays ticked for a new search, which is filtered and counted afresh', async () => {
-			await showWith(ALL, MIXED);
+			await showUnticked(ALL, MIXED);
 			tick();
 			await search('Nürnberg', 20);
 			expect(toggle().checked).toBe(true);
@@ -1205,37 +1225,37 @@ describe('sort by soonest or nearest', () => {
 		});
 
 		it('keeps focus on the checkbox when clicked without focusing it first', async () => {
-			await showWith(ALL, MIXED);
+			await showUnticked(ALL, MIXED);
 			act(() => toggle().click());
 			expect(toggle().checked).toBe(true);
 			expect(document.activeElement).toBe(toggle());
 		});
 
 		it('announces one booked-out date shown in the singular', async () => {
-			await showWith(ALL, [booked1, waiting]);
+			await showUnticked(ALL, [booked1, waiting]);
 			tick();
 			tick();
 			expect(statusText()).toBe('1 booked-out date shown');
 		});
 
 		it('everything hidden with a single date: the singular notice', async () => {
-			await showWith(ALL, [booked1]);
+			await showUnticked(ALL, [booked1]);
 			tick();
 			expect(notices()).toEqual(['1 date here is booked out and hidden. Show them']);
 			expect(hiddenLine()).toBeNull();
 		});
 
 		it('reads the singular forms in German', async () => {
-			await showWith(ALL, [booked1, free], '#q=N%C3%BCrnberg&r=40&lang=de', 'de');
+			await showUnticked(ALL, [booked1, free], '#q=N%C3%BCrnberg&r=40&lang=de', 'de');
 			tick();
 			expect(hiddenLine()!.textContent).toBe('1 ausgebuchter Termin ausgeblendet · Anzeigen');
-			await showWith(ALL, [booked1], '#q=N%C3%BCrnberg&r=40&lang=de', 'de');
+			await showUnticked(ALL, [booked1], '#q=N%C3%BCrnberg&r=40&lang=de', 'de');
 			tick();
 			expect(notices()).toEqual(['1 Termin hier ist ausgebucht und ausgeblendet. Anzeigen']);
 		});
 
 		it('reads in German', async () => {
-			await showWith(ALL, MIXED, '#q=N%C3%BCrnberg&r=40&lang=de', 'de');
+			await showUnticked(ALL, MIXED, '#q=N%C3%BCrnberg&r=40&lang=de', 'de');
 			expect(toggle().closest('label')!.textContent).toBe('Ausgebuchte ausblenden');
 			tick();
 			expect(hiddenLine()!.textContent).toBe('2 ausgebuchte Termine ausgeblendet · Anzeigen');
