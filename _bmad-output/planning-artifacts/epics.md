@@ -186,7 +186,7 @@ About 55 centres switch from "not checked" to real dates with status, deadline, 
 ### Epic 3: Spot new chances fast, and keep the data trustworthy
 Users see what's new since yesterday and can hide booked-out dates. The operator sees each booking system's health and gets alerted when anything breaks, so stale data gets fixed rather than left unnoticed.
 **FRs covered:** FR15, FR16, FR20, FR29, FR31 (everything-hidden notice), FR33 (system status section)
-**Notes:** "New" badge with baseline rule, hide-booked-out toggle, booking-system status on About, failed-run issues, dead-man ping, monthly directory diff, compact date-tile cards (Stories 3.6–3.7, build before 3.1). Covers UX-DR8, 14, 30, 31.
+**Notes:** "New" badge with baseline rule, hide-booked-out toggle, booking-system status on About, failed-run issues, dead-man ping, monthly directory diff, compact date-tile cards (Stories 3.6–3.7, build before 3.1). Covers UX-DR8, 14, 30, 31. Stories 3.8–3.13 (added 2026-10-31) carry the Epic 2 retrospective's open items (`implementation-artifacts/epic-2-retro-2026-10-31.md`): stable same-minute ids (3.8, build before 3.1), status unless in person only (3.9), dates without a published time for MVHS (3.10, after 3.6), collect only once a day (3.11), every covered centre checked (3.12, after 3.11), and coordinates for the last 8 centres (3.13). Story 3.4 also gained two alert criteria from that retrospective.
 
 ### Epic 4: Launch publicly
 The site can be announced: legal pages are live, it's indexable, it's tested in the in-app browsers people use to open shared links, and the directory moves to the official BAMF source.
@@ -908,7 +908,7 @@ Users see what's new since yesterday and can hide booked-out dates; the operator
 
 ### Story 3.1: "New" badge on fresh dates
 
-**Depends on:** Stories 3.6 and 3.7 (the badge sits in the new card layout).
+**Depends on:** Stories 3.6 and 3.7 (the badge sits in the new card layout) and Story 3.8 (dates must keep their `first_seen_at`).
 
 As a user checking back every day,
 I want dates that appeared since yesterday marked "New",
@@ -997,6 +997,14 @@ So that I can fix a broken reader before users notice.
 **Given** the operator's notes in the repo
 **When** read
 **Then** they explain re-enabling the schedule via `workflow_dispatch` or the Actions tab after GitHub's 60-day inactivity disable, and switching to the home-machine fallback if sites block GitHub's IPs
+
+**Given** a run in which every centre that was fetched ends `failed` (added 2026-10-31, Epic 2 retrospective F14)
+**When** the run finishes
+**Then** the run is marked failed and alerts the operator like any other failed run, even though `run.ts` itself completed
+
+**Given** a centre that had current listings and now returns `ok` with zero listings while its list page still has the expected structure (added 2026-10-31, Epic 2 retrospective F14)
+**When** the run finishes
+**Then** the issue for its reader system names the centre as "dates disappeared, check the page", so a redesigned page is not taken for "no dates"
 
 ### Story 3.5: Monthly directory check
 
@@ -1106,6 +1114,189 @@ So that each card says it once, without a block of repeated words.
 **Given** DE and EN
 **When** labels render
 **Then** every label comes from the translation files, with the same meaning in both languages (UX-DR26)
+
+### Story 3.8: Same-minute dates keep their history
+
+**Build before Story 3.1.** Added 2026-10-31 from the Epic 2 retrospective (`implementation-artifacts/epic-2-retro-2026-10-31.md`, finding F7, action item 5).
+
+As a user checking back every day,
+I want each date to keep its own history when another date at the same minute appears or disappears,
+So that "New" never marks an old date and never hides a new one.
+
+**Context:** Normalise numbers same-minute sessions `#2`, `#3` by their position in this run (`pipeline/stages/normalise.ts:131-136`), and merge keys `first_seen_at`, `baseline` and tombstones by id (`pipeline/stages/merge.ts:42-51`). When a sibling appears or disappears, a surviving date takes another date's id and history.
+
+**Acceptance Criteria:**
+
+**Given** a centre whose stored state has two or more listings at the same minute
+**When** an `ok` run returns that minute with one sibling removed, one added, or the order of places changed
+**Then** each date that is still listed keeps its stored id, `first_seen_at` and `baseline`, matched to the stored listing by `source_url`, then by place; only a date with no match gets a new id and a new `first_seen_at` (AD-7, FR16)
+**And** only the date that is really gone gets `removed_at`
+
+**Given** a new id is needed at a minute where earlier ids are taken (live or tombstoned)
+**When** normalise assigns it
+**Then** it takes the lowest free `#n`, so no id is ever reused by a different date while its tombstone is in state
+
+**Given** `tests/normalise.test.ts` and `tests/merge.test.ts`
+**When** they run
+**Then** they cover: sibling removed, sibling added before an existing one, two siblings swapping places, and a same-minute date that disappears and returns
+
+### Story 3.9: Status shown unless registration is in person only
+
+Added 2026-10-31 from the Epic 2 retrospective (findings F3, F14, F15, action items 3 and 8).
+
+As a person looking for a test date,
+I want a date's booking status shown whenever the provider gives one,
+So that "Status unknown" means the provider really says nothing, not that it also accepts in-person registration.
+
+**Context:** 73 of 100 published dates read "Status unknown" because the ITEM KG reader drops every status signal when the registration method is `in_person` (`pipeline/readers/itemkg/index.ts:186-197,222`), even on pages that also accept email (VHS Fichtelgebirge: "Die Anmeldung erfolgt persönlich … Alternativ ist auch eine Anmeldung per E-Mail möglich"). Story 2.4 asks for `unknown` only for in-person-only registration. The two readers also keep separate rules for registration wording (`pipeline/readers/kuferweb/index.ts:406`) and preparation courses (ITEM KG excludes them at `itemkg/index.ts:22,129`; KuferWeb's `TEST_TITLE` at `kuferweb/index.ts:22` does not).
+
+**Acceptance Criteria:**
+
+**Given** `shared/`
+**When** this story is done
+**Then** one helper decides the registration method and whether registration is in person only, and one helper decides whether a course title is a preparation course; both readers use them, and neither keeps its own copy (FR10, FR35)
+
+**Given** a page whose registration text names in-person registration and another method (e-mail, post, online)
+**When** a reader parses it
+**Then** `registration_method` is the first method named, as today, but the status comes from the page's booking signals; only a page saying registration is in person only ("nur persönlich", "ausschließlich persönlich", or in person with no other method named) gives `unknown` (FR10)
+
+**Given** the VHS Fichtelgebirge Marktredwitz test page, saved as a fixture under `pipeline/readers/itemkg/fixtures/fichtelgebirge/`
+**When** the ITEM KG reader parses it
+**Then** its dates carry the status their booking flags give, and the Bad Kissingen in-person, cash-only fixture still gives `in_person` / `unknown`
+
+**Given** a KuferWeb list page with a preparation course whose title names the Einbürgerungstest (new fixture)
+**When** the reader parses it
+**Then** the preparation course is not a listing
+
+**Given** the snapshot after the first daily run with this change
+**When** the operator compares it with 2026-10-30's (81 of 100 dates `unknown`)
+**Then** the spec's run result records the new count of `unknown` dates per reader
+
+### Story 3.10: Dates whose start time is not published yet
+
+**Build after Story 3.6** (the card wording uses the date-tile layout). Added 2026-10-31 from the Epic 2 retrospective (finding F2, action item 2).
+
+As a person in Munich,
+I want MVHS test dates shown even before MVHS publishes the exact start time,
+So that the biggest test centre in Bavaria is no longer "Not checked right now".
+
+**Context:** MVHS lists each test with a date only and sends the exact times 10 days before the test (`data/directory/itemkg-note.md`, "MVHS (München)"). `RawListing` requires a time, so the ITEM KG reader fails MVHS with `date-unparseable` on every run, and a search for "München", 10 km shows 0 dates.
+
+**Acceptance Criteria:**
+
+**Given** `shared/listing.ts`
+**When** the contract changes
+**Then** `RawListing.time` may be `null` only when the page states a date with no time (an "00:00 - 23:59" placeholder counts as no time); a reader never invents a time (AD-3, FR6)
+
+**Given** a raw listing with no time
+**When** normalise runs
+**Then** `starts_at` is that day at 00:00 Europe/Berlin, `time_known` is `false`, and the id is `<centre_id>@<YYYY-MM-DD>` (with `#2`, `#3` as in Story 3.8 when several untimed dates share a day) (AD-7)
+**And** a date with no time stays current until the end of its day, in publish and in the browser (FR5)
+
+**Given** publish
+**When** it writes `snapshot.json`
+**Then** every listing carries `time_known`, `schemaVersion` becomes 4, and `web/` accepts it in the same commit (AD-9)
+
+**Given** a listing with `time_known: false`
+**When** its result card renders
+**Then** the meta line reads "Time not published yet" (DE: "Uhrzeit noch nicht veröffentlicht") in place of the time, and the screen-reader link name says the same after the date (UX-DR23)
+**And** Soonest sorts it by its date, before timed dates of the same day
+
+**Given** the MVHS category page and a detail page (fixtures under `pipeline/readers/itemkg/fixtures/mvhs/`)
+**When** the ITEM KG reader parses them
+**Then** MVHS returns `ok` with one listing per test date and `time: null`, and the "Deutsch Geschichte und Politik von A-Z" course is not a listing
+
+**Given** a search for "München", 10 km after the next daily run
+**When** results render
+**Then** MVHS shows its dates as result cards, not "Not checked right now" (needs MVHS's coordinates from Story 3.13; until then its distance reads "unknown")
+
+### Story 3.11: Collect only once a day
+
+Added 2026-10-31 from the Epic 2 retrospective (findings F6, F10, action item 4).
+
+As a test centre,
+I want the bot to read my site once a day, not on every code change,
+So that its visits stay within the promised limit.
+
+**Context:** `pipeline.yml` collects on every push to `main` (`.github/workflows/pipeline.yml:7-8`), so each push uses one of each site's 4 visits per 24 h; after the 10/29–10/30 runs every host was at 4/4. The publish job checks out `${{ github.sha }}` (`pipeline.yml:34`), so a run queued behind another reads a visit log without that run's visits. A run that fails after merge never commits its visits (`pipeline/stages/run.ts:171-190`).
+
+**Acceptance Criteria:**
+
+**Given** a push to `main` (code, directory or data)
+**When** `pipeline.yml` runs
+**Then** no provider site and no Nominatim request is sent; the site is built and deployed from the pushed SHA with the committed data (FR9, NFR3)
+
+**Given** the 05:17 UTC schedule or a manual `workflow_dispatch`
+**When** the run collects
+**Then** it first checks out the current tip of `main`, so the visit log and venue cache include every earlier run (NFR3, AD-5)
+
+**Given** a collecting run that fails after it contacted any site (collect throws, publish fails, tests fail, push is rejected for good)
+**When** the job ends
+**Then** this run's visits are still committed to `data/state/visits.json` on `main`, and nothing else from the failed run is
+
+**Given** `tests/workflows.test.ts`
+**When** it runs
+**Then** it asserts the triggers that collect, the checkout ref of the collecting job, and the visits-on-failure step
+
+**Given** the About page "How it works" text
+**When** this story is done
+**Then** it still truthfully says the websites are read once a day, in DE and EN (FR33)
+
+### Story 3.12: Every covered centre gets checked
+
+**Build after Story 3.11.** Added 2026-10-31 from the Epic 2 retrospective (finding F1, action item 1).
+
+As a person near Würzburg, Erding, Cham, Straubing or Kelheim,
+I want my centre's dates read like everyone else's,
+So that I don't see "Not checked right now" for a site that works.
+
+**Context:** These five ITEM KG centres have no entry in `data/state/state.json`, yet each host had 4 visits on 10/29–10/30. On 2026-10-31 each list page answered 200 with no redirect and robots.txt allows it. Merge stores nothing for a `skipped` outcome (`pipeline/stages/merge.ts:70`), so the reason is only in the CI run logs.
+
+**Acceptance Criteria:**
+
+**Given** the CI logs of the runs on 2026-10-29 and 2026-10-30
+**When** the operator and dev read the five centres' log lines
+**Then** the cause is recorded in `data/directory/itemkg-note.md` and fixed, or the centre is set to `reader: none` with the reason
+
+**Given** a run in which a covered centre is skipped
+**When** merge writes state
+**Then** the centre records `last_skip_reason` (`robots`, `budget`, `opted-out`, `no-reader`) and `last_skip_at`, without touching its listings or `last_result`; the state schema and `stateVersion` change with it (AD-6 amended)
+
+**Given** a centre whose last outcome was a robots skip
+**When** a later run publishes without reaching it
+**Then** it is still published as `not_checked`, not as covered with no result (FR12)
+
+**Given** the first daily run after the fix
+**When** the snapshot is written
+**Then** each of the five centres has `last_result` `ok` or `failed`, or is `not_checked` with its recorded reason, and the ITEM KG system line adds up (`centres_ok` + `centres_failed` + skipped = `centres_covered`) (NFR6)
+
+### Story 3.13: Coordinates for every centre, and data tests that follow the data
+
+Added 2026-10-31 from the Epic 2 retrospective (Epic 1 follow-through, action item 9). Carries Epic 1 retrospective action items 2, 6 and P2.
+
+As a person searching near any centre,
+I want every centre placed on the map,
+So that none is left as "distance unknown" or "may be nearby".
+
+**Context:** 8 centres still have no coordinates (`bayerisches-rotes-kreuz`, `muenchner-vhs-gmbh`, `vhs-der-gemeinden-im-landkreis-roth`, `vhs-fichtelgebirge`, `vhs-kaufering`, `vhs-kreis-kronach-e-v`, `volkshochschule-eching-e-v`, `volkshochschule-kitzingen`; `data/directory/geocode-note.md`). `tests/directory.test.ts:190` still pins `toHaveLength(119)`, and `deferred-work.md` asks for a named allowlist of hand-set coordinates.
+
+**Acceptance Criteria:**
+
+**Given** the 8 centres
+**When** this story is done
+**Then** each has coordinates, either from a corrected address geocoded by `tools/geocode` or set by hand by the operator from the map, and `geocode-note.md` lists which were set by hand
+
+**Given** `tests/directory.test.ts`
+**When** it runs
+**Then** a centre without a geocode-cache record passes only if it is on a named allowlist of hand-set centres, and the centre count is checked against the data (for example unique ids, every snapshot centre in the directory), not a fixed number
+
+**Given** the search page
+**When** a search runs after this story
+**Then** the "N centres have no map position yet" notice no longer shows, because no centre lacks coordinates
+
+**Given** the repository's agent instructions (AGENTS.md, set up with `bmad-project-context`)
+**When** this story is done
+**Then** they state: "`npm test` gates publishing. Committed-data tests derive their expectations from the files and never fail on a legitimate data change."
 
 ## Epic 4: Launch publicly
 
