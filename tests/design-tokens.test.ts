@@ -122,6 +122,12 @@ function expectations(design: Design): Expectation[] {
 	return out;
 }
 
+/** Custom properties in `declared` that no DESIGN.md token derives (non-custom properties such as color-scheme are ignored). */
+function extraTokens(declared: Record<string, string>, design: Design): string[] {
+	const allowed = new Set(expectations(design).map((exp) => exp.property));
+	return Object.keys(declared).filter((name) => name.startsWith('--') && !allowed.has(name));
+}
+
 // ---------- CSS parsing ----------
 
 const stripCssComments = (css: string): string => css.replace(/\/\*[\s\S]*?\*\//g, '');
@@ -192,6 +198,24 @@ describe('design tokens', () => {
 			expect(normalise(resolveVars(darkRaw, darkProps)), `${exp.property} (dark)`).toBe(normalise(exp.dark));
 		});
 	}
+
+	it('holds no token that DESIGN.md does not define', () => {
+		expect(extraTokens(tokens.light, design), 'tokens.css properties not derived from DESIGN.md').toEqual([]);
+		expect(extraTokens(tokens.dark, design), 'dark-block properties not derived from DESIGN.md').toEqual([]);
+	});
+
+	it('the extra-token check catches a removed token added back', () => {
+		const readded = { ...tokens.light, '--status-chip-free-color': 'var(--color-status-free)', '--font-card-date-size': '1.125rem' };
+		expect(extraTokens(readded, design)).toEqual(['--status-chip-free-color', '--font-card-date-size']);
+	});
+
+	it('base.css uses only custom properties declared in tokens.css or base.css', () => {
+		const code = stripCssComments(read(BASE_CSS));
+		const declaredInBase = new Set([...code.matchAll(/(--[\w-]+)\s*:/g)].map((m) => m[1]!));
+		const used = new Set([...code.matchAll(/var\(\s*(--[\w-]+)/g)].map((m) => m[1]!));
+		const undeclared = [...used].filter((name) => !(name in tokens.light) && !declaredInBase.has(name));
+		expect(undeclared, 'var() references with no declaration').toEqual([]);
+	});
 
 	it('has a global :focus-visible ring built from the focus-ring tokens', () => {
 		const code = stripCssComments(read(BASE_CSS));

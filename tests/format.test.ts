@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { berlinToday, cardDate, deadlineState, freshness } from '../web/src/search/format.ts';
+import { berlinToday, cardDate, cardTime, deadlineState, freshness, tileDate } from '../web/src/search/format.ts';
 
 const HOUR = 60 * 60 * 1000;
 const MINUTE = 60 * 1000;
@@ -28,6 +28,28 @@ describe('cardDate', () => {
 			process.env.TZ = tz;
 			expect(cardDate('2026-12-09T23:30:00+01:00', 'en')).toBe('Wed 9 Dec, 23:30');
 			expect(cardDate('2026-12-09T00:15:00+01:00', 'de')).toBe('Mi., 9. Dez., 00:15');
+		}
+	});
+});
+
+describe('tileDate and cardTime', () => {
+	it('gives the tile month, day and weekday in both languages', () => {
+		expect(tileDate('2026-12-09T10:00:00+01:00', 'en')).toEqual({ month: 'Dec', day: '9', weekday: 'Wed' });
+		expect(tileDate('2026-12-09T10:00:00+01:00', 'de')).toEqual({ month: 'Dez', day: '9', weekday: 'Mi' });
+		expect(tileDate('2026-03-23T09:00:00+01:00', 'de')).toEqual({ month: 'Mär', day: '23', weekday: 'Mo' });
+	});
+
+	it('gives the local start time as HH:mm', () => {
+		expect(cardTime('2026-12-09T10:00:00+01:00')).toBe('10:00');
+		expect(cardTime('2026-07-01T00:30:00+02:00')).toBe('00:30');
+	});
+
+	it('does not depend on the browser time zone', () => {
+		for (const tz of ['Pacific/Kiritimati', 'America/Los_Angeles', 'UTC']) {
+			process.env.TZ = tz;
+			expect(tileDate('2026-12-09T23:30:00+01:00', 'en')).toEqual({ month: 'Dec', day: '9', weekday: 'Wed' });
+			expect(tileDate('2026-12-09T00:15:00+01:00', 'de')).toEqual({ month: 'Dez', day: '9', weekday: 'Mi' });
+			expect(cardTime('2026-12-09T00:15:00+01:00')).toBe('00:15');
 		}
 	});
 });

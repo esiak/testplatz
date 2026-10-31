@@ -545,16 +545,28 @@ a {
 	min-width: 0;
 }
 
-/* Uncovered card: one stretched link (the h3's link); Map ↗ and Why? sit above the link layer. */
+/*
+ * Result, no-dates and uncovered cards (variant B, "date tile"): tile | text | icons, with an
+ * optional full-width eligibility line. One stretched link (the h3's link, wrapping the tile);
+ * the address, map pin, icons, eligibility line and Why? sit above the link layer.
+ */
 .card {
 	position: relative;
 	display: grid;
-	gap: var(--space-2);
+	grid-template-columns: var(--date-tile-width) minmax(0, 1fr) auto;
+	column-gap: var(--space-3);
+	row-gap: var(--space-2);
+	align-items: start;
 	min-width: 0;
 	padding: var(--result-card-padding);
 	background: var(--result-card-background);
 	border: thin solid var(--result-card-border);
 	border-radius: var(--result-card-rounded);
+}
+
+/* No-dates and uncovered cards have no icons: no empty third track or its gap. */
+.card:not(:has(.card__icons)) {
+	grid-template-columns: var(--date-tile-width) minmax(0, 1fr);
 }
 
 .card:has(.card__link:focus-visible) {
@@ -567,24 +579,14 @@ a {
 	outline-color: transparent;
 }
 
-.card__top {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: flex-start;
-	justify-content: space-between;
-	gap: var(--space-2);
-}
-
-/* The heading: the centre name on uncovered cards, the date (and link text) on result cards. */
-.card__name,
-.card__date {
+.card__heading {
 	min-width: 0;
 	margin: 0;
-	font: var(--font-card-date);
-	overflow-wrap: anywhere;
+	font: inherit;
 }
 
 .card__link {
+	display: block;
 	color: var(--color-ink-primary);
 	text-decoration: none;
 }
@@ -596,134 +598,127 @@ a {
 	border-radius: var(--result-card-rounded);
 }
 
-.chip {
-	padding: var(--space-1) var(--space-2);
-	font: var(--status-chip-typography);
-	border-radius: var(--status-chip-rounded);
+.glyph {
+	flex: none;
+	inline-size: 1em;
+	block-size: 1em;
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 2;
+	stroke-linecap: round;
+	stroke-linejoin: round;
 }
 
-.chip--unknown {
-	color: var(--status-chip-unknown-color);
-	background: var(--status-chip-unknown-background);
+/* Date tile: month and weekday in meta, day in tile-day; or an icon instead of a date. */
+.date-tile {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	inline-size: var(--date-tile-width);
+	padding-block: var(--space-1);
+	text-align: center;
+	color: var(--color-ink-primary);
+	background: var(--date-tile-background);
+	border-radius: var(--date-tile-rounded);
 }
 
-.chip--free {
-	color: var(--status-chip-free-color);
-	background: var(--status-chip-free-background);
+.date-tile__label {
+	font: var(--date-tile-label-typography);
+	color: var(--date-tile-label-color);
 }
 
-.chip--booked {
-	color: var(--status-chip-booked-color);
-	background: var(--status-chip-booked-background);
+.date-tile__day {
+	font: var(--date-tile-day-typography);
 }
 
-.card__centre {
-	margin: 0;
-	font: var(--font-body);
-	overflow-wrap: anywhere;
+.date-tile--icon {
+	min-height: calc(var(--space-6) + var(--space-5));
+	color: var(--date-tile-label-color);
 }
 
-/* Provider text, shown as published: above the link layer, selectable, taps do nothing. */
-.card__eligibility {
-	position: relative;
-	z-index: 1;
-	margin: 0;
-	font: var(--font-body);
-	overflow-wrap: anywhere;
-	user-select: text;
+.date-tile--icon .glyph {
+	inline-size: var(--space-5);
+	block-size: var(--space-5);
 }
 
-.card__freshness {
-	margin: 0 0 0 auto;
-	font: var(--freshness-line-typography);
-	color: var(--freshness-line-color);
+.date-tile--unknown {
+	color: var(--color-status-unknown);
+	background: var(--color-status-unknown-bg);
 }
 
-/* Selectable address and its Map link, with clearance where nothing else responds. */
+.card__text {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	min-width: 0;
+}
+
+.card__text > * {
+	max-inline-size: 100%;
+}
+
+/* Selectable address and its icon-only map pin (44 px target that does not grow the line). */
 .card__address {
 	position: relative;
 	z-index: 1;
-	display: flex;
-	flex-wrap: wrap;
-	align-items: center;
-	column-gap: var(--space-2);
 	margin: 0;
-	padding-block: var(--space-2);
 	font: var(--address-line-typography);
 	color: var(--address-line-color);
-}
-
-.card__address-text {
-	min-width: 0;
 	overflow-wrap: anywhere;
+	user-select: text;
 }
 
 .card__map {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	gap: var(--space-1);
-	min-width: var(--space-target-min);
+	min-inline-size: var(--space-target-min);
 	min-height: var(--space-target-min);
-	padding-inline: var(--space-2);
+	margin-block: calc(var(--space-3) * -1);
+	vertical-align: middle;
 	color: var(--address-line-link-color);
 }
 
-.card__body {
+.card__map .glyph {
+	inline-size: 1.125em;
+	block-size: 1.125em;
+}
+
+/* Meta lines: time · distance · deadline; the separators are CSS, never text or speech, and end the previous part. */
+.card__meta,
+.card__centre,
+.card__test-page {
 	margin: 0;
-	font: var(--font-body);
+	font: var(--card-meta-typography);
+	color: var(--card-meta-color);
+	overflow-wrap: break-word;
 }
 
-/* Key facts: four across when each cell gets fact-cell-min, else 2 × 2. */
-.card__facts {
-	container-type: inline-size;
+.card__meta-part:not(:last-child)::after {
+	/* Fallback first: browsers without alt text for `content` still draw the dot. */
+	content: '·';
+	content: '·' / '';
+	margin-inline: var(--space-1);
+	color: var(--card-meta-color);
 }
 
-.key-facts {
-	display: grid;
-	grid-template-columns: repeat(2, minmax(0, 1fr));
-	gap: var(--space-2);
+.card__meta-part--warn {
+	color: var(--color-status-unknown);
+}
+
+.card__meta-part--nowrap {
+	white-space: nowrap;
+}
+
+.card__test-page {
+	color: var(--color-action);
+}
+
+.card__freshness {
 	margin: 0;
-	padding: var(--space-2) var(--space-3);
-	background: var(--key-facts-row-background);
-	border-radius: var(--key-facts-row-rounded);
-}
-
-/* 39em = 4 × fact-cell-min (9em) + 3 gaps + the row's inline padding. */
-@container (min-width: 39em) {
-	.key-facts {
-		grid-template-columns: repeat(4, minmax(var(--key-facts-row-cell-min-width), 1fr));
-	}
-}
-
-.key-facts__cell {
-	min-width: 0;
-}
-
-.key-facts__label {
-	font: var(--key-facts-row-label-typography);
-	color: var(--key-facts-row-label-color);
-}
-
-.key-facts__value {
-	margin: 0;
-	font: var(--key-facts-row-value-typography);
-	overflow-wrap: anywhere;
-}
-
-.card__bottom {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: center;
-	justify-content: space-between;
-	gap: var(--space-2);
-}
-
-.card__destination {
-	min-width: 0;
-	font: var(--destination-line-typography);
-	color: var(--destination-line-color);
-	overflow-wrap: anywhere;
+	font: var(--freshness-line-typography);
+	color: var(--freshness-line-color);
 }
 
 .card__why {
@@ -731,13 +726,127 @@ a {
 	z-index: 1;
 	display: inline-flex;
 	align-items: center;
-	justify-content: center;
-	min-width: var(--space-target-min);
+	min-inline-size: var(--space-target-min);
 	min-height: var(--space-target-min);
-	margin-inline-start: auto;
-	padding-inline: var(--space-2);
 	font: var(--font-meta);
 	color: var(--color-action);
+}
+
+/* Icons, stacked top-right: each a 36 px target around a 28 px circle. */
+.card__icons {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+}
+
+.card-icon {
+	position: relative;
+	display: flex;
+}
+
+.card-icon__button {
+	position: relative;
+	z-index: 1;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-inline-size: var(--status-icon-target);
+	min-height: var(--status-icon-target);
+	padding: 0;
+	font: inherit;
+	background: transparent;
+	border: 0;
+	border-radius: var(--status-icon-rounded);
+	cursor: pointer;
+}
+
+.card-icon__circle {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	inline-size: var(--status-icon-size);
+	min-height: var(--status-icon-size);
+	border-radius: var(--status-icon-rounded);
+}
+
+.card-icon__circle .glyph {
+	inline-size: calc(var(--status-icon-size) * 0.64);
+	block-size: calc(var(--status-icon-size) * 0.64);
+}
+
+.card-icon__button--free .card-icon__circle {
+	color: var(--status-icon-free-color);
+	background: var(--status-icon-free-background);
+}
+
+.card-icon__button--booked .card-icon__circle {
+	color: var(--status-icon-booked-color);
+	background: var(--status-icon-booked-background);
+}
+
+.card-icon__button--unknown .card-icon__circle {
+	color: var(--status-icon-unknown-color);
+	background: var(--status-icon-unknown-background);
+}
+
+.card-icon__button--info .card-icon__circle {
+	inline-size: var(--info-icon-size);
+	min-height: var(--info-icon-size);
+	color: var(--info-icon-color);
+	background: var(--info-icon-background);
+	border-radius: var(--info-icon-rounded);
+}
+
+/* The icon's words, above it on hover, keyboard focus or while expanded. */
+.card-icon__label {
+	display: none;
+	position: absolute;
+	inset-block-end: calc(100% - var(--space-1));
+	inset-inline-end: 0;
+	z-index: 3;
+	inline-size: max-content;
+	max-inline-size: calc(100vw - 2 * var(--space-gutter-mobile));
+	padding: var(--space-1) var(--space-2);
+	font: var(--icon-label-typography);
+	color: var(--icon-label-color);
+	background: var(--icon-label-background);
+	border-radius: var(--icon-label-rounded);
+	pointer-events: none;
+}
+
+/* Escape hides a hover or focus label (data-dismissed) until blur or pointer leave. */
+.card-icon__button:focus-visible:not([data-dismissed]) + .card-icon__label,
+.card-icon__button[aria-expanded='true'] + .card-icon__label {
+	display: block;
+}
+
+/* Touch keeps :hover after a tap, so a tapped-closed label would stay: hover only where it is real. */
+@media (hover: hover) {
+	.card-icon:hover .card-icon__button:not([data-dismissed]) + .card-icon__label {
+		display: block;
+	}
+}
+
+/* The provider's rule, as published: full width, above the link layer, selectable. */
+.card__eligibility {
+	position: relative;
+	z-index: 1;
+	grid-column: 1 / -1;
+	display: flex;
+	gap: var(--space-2);
+	align-items: flex-start;
+	margin: 0;
+	padding: var(--space-1) var(--space-2);
+	font: var(--eligibility-line-typography);
+	color: var(--eligibility-line-color);
+	background: var(--eligibility-line-background);
+	border-radius: var(--eligibility-line-rounded);
+	overflow-wrap: anywhere;
+	user-select: text;
+}
+
+.card__eligibility .glyph {
+	margin-block-start: 0.25em;
 }
 
 /* Skeleton card: the card outline with three static bars, no animation. */

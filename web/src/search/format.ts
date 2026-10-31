@@ -75,6 +75,21 @@ export function cardDate(startsAt: string, lang: Lang): string {
 	return `${calendar(parts, lang, WEEKDAY_DAY_MONTH)}, ${parts.time}`;
 }
 
+/** Date tile parts: en `{ month: 'Dec', day: '9', weekday: 'Wed' }`, de `{ month: 'Dez', day: '9', weekday: 'Mi' }`. */
+export function tileDate(startsAt: string, lang: Lang): { month: string; day: string; weekday: string } {
+	const parts = localParts(startsAt);
+	return {
+		month: calendar(parts, lang, { month: 'short' }),
+		day: String(parts.day),
+		weekday: calendar(parts, lang, { weekday: 'short' }),
+	};
+}
+
+/** The local start time of `starts_at` as `HH:mm`. */
+export function cardTime(startsAt: string): string {
+	return localParts(startsAt).time;
+}
+
 export type DeadlineState = { kind: 'unknown' } | { kind: 'passed' } | { kind: 'date'; date: string };
 
 /** `null` → unknown; before today's Berlin date → passed (the card stays); else the date in the given language. */

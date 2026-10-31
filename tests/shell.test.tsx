@@ -228,7 +228,8 @@ describe('no hard-coded UI text', () => {
 		it('results', async () => {
 			await searchPage('Nürnberg', 20);
 			expect(root.querySelectorAll('ul.results > li > article')).toHaveLength(3);
-			expect(root.querySelector('.card__destination')).not.toBeNull();
+			expect(root.querySelector('.card__link .date-tile')).not.toBeNull();
+			expect(root.querySelector('.card__meta')).not.toBeNull();
 			expect(leftoverText(dataText)).toEqual([]);
 		});
 
@@ -310,7 +311,7 @@ describe('no hard-coded UI text', () => {
 			it('results with an unlocated card and the hidden notice', async () => {
 				await search('Nürnberg', 20);
 				expect(root.querySelectorAll('ul.results > li > article')).toHaveLength(4);
-				expect(root.textContent).toContain('[[card.fact.distance_unknown]]');
+				expect(root.textContent).toContain('[[card.distance_unknown]]');
 				expect(root.textContent).toContain('[[results.unlocated_notice_one]]');
 				expect(root.textContent).toContain('[[results.unlocated_link]]');
 				expect(leftoverText(unlocatedText)).toEqual([]);

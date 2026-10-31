@@ -4,13 +4,7 @@
 
 ## Goal
 
-Users see which test dates are new since yesterday, can hide booked-out dates, and scan compact date-tile cards that show status, registration method and missing eligibility as icons. The operator sees each booking system's health on About the data. The operator is alerted when a run fails, when runs stop, or when a centre's dates disappear suspiciously, and gets a monthly report of directory changes, so stale data gets fixed instead of going unnoticed. Since the Epic 2 retrospective (2026-10-31), the epic also fixes the data problems that retrospective found:
-- same-minute listing ids that swapped history (fixed by Story 3.8, done);
-- "Status unknown" on pages that also accept email registration;
-- MVHS dates that have no published time yet;
-- collection on every push, which used up each site's visit budget;
-- five ITEM KG centres that never got checked;
-- 8 centres without coordinates.
+Make the daily-refreshed date list quicker to act on and safer to trust. Users see which dates appeared since yesterday ("New"), can hide booked-out dates, and get compact date-tile cards with icon-based status, registration and eligibility. The operator sees each booking system's health on About the data, is alerted when a run fails or stops, and gets a monthly directory diff. The epic also closes the Epic 2 retrospective's data-quality gaps: stable same-minute ids, honest status for mixed-registration pages, MVHS dates without a published time, collection only once a day, every covered centre actually checked, and coordinates for every centre. This way, stale or broken data gets fixed instead of going unnoticed.
 
 ## Stories
 
@@ -30,97 +24,45 @@ Users see which test dates are new since yesterday, can hide booked-out dates, a
 
 ## Requirements & Constraints
 
-- **New:** a date is new when `now − first_seen_at < 24 h` and it is not `baseline`. `first_seen_at` is set once and survives a date disappearing and coming back. Dates found in a centre's first successful check are never new.
-- **Hide booked-out:** hides only `booked_out` dates. It never hides waitlist, unknown, no-dates or uncovered cards. The count line ("N dates and M unchecked centres within R km") still counts hidden dates. When everything is hidden, a notice offers "Show them". Nothing is ever dropped silently.
-- **Honesty:** a gap in data must never read as "nothing available". Missing fields read "unknown" and are never guessed. A reader never invents a time. "Who may register" is never shown as "open to all".
-- **Freshness:** a covered centre's data is at most 36 h old. A system whose `last_success_at` is more than 36 h old reads "Not updated since <time>". Staleness is shown in text, never by colour alone and never in a banner.
-- **Politeness:**
-  - Collection runs once a day, plus manual dispatch.
-  - Each site gets at most 4 visits in any rolling 24 h, reruns included.
-  - Pushes never trigger collection.
-  - A run's visits are recorded even when a later step of that run fails.
-- **Reliability:** a failed run never breaks the live site. Failures reach the operator through a GitHub issue (which GitHub emails) and an external dead-man check that alerts after 13 h without a ping.
-- **Directory:** the directory must stay complete. The monthly diff reports added, removed and changed centres and never edits `centres.json`.
-- **Cost and privacy:** €0 running cost and no paid APIs. No analytics, cookies or third-party requests at page load.
-- **Accessibility:**
-  - WCAG AA with full keyboard access.
-  - Targets are 44 px, except card icons: 36 px targets with 28 px visuals, spaced per WCAG 2.5.8.
-  - Pages reflow at 320 px width and 200 % zoom with the longest German strings.
-- **Translations:** all UI text lives in the DE and EN translation files. Both say the same thing, with no exclamation marks.
+- **New badge:** shows when `now − first_seen_at < 24 h` and the listing is not `baseline`. `first_seen_at` is set once and survives a disappear/reappear. Dates found in a centre's first successful check are never new.
+- **Hide booked-out:** hides only `booked_out`. Waitlist, unknown, no-dates and uncovered cards always stay. It is ticked by default (operator decision). The count line still counts hidden dates. A "N booked-out dates hidden · Show" line appears, and an "everything hidden" notice offers "Show them".
+- **Booking-system status:** one row per system with centres covered, last successful run, and "Working" or "Not updated since Tue 14:00" (36 h rule). The status is text, never colour alone.
+- **Alerting:** any failed `pipeline.yml` run (fetch, publish validation, push, deploy) opens or comments on a GitHub issue. A run where every fetched centre failed counts as failed. A system with `centres_ok = 0` for more than 24 h gets an issue, which closes automatically after its next success. A centre that drops from listings to `ok` with zero listings is flagged "dates disappeared, check the page". Each successful run pings a free dead-man check (alerts after 13 h of silence), with the URL stored as a repo secret.
+- **Directory diff:** runs monthly (and on manual dispatch). It reports added, removed and changed centres as an issue and never edits `centres.json`. When there are no differences, it opens no issue.
+- **Honesty:** a gap in data must never read as "nothing available". Missing fields read "unknown", and nothing implies eligibility is "open to all".
+- **Politeness:** at most 4 visits per site per rolling 24 h, including reruns. Pushes to `main` must not collect: they only build and deploy committed data. Only the schedule (05:17 UTC) and dispatch collect.
+- **Freshness:** covered centres' data must be at most 36 h old. Every covered centre must end each run `ok`, `failed`, or `not_checked` with a recorded reason.
+- Cost €0, no backend, no third-party requests at page load. WCAG AA, 320 px / 200 % reflow, and DE/EN parity for every string.
 
 ## Technical Decisions
 
-- **Pipeline:** a batch pipeline (fetch → parse → normalise → locate → merge → publish) commits to `main` and deploys a static snapshot. The Preact app computes freshness and "New" in the browser from raw timestamps. The 36 h and 24 h thresholds are shared constants in `shared/`.
-- **Import directions:** only `web → shared`, `stages → readers/fetch/shared`, `readers → shared` and `tools → fetch/shared`. Readers are pure: no I/O, and `ctx.runAt` is their only clock.
-- **Run outcomes:** each centre's outcome in a run is `ok`, `failed` or `skipped`. Only merge writes `data/state/`.
-  - `ok` replaces the centre's listings; `failed` keeps them.
-  - A listing missing from an `ok` result gets a `removed_at` tombstone until its `starts_at` passes. If the date reappears, `removed_at` is cleared and `first_seen_at` is kept.
-  - Story 3.12 changes skips. A skip records `last_skip_reason` (`robots`, `budget`, `opted-out` or `no-reader`) and `last_skip_at`, without touching listings or `last_result`. The state schema and `stateVersion` change with it.
-- **Listing id:** built only in normalise as `<centre_id>@<YYYY-MM-DDTHH:mm>`, with `#n` added for same-minute sessions. Story 3.8 (done) amended the rule:
-  - A session keeps the id of a stored listing from that minute when they match. Live listings are tried before tombstoned ones, and each stored listing matches only once.
-  - Matches, strongest first:
-    1. same `source_url` and place;
-    2. same `source_url`, when exactly one session on each side has that URL;
-    3. same non-null place.
-  - Every other session takes the lowest `#n` that no stored listing of that minute holds (live or tombstoned), in order of place.
-  - The id never uses the provider URL.
-  - Story 3.10 adds untimed dates. Their id is `<centre_id>@<YYYY-MM-DD>`, with `starts_at` at 00:00 Europe/Berlin and `time_known: false`. Same-day untimed dates are numbered by the same `#n` rule, and an untimed date stays current until the end of its day.
-- **Snapshot contract:** `snapshot.json` has `{schemaVersion, generated_at, systems[], centres[], listings[]}`. Each system carries `reader`, `centres_covered`, `centres_ok`, `centres_failed` and `last_success_at`.
-  - A breaking change bumps `schemaVersion` and updates `web/` in the same commit. Story 3.10 bumps it to 4.
-  - Publish refuses invalid output. On a version mismatch the app reloads once.
-- **Codes and words:** `status`, `registration_method`, `coverage` and `last_result` are lowercase codes in the data. All words live in `web/src/i18n/{de,en}.json`, and CI fails on missing or extra keys. Provider text is shown as published and marked `lang="de"`.
-- **Status:** the shared `mapStatus` applies the precedence waitlist > booked_out > free > unknown.
-  - Story 3.9 moves three rules into single shared helpers that both readers use: the registration method, whether registration is in person only, and whether a course is a preparation course.
-  - Only a page saying registration is in person only gives `unknown`.
-- **Zero dates needs proof:** `ok` with zero listings requires the expected page structure. Story 3.4 alerts when a centre that had dates returns `ok` with zero dates while the structure is intact.
-- **Workflows:**
-  - `pipeline.yml` uses one concurrency group without cancel-in-progress. Each run makes one commit (`data/state` + `data/public`) and deploys only from the pushed SHA.
-  - Story 3.11 limits collection to the 05:17 UTC schedule and manual dispatch. A collecting run checks out the tip of `main`; a push only builds and deploys.
-  - `directory-monthly.yml` runs `tools/directory-diff` through `pipeline/fetch` on the 1st of each month.
-  - The dead-man ping URL is a repository secret. Story 3.4 chooses and records the free provider.
-- **Nominatim:** called only from `tools/geocode` (centres, run manually) and `pipeline/stages/locate` (capped per run and cached).
-- **Testing:**
-  - Readers are tested against committed HTML fixtures, including a "structure missing" one.
-  - Merge and normalise tests cover tombstones, baseline and same-minute ids.
-  - Tests on committed data derive their expectations from the data and never pin counts. Story 3.13 replaces `toHaveLength(119)`, adds a named allowlist of hand-set coordinates, and records this rule in AGENTS.md.
+- **Layering:** imports flow one way only: `web` and `pipeline/stages` depend on `shared`, readers never import fetch or stages, and `web` never imports pipeline or tools. All HTTP goes through `pipeline/fetch`, including `tools/directory-diff`.
+- **Merge is the only state writer.** An `ok` outcome replaces listings and tombstones missing ones with `removed_at`, kept until `starts_at` passes. A `failed` outcome keeps the previous listings. Story 3.12 amends `skipped`: it now records `last_skip_reason` (`robots`, `budget`, `opted-out`, `no-reader`) and `last_skip_at`, without touching listings or `last_result`, and bumps `stateVersion`. A robots-skipped centre publishes as `not_checked`.
+- **Listing id:** `<centre_id>@<YYYY-MM-DDTHH:mm>`, built only in normalise. A same-minute session keeps its stored id by matching on `source_url` + `place`, then a unique `source_url`, then `place`. Unmatched sessions take the lowest free `#n`, counting tombstoned ids as taken. Untimed dates use `<centre_id>@<YYYY-MM-DD>`.
+- **Untimed dates:** `RawListing.time` may be `null` only when the page gives no time; an "00:00 - 23:59" placeholder also counts as no time. Normalise sets `starts_at` to 00:00 Europe/Berlin and `time_known: false`. Such a date stays current until the end of its day. Snapshot `schemaVersion` becomes 4, and `web/` changes in the same commit.
+- **Shared reader helpers:** one helper in `shared/` decides the registration method and whether registration is in person only; another detects preparation courses. Both readers use them. Status is `unknown` only when registration is in person only.
+- **Snapshot contract:** `systems[]` has `reader`, `centres_covered`, `centres_ok`, `centres_failed`, `last_success_at`. Centres carry `coverage`, `last_result`, `last_checked_at`, `last_success_at`. The 24 h and 36 h thresholds are constants in `shared/`, compared in the browser against the current time.
+- **Codes in data, words in `web/src/i18n/{de,en}.json`.** CI fails on missing or extra keys.
+- **Git as database:** each run makes one commit to `data/state/` + `data/public/`, and deploys only the pushed SHA. The collecting job checks out the current tip of `main`. Visits from a failed collecting run must still be committed to `data/state/visits.json`.
+- **Tests:** readers run against committed HTML fixtures, including a "structure missing" fixture. Merge and normalise tests cover tombstones, baseline and same-minute cases. `tests/workflows.test.ts` asserts the workflow triggers, checkout ref and visits-on-failure step. Data tests derive their expectations from the data files (no fixed counts). Hand-set coordinates are allowed only for centres on a named allowlist.
 
 ## UX & Interaction Patterns
 
-- **Card layout (variant B, "date tile"):**
-  - Left: a date tile with month, day (`tile-day`) and weekday.
-  - Middle, in order:
-    - the address (`card-address`), with a map-pin link that has its own 44 px target and the name "Map: <address> (Google Maps, new tab)";
-    - a meta line "time · distance · Deadline …";
-    - the centre name;
-    - the freshness line.
-  - Right: icons stacked top-right in a fixed order: status, then registration, then eligibility, which appears only when eligibility is `null`.
-  - Eligibility text gets a full-width bottom line with a house icon. It is marked `lang="de"` and is selectable.
-  - There is no key-facts row, status chip or destination line.
-  - The whole card is one stretched link (new tab, `noopener noreferrer`). Links are never nested.
-- **No-dates and uncovered cards:** use the same layout without icons. The tile shows a calendar icon for no-dates, or a question mark on the unknown tint for uncovered. Uncovered cards keep "Why?" and have no freshness line.
-- **Icons are toggletips:**
-  - Each value has its own shape.
-  - Each icon is a `<button>` with `aria-label` and `aria-expanded`.
-  - The label shows on hover, focus or tap, and only one is open at a time. Escape or tapping elsewhere closes it.
-  - Tapping an icon never opens the card. An opened label is announced politely.
-- **"New" badge:** an ink-primary pill on surface-muted (not blue), placed after the address and map pin. The card's link name says "new" after the date.
-- **Link name:** "<date, time>, [new,] <address>, <centre>, <status>, <registration>, opens <domain> in a new tab". The tile text and the glyphs ↗ ◷ · are `aria-hidden`.
-- **Hide booked-out toggle:**
-  - A native checkbox (`accent-color: action`).
-  - Shows "N booked-out dates hidden · Show". Focus stays on the checkbox.
-  - Shares a row with the Soonest | Nearest control, and wraps below it when they don't fit.
-- **Announcements:** the single `role=status` region announces "N booked-out dates hidden" or "shown".
-- **About the data, "Booking systems":** a real `<table>` with header cells and one row per system: centres covered, last successful run, and "Working" or "Not updated since Tue 14:00". At 320 px the table scrolls inside its own container.
-- **Visual reference:** `ux-designs/ux-bgtsearch-2026-10-25/mockups/card-b-states.html`.
+- **Date-tile card (variant B):** a tile on the left (month, day in `tile-day`, weekday). The text column has the address in `card-address` with a map pin, a meta line "14:00 · 14 km · Deadline 13 Nov", the centre name and the freshness line. Icons are stacked on the right. An optional full-width eligibility line (house icon, `lang="de"`) sits below. Cards have no key-facts row, status chip or destination line.
+- **Card link:** the whole card is one stretched link that opens in a new tab. The map pin, icons, address, eligibility line and "Why?" sit above the link layer. Links are never nested.
+- **Card link name:** "<date, time>, [new,] <address>, <centre>, <status>, <registration>, opens <domain> in a new tab". The tile text and the ↗ ◷ · glyphs are `aria-hidden`.
+- **Icons:** status, then registration, then eligibility (only when null). Each is a toggletip `<button>` with `aria-label` and `aria-expanded`. Each value has its own shape, and colour is never the only cue. Only one label is open at a time; Escape or tapping elsewhere closes it, and opening one never opens the card. The visual is 28 px inside a 36 px target.
+- **"New" badge:** an ink-primary pill on `surface-muted`, never blue.
+- **No-dates card:** shows a calendar icon in the tile. **Uncovered card:** shows a question mark on the unknown tint, keeps "Why?" (44 px), and has no freshness line.
+- **Live region:** one `role="status"` region announces "N booked-out dates hidden/shown". Focus stays on the checkbox. The toggle wraps below the sort control on narrow screens.
+- **About table:** a real `<table>` that scrolls inside its own container at 320 px, never the page.
+- **Wording examples:** "Deadline passed", "Deadline unknown", "distance unknown", "Time not published yet" ("Uhrzeit noch nicht veröffentlicht"). No exclamation marks, and no staleness banners.
+- **UX references:** `ux-designs/ux-bgtsearch-2026-10-25/mockups/card-b-states.html` and the tokens in the DESIGN.md frontmatter.
 
 ## Cross-Story Dependencies
 
-- **3.7 with 3.6:** build 3.7 together with 3.6 or right after it.
-- **3.6 and 3.7 before 3.1:** the badge lives in the new card layout.
-- **3.8 (done) before 3.1:** "New" relies on stable ids and `first_seen_at`.
-- **3.10 after 3.6:** its card wording, "Time not published yet", uses the date-tile layout. 3.10 also reuses 3.8's `#n` rule.
-- **3.10 and 3.13:** MVHS distance reads "unknown" until 3.13 gives MVHS coordinates.
-- **3.12 after 3.11:** diagnosing and verifying the unchecked centres needs correct visit budgets and checkout.
-- **3.3 and 3.4 build on Epic 2:** both read the `systems[]` that Epic 2's publish already emits. Story 3.4 also reads the per-centre outcomes.
-- **3.5 and Epic 4:** the source list is rtpartner.de until Epic 4 switches the directory to the BAMF list, so the diff must follow the directory's `source`.
-- **3.6 and Epic 2 tests:** 3.6 replaces Epic 2's card translation keys and updates the tests for Stories 2.7 and 2.8.
+- 3.6 and 3.7 come before 3.1, which uses the new card layout. 3.8 also comes before 3.1, because "New" needs stable `first_seen_at`.
+- 3.10 comes after 3.6 (its card wording). MVHS distance stays "unknown" until 3.13 adds coordinates.
+- 3.12 comes after 3.11, so visit budgets are no longer used up by push-triggered runs.
+- 3.4's alert criteria rely on the merge and run outcomes from Epic 2. 3.3 reads the `systems[]` that Epic 2's publish already emits.
+- 3.5 switches its source to the BAMF list once Epic 4 (Story 4.2) lands.
