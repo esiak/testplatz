@@ -3,14 +3,14 @@
 	"centres": {
 		"muenchner-vhs-gmbh": {
 			"last_result": "failed",
-			"last_checked_at": "2026-10-31T14:54:10.256Z",
+			"last_checked_at": "2026-10-31T15:09:02.207Z",
 			"last_success_at": null,
 			"listings": []
 		},
 		"vhs-aichach-friedberg-e-v": {
 			"last_result": "ok",
-			"last_checked_at": "2026-10-31T14:54:10.256Z",
-			"last_success_at": "2026-10-31T14:54:10.256Z",
+			"last_checked_at": "2026-10-31T15:09:02.207Z",
+			"last_success_at": "2026-10-31T15:09:02.207Z",
 			"listings": [
 				{
 					"id": "vhs-aichach-friedberg-e-v@2026-11-12T13:00",
@@ -111,8 +111,8 @@
 		},
 		"vhs-arberland": {
 			"last_result": "ok",
-			"last_checked_at": "2026-10-31T14:54:10.256Z",
-			"last_success_at": "2026-10-31T14:54:10.256Z",
+			"last_checked_at": "2026-10-31T15:09:02.207Z",
+			"last_success_at": "2026-10-31T15:09:02.207Z",
 			"listings": [
 				{
 					"id": "vhs-arberland@2026-12-10T18:00",
@@ -156,8 +156,8 @@
 		},
 		"vhs-aschaffenburg": {
 			"last_result": "ok",
-			"last_checked_at": "2026-10-31T14:54:10.256Z",
-			"last_success_at": "2026-10-31T14:54:10.256Z",
+			"last_checked_at": "2026-10-31T15:09:02.207Z",
+			"last_success_at": "2026-10-31T15:09:02.207Z",
 			"listings": [
 				{
 					"id": "vhs-aschaffenburg@2027-06-17T11:00",
@@ -182,8 +182,8 @@
 		},
 		"vhs-bad-kisingen-und-hammelburg": {
 			"last_result": "ok",
-			"last_checked_at": "2026-10-31T14:54:10.256Z",
-			"last_success_at": "2026-10-31T14:54:10.256Z",
+			"last_checked_at": "2026-10-31T15:09:02.207Z",
+			"last_success_at": "2026-10-31T15:09:02.207Z",
 			"listings": [
 				{
 					"id": "vhs-bad-kisingen-und-hammelburg@2026-11-19T14:30",
@@ -227,8 +227,8 @@
 		},
 		"vhs-bad-reichenhall": {
 			"last_result": "ok",
-			"last_checked_at": "2026-10-31T14:54:10.256Z",
-			"last_success_at": "2026-10-31T14:54:10.256Z",
+			"last_checked_at": "2026-10-31T15:09:02.207Z",
+			"last_success_at": "2026-10-31T15:09:02.207Z",
 			"listings": [
 				{
 					"id": "vhs-bad-reichenhall@2026-11-10T08:00",
@@ -386,20 +386,20 @@
 		},
 		"vhs-bamberg": {
 			"last_result": "ok",
-			"last_checked_at": "2026-10-31T14:54:10.256Z",
-			"last_success_at": "2026-10-31T14:54:10.256Z",
+			"last_checked_at": "2026-10-31T15:09:02.207Z",
+			"last_success_at": "2026-10-31T15:09:02.207Z",
 			"listings": []
 		},
 		"vhs-bamberg-land-e-v": {
 			"last_result": "ok",
-			"last_checked_at": "2026-10-31T14:54:10.256Z",
-			"last_success_at": "2026-10-31T14:54:10.256Z",
+			"last_checked_at": "2026-10-31T15:09:02.207Z",
+			"last_success_at": "2026-10-31T15:09:02.207Z",
 			"listings": []
 		},
 		"vhs-beilngries-e-v": {
 			"last_result": "ok",
-			"last_checked_at": "2026-10-31T14:54:10.256Z",
-			"last_success_at": "2026-10-31T14:54:10.256Z",
+			"last_checked_at": "2026-10-31T15:09:02.207Z",
+			"last_success_at": "2026-10-31T15:09:02.207Z",
 			"listings": [
 				{
 					"id": "vhs-beilngries-e-v@2026-12-08T15:30",
@@ -538,8 +538,8 @@
 		},
 		"vhs-coburg-ggmbh": {
 			"last_result": "ok",
-			"last_checked_at": "2026-10-31T14:54:10.256Z",
-			"last_success_at": "2026-10-31T14:54:10.256Z",
+			"last_checked_at": "2026-10-31T15:09:02.207Z",
+			"last_success_at": "2026-10-31T15:09:02.207Z",
 			"listings": [
 				{
 					"id": "vhs-coburg-ggmbh@2027-01-18T13:30",
@@ -659,8 +659,8 @@
 		},
 		"vhs-der-gemeinden-im-landkreis-roth": {
 			"last_result": "ok",
-			"last_checked_at": "2026-10-31T14:54:10.256Z",
-			"last_success_at": "2026-10-31T14:54:10.256Z",
+			"last_checked_at": "2026-10-31T15:09:02.207Z",
+			"last_success_at": "2026-10-31T15:09:02.207Z",
 			"listings": [
 				{
 					"id": "vhs-der-gemeinden-im-landkreis-roth@2026-11-14T09:00",
@@ -704,8 +704,8 @@
 		},
 		"vhs-des-landkreises-forchheim": {
 			"last_result": "ok",
-			"last_checked_at": "2026-10-31T14:54:10.256Z",
-			"last_success_at": "2026-10-31T14:54:10.256Z",
+			"last_checked_at": "2026-10-31T15:09:02.207Z",
+			"last_success_at": "2026-10-31T15:09:02.207Z",
 			"listings": [
 				{
 					"id": "vhs-des-landkreises-forchheim@2026-12-10T18:30",
@@ -730,8 +730,8 @@
 		},
 		"vhs-donauwoerth": {
 			"last_result": "ok",
-			"last_checked_at": "2026-10-31T14:54:10.256Z",
-			"last_success_at": "2026-10-31T14:54:10.256Z",
+			"last_checked_at": "2026-10-31T15:09:02.207Z",
+			"last_success_at": "2026-10-31T15:09:02.207Z",
 			"listings": [
 				{
 					"id": "vhs-donauwoerth@2026-11-20T18:00",
@@ -794,8 +794,8 @@
 		},
 		"vhs-ebersberger-land-grafing-bei-muenchen": {
 			"last_result": "ok",
-			"last_checked_at": "2026-10-31T14:54:10.256Z",
-			"last_success_at": "2026-10-31T14:54:10.256Z",
+			"last_checked_at": "2026-10-31T15:09:02.207Z",
+			"last_success_at": "2026-10-31T15:09:02.207Z",
 			"listings": [
 				{
 					"id": "vhs-ebersberger-land-grafing-bei-muenchen@2026-12-15T14:30",
@@ -820,8 +820,8 @@
 		},
 		"vhs-f-d-landkreis-regensburg-e-v": {
 			"last_result": "ok",
-			"last_checked_at": "2026-10-31T14:54:10.256Z",
-			"last_success_at": "2026-10-31T14:54:10.256Z",
+			"last_checked_at": "2026-10-31T15:09:02.207Z",
+			"last_success_at": "2026-10-31T15:09:02.207Z",
 			"listings": [
 				{
 					"id": "vhs-f-d-landkreis-regensburg-e-v@2027-01-15T12:30",
@@ -1017,8 +1017,8 @@
 		},
 		"vhs-fichtelgebirge": {
 			"last_result": "ok",
-			"last_checked_at": "2026-10-31T14:54:10.256Z",
-			"last_success_at": "2026-10-31T14:54:10.256Z",
+			"last_checked_at": "2026-10-31T15:09:02.207Z",
+			"last_success_at": "2026-10-31T15:09:02.207Z",
 			"listings": [
 				{
 					"id": "vhs-fichtelgebirge@2026-11-26T10:00",
@@ -1290,8 +1290,8 @@
 		},
 		"vhs-fuerth-ggmbh": {
 			"last_result": "ok",
-			"last_checked_at": "2026-10-31T14:54:10.256Z",
-			"last_success_at": "2026-10-31T14:54:10.256Z",
+			"last_checked_at": "2026-10-31T15:09:02.207Z",
+			"last_success_at": "2026-10-31T15:09:02.207Z",
 			"listings": [
 				{
 					"id": "vhs-fuerth-ggmbh@2026-12-04T09:00",
@@ -1335,8 +1335,8 @@
 		},
 		"vhs-groebenzell-e-v": {
 			"last_result": "ok",
-			"last_checked_at": "2026-10-31T14:54:10.256Z",
-			"last_success_at": "2026-10-31T14:54:10.256Z",
+			"last_checked_at": "2026-10-31T15:09:02.207Z",
+			"last_success_at": "2026-10-31T15:09:02.207Z",
 			"listings": [
 				{
 					"id": "vhs-groebenzell-e-v@2026-11-30T14:00",
@@ -1380,8 +1380,8 @@
 		},
 		"vhs-im-norden-des-landkreises-muenchen": {
 			"last_result": "ok",
-			"last_checked_at": "2026-10-31T14:54:10.256Z",
-			"last_success_at": "2026-10-31T14:54:10.256Z",
+			"last_checked_at": "2026-10-31T15:09:02.207Z",
+			"last_success_at": "2026-10-31T15:09:02.207Z",
 			"listings": [
 				{
 					"id": "vhs-im-norden-des-landkreises-muenchen@2026-11-20T15:00",
@@ -1482,8 +1482,8 @@
 		},
 		"vhs-landshut-e-v": {
 			"last_result": "ok",
-			"last_checked_at": "2026-10-31T14:54:10.256Z",
-			"last_success_at": "2026-10-31T14:54:10.256Z",
+			"last_checked_at": "2026-10-31T15:09:02.207Z",
+			"last_success_at": "2026-10-31T15:09:02.207Z",
 			"listings": [
 				{
 					"id": "vhs-landshut-e-v@2026-11-12T14:00",
@@ -1641,8 +1641,8 @@
 		},
 		"vhs-moosburg-e-v": {
 			"last_result": "ok",
-			"last_checked_at": "2026-10-31T14:54:10.256Z",
-			"last_success_at": "2026-10-31T14:54:10.256Z",
+			"last_checked_at": "2026-10-31T15:09:02.207Z",
+			"last_success_at": "2026-10-31T15:09:02.207Z",
 			"listings": [
 				{
 					"id": "vhs-moosburg-e-v@2026-11-26T15:00",
@@ -1686,8 +1686,8 @@
 		},
 		"vhs-muehldorf-e-v": {
 			"last_result": "ok",
-			"last_checked_at": "2026-10-31T14:54:10.256Z",
-			"last_success_at": "2026-10-31T14:54:10.256Z",
+			"last_checked_at": "2026-10-31T15:09:02.207Z",
+			"last_success_at": "2026-10-31T15:09:02.207Z",
 			"listings": [
 				{
 					"id": "vhs-muehldorf-e-v@2026-12-11T13:00",
@@ -1731,8 +1731,8 @@
 		},
 		"vhs-starnberger-see-e-v": {
 			"last_result": "ok",
-			"last_checked_at": "2026-10-31T14:54:10.256Z",
-			"last_success_at": "2026-10-31T14:54:10.256Z",
+			"last_checked_at": "2026-10-31T15:09:02.207Z",
+			"last_success_at": "2026-10-31T15:09:02.207Z",
 			"listings": [
 				{
 					"id": "vhs-starnberger-see-e-v@2026-12-11T15:30",
@@ -1852,8 +1852,8 @@
 		},
 		"vhs-taufkirchen": {
 			"last_result": "ok",
-			"last_checked_at": "2026-10-31T14:54:10.256Z",
-			"last_success_at": "2026-10-31T14:54:10.256Z",
+			"last_checked_at": "2026-10-31T15:09:02.207Z",
+			"last_success_at": "2026-10-31T15:09:02.207Z",
 			"listings": [
 				{
 					"id": "vhs-taufkirchen@2026-11-11T13:00",
@@ -1954,8 +1954,8 @@
 		},
 		"vhs-traunreut-e-v": {
 			"last_result": "ok",
-			"last_checked_at": "2026-10-31T14:54:10.256Z",
-			"last_success_at": "2026-10-31T14:54:10.256Z",
+			"last_checked_at": "2026-10-31T15:09:02.207Z",
+			"last_success_at": "2026-10-31T15:09:02.207Z",
 			"listings": [
 				{
 					"id": "vhs-traunreut-e-v@2026-11-13T10:00",
@@ -1999,14 +1999,14 @@
 		},
 		"volkshochschule-eching-e-v": {
 			"last_result": "failed",
-			"last_checked_at": "2026-10-31T14:54:10.256Z",
+			"last_checked_at": "2026-10-31T15:09:02.207Z",
 			"last_success_at": null,
 			"listings": []
 		},
 		"volkshochschule-im-landkreis-unterallgaeu-e-v": {
 			"last_result": "ok",
-			"last_checked_at": "2026-10-31T14:54:10.256Z",
-			"last_success_at": "2026-10-31T14:54:10.256Z",
+			"last_checked_at": "2026-10-31T15:09:02.207Z",
+			"last_success_at": "2026-10-31T15:09:02.207Z",
 			"listings": [
 				{
 					"id": "volkshochschule-im-landkreis-unterallgaeu-e-v@2026-11-19T08:00",
@@ -2031,8 +2031,8 @@
 		},
 		"volkshochschule-rottenburg-an-der-laaber-e-v": {
 			"last_result": "ok",
-			"last_checked_at": "2026-10-31T14:54:10.256Z",
-			"last_success_at": "2026-10-31T14:54:10.256Z",
+			"last_checked_at": "2026-10-31T15:09:02.207Z",
+			"last_success_at": "2026-10-31T15:09:02.207Z",
 			"listings": [
 				{
 					"id": "volkshochschule-rottenburg-an-der-laaber-e-v@2027-03-09T16:00",
@@ -2057,8 +2057,8 @@
 		},
 		"volkshochschule-straubing-bogen-ggmbh": {
 			"last_result": "ok",
-			"last_checked_at": "2026-10-31T14:54:10.256Z",
-			"last_success_at": "2026-10-31T14:54:10.256Z",
+			"last_checked_at": "2026-10-31T15:09:02.207Z",
+			"last_success_at": "2026-10-31T15:09:02.207Z",
 			"listings": [
 				{
 					"id": "volkshochschule-straubing-bogen-ggmbh@2026-11-30T09:00",
