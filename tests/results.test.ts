@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { haversineKm } from '../shared/geo.ts';
 import type { SnapshotCentre, SnapshotListing } from '../shared/snapshot.ts';
-import { allBookedOut, sortedCards, undatedKind, type Results, type SortedCard } from '../web/src/search/results.ts';
+import { allBookedOut, bookedOutCount, hideBookedOut, sortedCards, undatedKind, type Results, type SortedCard } from '../web/src/search/results.ts';
 import { selectCards } from '../web/src/search/search.ts';
 import { placeRow } from './fixtures/places.ts';
 import { coveredCentre, snapshotCentre, snapshotListing } from './fixtures/snapshot.ts';
@@ -263,5 +263,28 @@ describe('allBookedOut', () => {
 		expect(allBookedOut(dated('booked_out', 'free'))).toBe(false);
 		expect(allBookedOut(dated('booked_out', 'unknown'))).toBe(false);
 		expect(allBookedOut([])).toBe(false);
+	});
+});
+
+describe('bookedOutCount and hideBookedOut', () => {
+	const dated = (...statuses: Array<'free' | 'booked_out' | 'waitlist' | 'unknown'>) =>
+		select(
+			[near],
+			statuses.map((status, i) => placedAt(near, `2026-12-${String(i + 1).padStart(2, '0')}T10:00:00+01:00`, { status })),
+		).dated;
+
+	it('counts and removes only booked-out dates, keeping the others in order', () => {
+		const mixed = dated('booked_out', 'waitlist', 'free', 'booked_out', 'unknown');
+		expect(bookedOutCount(mixed)).toBe(2);
+		expect(hideBookedOut(mixed).map(({ listing }) => listing.status)).toEqual(['waitlist', 'free', 'unknown']);
+	});
+
+	it('leaves the input untouched and handles none or all booked out', () => {
+		const all = dated('booked_out', 'booked_out');
+		expect(hideBookedOut(all)).toEqual([]);
+		expect(all).toHaveLength(2);
+		expect(bookedOutCount(dated('free', 'waitlist'))).toBe(0);
+		expect(hideBookedOut([])).toEqual([]);
+		expect(bookedOutCount([])).toBe(0);
 	});
 });

@@ -908,14 +908,14 @@ describe('sort by soonest or nearest', () => {
 		expect(radio('nearest').checked).toBe(false);
 		expect(cardNames()).toEqual([EARLY, LATE, 'Fünf', 'Ohne Ort']);
 		expect(headings()).toEqual(['No dates to show']);
-		expect(layout()).toEqual(['p.results-count', 'fieldset.sort-control', 'ul.results', 'h2.results-heading', 'ul.results']);
+		expect(layout()).toEqual(['p.results-count', 'div.results-controls', 'ul.results', 'h2.results-heading', 'ul.results']);
 		expect(location.hash).toBe('#q=N%C3%BCrnberg&r=40&sort=soonest&lang=en');
 	});
 
 	it('soonest with only undated cards: the heading, then the cards, and the no-dates notice', async () => {
 		await showWith([u5, unloc], []);
 		expect(cardNames()).toEqual(['Fünf', 'Ohne Ort']);
-		expect(layout()).toEqual(['p.results-count', 'fieldset.sort-control', 'p.notice-line', 'h2.results-heading', 'ul.results']);
+		expect(layout()).toEqual(['p.results-count', 'div.results-controls', 'p.notice-line', 'h2.results-heading', 'ul.results']);
 		expect(notices()).toEqual([en['results.notice_no_dates']]);
 	});
 
@@ -1058,6 +1058,188 @@ describe('sort by soonest or nearest', () => {
 		it('does not show without dated cards', async () => {
 			await showWith([u5, unloc], []);
 			expect(notices()).toEqual([en['results.notice_no_dates']]);
+		});
+	});
+
+	describe('hide booked-out dates', () => {
+		const toggle = () => root.querySelector<HTMLInputElement>('.results-controls input[type="checkbox"]')!;
+		const hiddenLine = () => root.querySelector('.hide-booked__line');
+		const countLine = () => root.querySelector('.results-count')!.textContent;
+		const booked1 = { ...early, status: 'booked_out' as const };
+		const booked2 = listingOf(d10, '2026-11-25T09:00:00+01:00', { status: 'booked_out' });
+		const waiting = { ...late, status: 'waitlist' as const };
+		const free = listingOf(d30, '2026-12-01T10:00:00+01:00', { status: 'free' });
+		const MIXED = [booked1, booked2, waiting, free];
+
+		/** Ticks or unticks the checkbox the way a click or Space does: focus, then toggle. */
+		function tick(): void {
+			act(() => {
+				toggle().focus();
+				toggle().click();
+			});
+		}
+
+		function clickButton(text: string): void {
+			act(() => {
+				const button = buttonByText(text)!;
+				button.focus();
+				button.click();
+			});
+		}
+
+		it('sits unticked after Soonest | Nearest in one results-controls row', async () => {
+			await showWith(ALL, MIXED);
+			const row = root.querySelector('.results-controls')!;
+			expect([...row.children].map((el) => el.className)).toEqual(['sort-control', 'hide-booked']);
+			expect(toggle().checked).toBe(false);
+			expect(toggle().closest('label')!.textContent).toBe('Hide booked-out');
+			expect(hiddenLine()).toBeNull();
+		});
+
+		it('hides only booked-out dates, keeps the count line, and announces the number hidden', async () => {
+			await showWith(ALL, MIXED);
+			const before = cardNames();
+			const counted = countLine();
+			expect(before).toEqual([EARLY, 'Wed 25 Nov, 09:00', 'Tue 1 Dec, 10:00', LATE, 'Fünf', 'Ohne Ort']);
+			tick();
+			expect(toggle().checked).toBe(true);
+			expect(document.activeElement).toBe(toggle());
+			expect(cardNames()).toEqual(['Tue 1 Dec, 10:00', LATE, 'Fünf', 'Ohne Ort']);
+			expect(hiddenLine()!.textContent).toBe('2 booked-out dates hidden · Show');
+			// Outside the row: the line appearing never moves the checkbox or the sort control.
+			expect(hiddenLine()!.closest('.results-controls')).toBeNull();
+			expect(statusText()).toBe('2 booked-out dates hidden');
+			expect(countLine()).toBe(counted);
+			expect(fetchMock).toHaveBeenCalledTimes(2);
+			expect(location.hash).toBe('#q=N%C3%BCrnberg&r=40&sort=soonest&lang=en');
+		});
+
+		it('"Show" unticks, brings every card back and moves focus to the checkbox', async () => {
+			await showWith(ALL, MIXED);
+			const before = cardNames();
+			tick();
+			const show = buttonByText('Show')!;
+			const describedBy = show.getAttribute('aria-describedby')!;
+			expect(document.getElementById(describedBy)!.textContent).toBe('2 booked-out dates hidden');
+			clickButton('Show');
+			expect(toggle().checked).toBe(false);
+			expect(document.activeElement).toBe(toggle());
+			expect(cardNames()).toEqual(before);
+			expect(hiddenLine()).toBeNull();
+			expect(statusText()).toBe('2 booked-out dates shown');
+		});
+
+		it('unticking the checkbox itself announces the dates shown and keeps focus', async () => {
+			await showWith(ALL, MIXED);
+			tick();
+			tick();
+			expect(toggle().checked).toBe(false);
+			expect(document.activeElement).toBe(toggle());
+			expect(cardNames()).toHaveLength(6);
+			expect(statusText()).toBe('2 booked-out dates shown');
+		});
+
+		it('everything hidden: "Show them" replaces the all-booked notice and undated cards stay', async () => {
+			const all = [
+				booked1,
+				booked2,
+				{ ...late, status: 'booked_out' as const },
+				listingOf(d30, '2026-12-01T10:00:00+01:00', { status: 'booked_out' }),
+			];
+			await showWith(ALL, all);
+			expect(notices()).toEqual([en['results.notice_all_booked']]);
+			tick();
+			expect(notices()).toEqual(['All 4 dates here are booked out and hidden. Show them']);
+			expect(cardNames()).toEqual(['Fünf', 'Ohne Ort']);
+			// "Show them" is the one way back: no second "Show".
+			expect(hiddenLine()).toBeNull();
+			expect(buttonByText('Show')).toBeUndefined();
+			const describedBy = buttonByText('Show them')!.getAttribute('aria-describedby')!;
+			expect(document.getElementById(describedBy)!.textContent).toBe('All 4 dates here are booked out and hidden.');
+			clickButton('Show them');
+			expect(toggle().checked).toBe(false);
+			expect(document.activeElement).toBe(toggle());
+			expect(cardNames()).toHaveLength(6);
+			expect(notices()).toEqual([en['results.notice_all_booked']]);
+			expect(statusText()).toBe('4 booked-out dates shown');
+		});
+
+		it('booked-out and waitlist only: the waitlist date stays and the all-booked notice keeps showing', async () => {
+			await showWith(ALL, [booked1, waiting]);
+			tick();
+			expect(notices()).toEqual([en['results.notice_all_booked']]);
+			expect(cardNames()).toHaveLength(3);
+			expect(hiddenLine()!.textContent).toBe('1 booked-out date hidden · Show');
+			expect(statusText()).toBe('1 booked-out date hidden');
+		});
+
+		it('nothing to hide: no card hidden, no hidden line, and "0 booked-out dates hidden"', async () => {
+			await showWith(ALL, [early, late]);
+			const before = cardNames();
+			tick();
+			expect(cardNames()).toEqual(before);
+			expect(hiddenLine()).toBeNull();
+			expect(statusText()).toBe('0 booked-out dates hidden');
+		});
+
+		it('Nearest keeps the hidden cards hidden in the single list', async () => {
+			await showWith(ALL, MIXED);
+			tick();
+			const kept = cardNames();
+			choose('nearest');
+			expect(root.querySelectorAll('ul.results')).toHaveLength(1);
+			expect(cardNames()).toHaveLength(4);
+			expect([...cardNames()].sort()).toEqual([...kept].sort());
+		});
+
+		it('stays ticked for a new search, which is filtered and counted afresh', async () => {
+			await showWith(ALL, MIXED);
+			tick();
+			await search('Nürnberg', 20);
+			expect(toggle().checked).toBe(true);
+			// d30 is 30 km away: only d10's booked-out and waitlist dates are left.
+			expect(hiddenLine()!.textContent).toBe('1 booked-out date hidden · Show');
+			expect(cardNames()).toEqual([LATE, 'Fünf', 'Ohne Ort']);
+			expect(statusText()).toBe(`${countLine()}. 1 booked-out date hidden`);
+			expect(location.hash).toBe('#q=N%C3%BCrnberg&r=20&sort=soonest&lang=en');
+		});
+
+		it('keeps focus on the checkbox when clicked without focusing it first', async () => {
+			await showWith(ALL, MIXED);
+			act(() => toggle().click());
+			expect(toggle().checked).toBe(true);
+			expect(document.activeElement).toBe(toggle());
+		});
+
+		it('announces one booked-out date shown in the singular', async () => {
+			await showWith(ALL, [booked1, waiting]);
+			tick();
+			tick();
+			expect(statusText()).toBe('1 booked-out date shown');
+		});
+
+		it('everything hidden with a single date: the singular notice', async () => {
+			await showWith(ALL, [booked1]);
+			tick();
+			expect(notices()).toEqual(['1 date here is booked out and hidden. Show them']);
+			expect(hiddenLine()).toBeNull();
+		});
+
+		it('reads the singular forms in German', async () => {
+			await showWith(ALL, [booked1, free], '#q=N%C3%BCrnberg&r=40&lang=de', 'de');
+			tick();
+			expect(hiddenLine()!.textContent).toBe('1 ausgebuchter Termin ausgeblendet · Anzeigen');
+			await showWith(ALL, [booked1], '#q=N%C3%BCrnberg&r=40&lang=de', 'de');
+			tick();
+			expect(notices()).toEqual(['1 Termin hier ist ausgebucht und ausgeblendet. Anzeigen']);
+		});
+
+		it('reads in German', async () => {
+			await showWith(ALL, MIXED, '#q=N%C3%BCrnberg&r=40&lang=de', 'de');
+			expect(toggle().closest('label')!.textContent).toBe('Ausgebuchte ausblenden');
+			tick();
+			expect(hiddenLine()!.textContent).toBe('2 ausgebuchte Termine ausgeblendet · Anzeigen');
+			expect(statusText()).toBe('2 ausgebuchte Termine ausgeblendet');
 		});
 	});
 });

@@ -9,7 +9,8 @@ import { NO_LOCATION_ID } from '../fragment.ts';
 import { useI18n } from '../i18n/i18n.tsx';
 import { ResultCard } from './result-card.tsx';
 import { NoDatesCard } from './no-dates-card.tsx';
-import { allBookedOut, sortedCards, undatedKind, type Results, type SortedCard } from './results.ts';
+import { HiddenBookedLine, HideBookedOut } from './hide-booked-out.tsx';
+import { allBookedOut, bookedOutCount, hideBookedOut, sortedCards, undatedKind, type Results, type SortedCard } from './results.ts';
 import { SearchBar } from './search-bar.tsx';
 import {
 	DEFAULT_RADIUS,
@@ -42,9 +43,11 @@ type DataState = { kind: 'loading' } | { kind: 'ready'; snapshot: Snapshot; plac
 /** What the live region says. Stored as a description so a language switch re-renders it. */
 type Announcement =
 	| { kind: 'loading' }
-	| { kind: 'outcome'; outcome: Outcome; shown: Shown | null }
+	/** `hiddenCount`: booked-out dates the ticked toggle hides in these results (0 when unticked). */
+	| { kind: 'outcome'; outcome: Outcome; shown: Shown | null; hiddenCount: number }
 	| { kind: 'suggestions'; count: number }
-	| { kind: 'sorted'; sort: Sort };
+	| { kind: 'sorted'; sort: Sort }
+	| { kind: 'hidden'; hidden: boolean; count: number };
 
 const SKELETON_COUNT = 3;
 
@@ -89,8 +92,20 @@ function AnnouncementText({ announcement }: { announcement: Announcement | null 
 		return <>{t(count === 1 ? 'search.suggestions_count_one' : 'search.suggestions_count', { count })}</>;
 	}
 	if (announcement.kind === 'sorted') return <>{t(announcement.sort === 'soonest' ? 'results.sorted_soonest' : 'results.sorted_nearest')}</>;
-	const { outcome, shown } = announcement;
-	if (outcome.kind === 'results' && shown) return <CountLine outcome={outcome} shown={shown} />;
+	if (announcement.kind === 'hidden') {
+		const { hidden, count } = announcement;
+		const key = hidden ? (count === 1 ? 'results.hidden_count_one' : 'results.hidden_count') : count === 1 ? 'results.shown_count_one' : 'results.shown_count';
+		return <>{t(key, { count })}</>;
+	}
+	const { outcome, shown, hiddenCount } = announcement;
+	if (outcome.kind === 'results' && shown) {
+		return (
+			<>
+				<CountLine outcome={outcome} shown={shown} />
+				{hiddenCount > 0 ? `. ${t(hiddenCount === 1 ? 'results.hidden_count_one' : 'results.hidden_count', { count: hiddenCount })}` : null}
+			</>
+		);
+	}
 	if (outcome.kind === 'no_centres') return <>{t('results.none_in_radius', { radius: outcome.search.r })}</>;
 	return null;
 }
@@ -181,8 +196,14 @@ export function SearchPage({ services }: { services?: Partial<SearchServices> })
 	/** The suggestions list starts dismissed: only typing (or a several-places outcome) opens it. */
 	const [listDismissed, setListDismissed] = useState(true);
 	const [listOpenId, setListOpenId] = useState(0);
+	/** Page state, not in the fragment: stays as set across new searches until unticked or reload. */
+	const [hideBooked, setHideBooked] = useState(false);
 
 	const fieldRef = useRef<HTMLInputElement>(null);
+	const hideBookedInput = useRef<HTMLInputElement>(null);
+	/** The toggle as of the last render, read by `show` so a new search's announcement says what it hides. */
+	const hideBookedOn = useRef(hideBooked);
+	hideBookedOn.current = hideBooked;
 	const lastSearch = useRef<Search | null>(null);
 	const dataRef = useRef(data);
 	dataRef.current = data;
@@ -219,7 +240,10 @@ export function SearchPage({ services }: { services?: Partial<SearchServices> })
 				setListOpenId((n) => n + 1);
 			}
 			if (result.kind === 'field_error') setAnnouncement(null);
-			else announce({ kind: 'outcome', outcome: result, shown: resultShown });
+			else {
+				const hiddenCount = hideBookedOn.current && resultShown ? bookedOutCount(resultShown.dated) : 0;
+				announce({ kind: 'outcome', outcome: result, shown: resultShown, hiddenCount });
+			}
 		},
 		// The services are fixed for the page's lifetime.
 		[announce, replaceHash],
@@ -317,6 +341,13 @@ export function SearchPage({ services }: { services?: Partial<SearchServices> })
 		announce({ kind: 'sorted', sort: next });
 	};
 
+	/** Hides or shows the booked-out dates already shown: no new search, clock read or fetch. Focus ends on the checkbox. */
+	const chooseHideBooked = (next: boolean) => {
+		setHideBooked(next);
+		announce({ kind: 'hidden', hidden: next, count: shown ? bookedOutCount(shown.dated) : 0 });
+		hideBookedInput.current?.focus();
+	};
+
 	const announceSuggestions = useCallback((count: number) => announce({ kind: 'suggestions', count }), [announce]);
 
 	const retry = () => {
@@ -360,16 +391,41 @@ export function SearchPage({ services }: { services?: Partial<SearchServices> })
 			</div>
 		);
 	} else if (outcome?.kind === 'results' && shown) {
+		const hiddenCount = hideBooked ? bookedOutCount(shown.dated) : 0;
+		const visible: Shown = hideBooked ? { ...shown, dated: hideBookedOut(shown.dated) } : shown;
+		// Every date is hidden by the toggle: this notice replaces the all-booked one (same state, said once).
+		const allHidden = shown.dated.length > 0 && visible.dated.length === 0;
 		body = (
 			<>
 				<p class="results-count">
 					<CountLine outcome={outcome} shown={shown} />
 				</p>
-				<SortControl sort={sort} onSort={chooseSort} />
+				<div class="results-controls">
+					<SortControl sort={sort} onSort={chooseSort} />
+					<HideBookedOut checked={hideBooked} checkboxRef={hideBookedInput} onChange={chooseHideBooked} />
+				</div>
+				{/* Everything hidden: the notice's "Show them" is the one way back, so this line stays out. */}
+				<HiddenBookedLine count={allHidden ? 0 : hiddenCount} onShow={() => chooseHideBooked(false)} />
 				{shown.dated.length === 0 ? <p class="notice-line">{t('results.notice_no_dates')}</p> : null}
-				{allBookedOut(shown.dated) ? <p class="notice-line">{t('results.notice_all_booked')}</p> : null}
+				{allHidden ? (
+					<p class="notice-line">
+						<span id="all-hidden-notice">
+							{t(hiddenCount === 1 ? 'results.notice_all_hidden_one' : 'results.notice_all_hidden', { count: hiddenCount })}
+						</span>{' '}
+						<button
+							type="button"
+							class="link-button notice-line__link"
+							aria-describedby="all-hidden-notice"
+							onClick={() => chooseHideBooked(false)}
+						>
+							{t('results.show_them')}
+						</button>
+					</p>
+				) : allBookedOut(shown.dated) ? (
+					<p class="notice-line">{t('results.notice_all_booked')}</p>
+				) : null}
 				<HiddenUnlocatedNotice count={outcome.hiddenUnlocated} />
-				<SortedResults shown={shown} sort={sort} />
+				<SortedResults shown={visible} sort={sort} />
 			</>
 		);
 	}

@@ -472,6 +472,57 @@ a {
 	}
 }
 
+/* Sort control and "Hide booked-out" share a row; the toggle wraps below when they don't fit. */
+.results-controls {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-end;
+	column-gap: var(--space-5);
+	row-gap: var(--space-2);
+	margin-block: var(--space-2);
+}
+
+.results-controls > .sort-control {
+	margin: 0;
+}
+
+.hide-booked {
+	min-width: 0;
+}
+
+.hide-booked__label {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--space-2);
+	min-height: var(--space-target-min);
+	font: var(--font-body);
+	color: var(--color-ink-primary);
+	cursor: pointer;
+}
+
+.hide-booked__input {
+	margin: 0;
+	accent-color: var(--color-action);
+	cursor: pointer;
+}
+
+/* "N booked-out dates hidden · Show": below the controls row, so neither control moves when it appears. */
+.hide-booked__line {
+	font: var(--font-meta);
+	color: var(--color-ink-secondary);
+}
+
+/* A button that reads as an inline link ("Show", "Show them"); `.notice-line__link` gives the target size. */
+.link-button {
+	padding: 0;
+	font: inherit;
+	color: var(--color-action);
+	text-decoration: underline;
+	background: none;
+	border: 0;
+	cursor: pointer;
+}
+
 /* Soonest's "No dates to show": sits between the two result lists. */
 .results-heading {
 	font: var(--font-section);

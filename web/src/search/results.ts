@@ -72,3 +72,15 @@ export function sortedCards(results: Results, sort: Sort): SortedCards {
 export function allBookedOut(dated: readonly DatedResult[]): boolean {
 	return dated.length > 0 && dated.every(({ listing }) => listing.status === 'booked_out' || listing.status === 'waitlist');
 }
+
+const isBookedOut = ({ listing }: DatedResult): boolean => listing.status === 'booked_out';
+
+/** How many dated cards are booked out (waitlist dates do not count). */
+export function bookedOutCount(dated: readonly DatedResult[]): number {
+	return dated.filter(isBookedOut).length;
+}
+
+/** The dated cards without the booked-out ones; waitlist, unknown and free dates stay. */
+export function hideBookedOut(dated: readonly DatedResult[]): DatedResult[] {
+	return dated.filter((result) => !isBookedOut(result));
+}
