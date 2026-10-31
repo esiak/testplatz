@@ -46,10 +46,14 @@ const raw = (date: string, extra: Partial<RawListing> = {}): RawListing => ({
 	...extra,
 });
 
-/** Located `ok` outcome for centre `id` with these raw listings (detail pages all 2xx), placed at the centre. */
-const ok = (id: string, listings: RawListing[]): LocatedOutcome => {
+/**
+ * Located `ok` outcome for centre `id` with these raw listings (detail pages all 2xx), placed at the
+ * centre. `previous` is the state the run starts from, as `run.ts` passes it to normalise.
+ */
+const ok = (id: string, listings: RawListing[], previous: State = emptyState()): LocatedOutcome => {
 	const c = centre(id);
-	const outcome = normaliseOutcome(c, { kind: 'ok', listings }, listings.map((l) => ({ url: l.source_url, role: 'detail', status: 200, finalUrl: l.source_url })));
+	const pages = listings.map((l) => ({ url: l.source_url, role: 'detail' as const, status: 200, finalUrl: l.source_url }));
+	const outcome = normaliseOutcome(c, { kind: 'ok', listings }, pages, previous.centres[id]?.listings ?? []);
 	if (outcome.kind !== 'ok') return outcome;
 	return { kind: 'ok', listings: outcome.listings.map((listing) => ({ ...listing, lat: c.lat, lon: c.lon, location: 'centre' as const })) };
 };
@@ -154,24 +158,60 @@ describe('mergeRun outcomes', () => {
 		expect(listingsOf(state, 'zz').map((l) => l.id)).toEqual(['zz@2026-11-12T10:00', 'zz@2026-12-01T10:00']);
 	});
 
-	it('same-minute ids end to end: stable across runs, a returning #2 keeps its history', () => {
-		const sessions = [raw('2026-11-12', { place: 'B', source_url: 'https://example.de/k/b' }), raw('2026-11-12', { place: 'A', source_url: 'https://example.de/k/a' })];
-		const one = merge(emptyState(), { a: ok('a', sessions) }, RUN_1).state;
-		expect(listingsOf(one, 'a').map((l) => [l.id, l.place])).toEqual([
-			['a@2026-11-12T10:00', 'A'],
-			['a@2026-11-12T10:00#2', 'B'],
-		]);
-		const two = merge(one, { a: ok('a', [sessions[0]!]) }, RUN_2).state;
-		// Only B is left, so it takes the unsuffixed id; #2 is tombstoned.
-		expect(listingsOf(two, 'a').map((l) => [l.id, l.place, l.removed_at])).toEqual([
-			['a@2026-11-12T10:00', 'B', null],
-			['a@2026-11-12T10:00#2', 'B', RUN_2.toISOString()],
-		]);
-		const three = merge(two, { a: ok('a', [...sessions].reverse()) }, RUN_3).state;
-		expect(listingsOf(three, 'a').map((l) => [l.id, l.place, l.removed_at, l.first_seen_at])).toEqual([
-			['a@2026-11-12T10:00', 'A', null, RUN_1.toISOString()],
-			['a@2026-11-12T10:00#2', 'B', null, RUN_1.toISOString()],
-		]);
+	describe('same-minute dates keep their history (Story 3.8)', () => {
+		const at = (place: string) => raw('2026-11-12', { place, source_url: `https://example.de/k/${place.toLowerCase()}` });
+		const rows = (state: State) => listingsOf(state, 'a').map((l) => [l.id, l.place, l.removed_at, l.first_seen_at, l.baseline]);
+		const run = (state: State, places: string[], runAt: Date) => merge(state, { a: ok('a', places.map(at), state) }, runAt).state;
+
+		it('a sibling removed: the survivor keeps its id and history, only the gone date is tombstoned', () => {
+			const one = run(emptyState(), ['A', 'B'], RUN_1);
+			const two = run(one, ['B'], RUN_2);
+			expect(rows(two)).toEqual([
+				['a@2026-11-12T10:00', 'A', RUN_2.toISOString(), RUN_1.toISOString(), true],
+				['a@2026-11-12T10:00#2', 'B', null, RUN_1.toISOString(), true],
+			]);
+		});
+
+		it('a sibling added before an existing one: the existing date keeps its id, the new one is new', () => {
+			const one = run(emptyState(), ['B'], RUN_1);
+			const two = run(one, ['A', 'B'], RUN_2);
+			expect(rows(two)).toEqual([
+				['a@2026-11-12T10:00', 'B', null, RUN_1.toISOString(), true],
+				['a@2026-11-12T10:00#2', 'A', null, RUN_2.toISOString(), false],
+			]);
+		});
+
+		it('two siblings swapping order: each keeps its own id', () => {
+			const one = run(emptyState(), ['A', 'B'], RUN_1);
+			const swapped = merge(one, { a: ok('a', [at('B'), at('A')], one) }, RUN_2).state;
+			expect(rows(swapped)).toEqual(rows(one));
+			// The same two dates re-labelled: places swap, the links stay with their dates.
+			const relabelled = merge(
+				one,
+				{ a: ok('a', [raw('2026-11-12', { place: 'B', source_url: 'https://example.de/k/a' }), raw('2026-11-12', { place: 'A', source_url: 'https://example.de/k/b' })], one) },
+				RUN_2,
+			).state;
+			expect(listingsOf(relabelled, 'a').map((l) => [l.id, l.source_url, l.removed_at])).toEqual([
+				['a@2026-11-12T10:00', 'https://example.de/k/a', null],
+				['a@2026-11-12T10:00#2', 'https://example.de/k/b', null],
+			]);
+		});
+
+		it('a date that disappears and returns keeps its id and first_seen_at; no new date takes its tombstoned id', () => {
+			const one = run(emptyState(), ['A', 'B'], RUN_1);
+			const two = run(one, ['B', 'C'], RUN_2);
+			expect(rows(two)).toEqual([
+				['a@2026-11-12T10:00', 'A', RUN_2.toISOString(), RUN_1.toISOString(), true],
+				['a@2026-11-12T10:00#2', 'B', null, RUN_1.toISOString(), true],
+				['a@2026-11-12T10:00#3', 'C', null, RUN_2.toISOString(), false],
+			]);
+			const three = run(two, ['A', 'B', 'C'], RUN_3);
+			expect(rows(three)).toEqual([
+				['a@2026-11-12T10:00', 'A', null, RUN_1.toISOString(), true],
+				['a@2026-11-12T10:00#2', 'B', null, RUN_1.toISOString(), true],
+				['a@2026-11-12T10:00#3', 'C', null, RUN_2.toISOString(), false],
+			]);
+		});
 	});
 });
 

@@ -92,10 +92,96 @@ const sameMinuteOrder = (a: Unnamed, b: Unnamed): number =>
 	compareNullable(a.place, b.place) || compare(a.source_url, b.source_url) || compare(a.address, b.address) || compare(contentKey(a), contentKey(b));
 
 /**
+ * What normalise needs of a stored listing to keep same-minute ids stable: its id, place, URL and
+ * whether it is tombstoned (`removed_at` set).
+ */
+export type PriorListing = Pick<Listing, 'id' | 'place' | 'source_url'> & { removed_at?: string | null };
+
+/** A stored listing of one minute and the `#n` its id holds (the unsuffixed id is `#1`). */
+interface Prior {
+	listing: PriorListing;
+	n: number;
+}
+
+/** The centre's stored listings grouped by minute (`YYYY-MM-DDTHH:mm`), each group by `#n`. */
+function priorByMinute(centreId: string, previous: readonly PriorListing[]): Map<string, Prior[]> {
+	const prefix = `${centreId}@`;
+	const byMinute = new Map<string, Prior[]>();
+	for (const listing of previous) {
+		if (!listing.id.startsWith(prefix)) continue;
+		const match = /^([^#]+)(?:#([2-9]|[1-9]\d+))?$/.exec(listing.id.slice(prefix.length));
+		if (match === null) continue;
+		const group = byMinute.get(match[1]!) ?? [];
+		group.push({ listing, n: match[2] === undefined ? 1 : Number(match[2]) });
+		byMinute.set(match[1]!, group);
+	}
+	// Live listings are tried before tombstoned ones, each by `#n`.
+	const live = (prior: Prior): number => ((prior.listing.removed_at ?? null) === null ? 0 : 1);
+	for (const group of byMinute.values()) group.sort((a, b) => live(a) - live(b) || a.n - b.n);
+	return byMinute;
+}
+
+/** How often each value occurs. */
+const counts = <T>(values: readonly T[]): Map<T, number> => {
+	const out = new Map<T, number>();
+	for (const value of values) out.set(value, (out.get(value) ?? 0) + 1);
+	return out;
+};
+
+/**
+ * Matching passes, strongest first: same `source_url` and `place`; then same `source_url` when that
+ * URL belongs to exactly one session on each side (a URL several sessions share says nothing about
+ * which is which); then the same non-null `place`.
+ */
+function matchPasses(sorted: readonly Unnamed[], priors: readonly Prior[]): Array<(listing: Unnamed, prior: PriorListing) => boolean> {
+	const runUrls = counts(sorted.map((listing) => listing.source_url));
+	const storedUrls = counts(priors.map((prior) => prior.listing.source_url));
+	return [
+		(listing, prior) => listing.source_url === prior.source_url && listing.place === prior.place,
+		(listing, prior) => listing.source_url === prior.source_url && runUrls.get(listing.source_url) === 1 && storedUrls.get(prior.source_url) === 1,
+		(listing, prior) => listing.place !== null && listing.place === prior.place,
+	];
+}
+
+/**
+ * The `#n` of each listing of one minute (`sorted` in `sameMinuteOrder`). A listing that matches a
+ * stored one (each stored listing matches at most once, live before tombstoned) keeps its number;
+ * the rest take the lowest numbers held by no stored listing of the minute, live or tombstoned, in
+ * `sorted` order.
+ */
+function numberMinute(sorted: readonly Unnamed[], priors: readonly Prior[]): Map<Unnamed, number> {
+	const numbers = new Map<Unnamed, number>();
+	const unmatched = [...priors];
+	for (const matches of matchPasses(sorted, priors)) {
+		for (const listing of sorted) {
+			if (numbers.has(listing)) continue;
+			const index = unmatched.findIndex((prior) => matches(listing, prior.listing));
+			if (index === -1) continue;
+			numbers.set(listing, unmatched[index]!.n);
+			unmatched.splice(index, 1);
+		}
+	}
+	const taken = new Set(priors.map((prior) => prior.n));
+	let next = 1;
+	for (const listing of sorted) {
+		if (numbers.has(listing)) continue;
+		while (taken.has(next)) next += 1;
+		numbers.set(listing, next);
+		taken.add(next);
+	}
+	return numbers;
+}
+
+/**
  * The centre's listings, ordered by id, and the ids whose address is the centre fallback (the
  * reader gave none). Shared by `normaliseCentre` and `normaliseOutcome`.
  */
-function buildListings(centre: Centre, raw: readonly RawListing[], pages: readonly PageSummary[]): { listings: Listing[]; centreAddressIds: string[] } {
+function buildListings(
+	centre: Centre,
+	raw: readonly RawListing[],
+	pages: readonly PageSummary[],
+	previous: readonly PriorListing[],
+): { listings: Listing[]; centreAddressIds: string[] } {
 	const okUrls = okDetailUrls(pages);
 	const fallbackAddress = formatAddress(centre.address);
 	const groups = new Map<string, Unnamed[]>();
@@ -128,22 +214,28 @@ function buildListings(centre: Centre, raw: readonly RawListing[], pages: readon
 	}
 	const listings: Listing[] = [];
 	const centreAddressIds: string[] = [];
+	const priors = priorByMinute(centre.centre_id, previous);
 	for (const [minute, group] of groups) {
-		group.sort(sameMinuteOrder).forEach((listing, index) => {
-			const id = `${centre.centre_id}@${minute}${index === 0 ? '' : `#${index + 1}`}`;
+		const sorted = group.sort(sameMinuteOrder);
+		const numbers = numberMinute(sorted, priors.get(minute) ?? []);
+		for (const listing of sorted) {
+			const n = numbers.get(listing)!;
+			const id = `${centre.centre_id}@${minute}${n === 1 ? '' : `#${n}`}`;
 			listings.push({ id, ...listing });
 			if (fromCentre.has(listing)) centreAddressIds.push(id);
-		});
+		}
 	}
 	return { listings: listings.sort((a, b) => compare(a.id, b.id)), centreAddressIds: centreAddressIds.sort(compare) };
 }
 
 /**
  * The centre's listings, ordered by id. Ids are `<centre_id>@<date>T<time>`; same-minute dates
- * collapse exact duplicates, then take `#2`, `#3`, … in `sameMinuteOrder`.
+ * collapse exact duplicates, then keep the id of the stored listing they match in `previous` (the
+ * centre's state listings, live and tombstoned), else take the lowest free `#n` in
+ * `sameMinuteOrder` (AD-7, Story 3.8). With no `previous`, that is `#2`, `#3`, … in order.
  */
-export function normaliseCentre(centre: Centre, raw: readonly RawListing[], pages: readonly PageSummary[]): Listing[] {
-	return buildListings(centre, raw, pages).listings;
+export function normaliseCentre(centre: Centre, raw: readonly RawListing[], pages: readonly PageSummary[], previous: readonly PriorListing[] = []): Listing[] {
+	return buildListings(centre, raw, pages, previous).listings;
 }
 
 /**
@@ -153,12 +245,13 @@ export function normaliseCentre(centre: Centre, raw: readonly RawListing[], page
 export type NormalisedOutcome = Exclude<CentreOutcome, { kind: 'ok' }> | { kind: 'ok'; listings: Listing[]; centreAddressIds: string[] };
 
 /**
- * Normalises an `ok` outcome with the centre's pages from this run. Output that fails
- * `listingSchema` fails only this centre (`failed('schema')`), like reader output.
+ * Normalises an `ok` outcome with the centre's pages from this run and its stored listings
+ * (`previous`, for stable same-minute ids). Output that fails `listingSchema` fails only this
+ * centre (`failed('schema')`), like reader output.
  */
-export function normaliseOutcome(centre: Centre, outcome: CentreOutcome, pages: readonly PageSummary[]): NormalisedOutcome {
+export function normaliseOutcome(centre: Centre, outcome: CentreOutcome, pages: readonly PageSummary[], previous: readonly PriorListing[]): NormalisedOutcome {
 	if (outcome.kind !== 'ok') return outcome;
-	const { listings, centreAddressIds } = buildListings(centre, outcome.listings, pages);
+	const { listings, centreAddressIds } = buildListings(centre, outcome.listings, pages, previous);
 	if (!listings.every((listing) => listingSchema.safeParse(listing).success)) return { kind: 'failed', reason: 'schema' };
 	return { kind: 'ok', listings, centreAddressIds };
 }

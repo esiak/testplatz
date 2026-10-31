@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { loadFixturePages, runReaderOnFixtures, type Fixtures } from '../pipeline/readers/fixture-runner.ts';
 import { itemkgReader } from '../pipeline/readers/itemkg/index.ts';
 import { kuferwebReader } from '../pipeline/readers/kuferweb/index.ts';
-import { berlinOffset, normaliseCentre, normaliseOutcome, startsAt } from '../pipeline/stages/normalise.ts';
+import { berlinOffset, normaliseCentre, normaliseOutcome, startsAt, type PriorListing } from '../pipeline/stages/normalise.ts';
 import type { Centre } from '../shared/directory.ts';
 import { listingSchema, type RawListing } from '../shared/listing.ts';
 import { summarisePage, type PageSummary, type Reader } from '../shared/reader.ts';
@@ -106,6 +106,74 @@ describe('normaliseCentre', () => {
 		expect(normaliseCentre(C, [...input].reverse(), [])).toEqual(normaliseCentre(C, input, []));
 	});
 
+	describe('same-minute ids from stored listings (Story 3.8)', () => {
+		const M = 'c@2026-11-12T10:00';
+		const prior = (suffix: string, place: string | null, source_url = 'https://a.de/k/1', removed_at: string | null = null) => ({
+			id: `${M}${suffix}`,
+			place,
+			source_url,
+			removed_at,
+		});
+		const ids = (rawListings: RawListing[], previous: PriorListing[]) =>
+			normaliseCentre(C, rawListings, [], previous).map((l) => [l.id, l.place, l.source_url]);
+
+		it('keeps a stored id matched by source_url and place, whatever the sort position', () => {
+			expect(ids([raw({ place: 'B' })], [prior('', 'A'), prior('#2', 'B')])).toEqual([[`${M}#2`, 'B', 'https://a.de/k/1']]);
+		});
+
+		it('matches by source_url when the place changed, then by place when the URL changed', () => {
+			const previous = [prior('', 'A', 'https://a.de/k/a'), prior('#2', 'B', 'https://a.de/k/b')];
+			expect(ids([raw({ place: 'B2', source_url: 'https://a.de/k/b' })], previous)).toEqual([[`${M}#2`, 'B2', 'https://a.de/k/b']]);
+			expect(ids([raw({ place: 'B', source_url: 'https://a.de/k/new' })], previous)).toEqual([[`${M}#2`, 'B', 'https://a.de/k/new']]);
+		});
+
+		it('never matches by a null place', () => {
+			expect(ids([raw({ place: null, source_url: 'https://a.de/k/x' })], [prior('', null, 'https://a.de/k/y')])).toEqual([[`${M}#2`, null, 'https://a.de/k/x']]);
+		});
+
+		it('gives a new date the lowest #n held by no stored listing, live or tombstoned', () => {
+			const previous = [prior('', 'A', 'https://a.de/k/a'), prior('#3', 'C', 'https://a.de/k/c')];
+			expect(ids([raw({ place: 'D', source_url: 'https://a.de/k/d' }), raw({ place: 'E', source_url: 'https://a.de/k/e' })], previous)).toEqual([
+				[`${M}#2`, 'D', 'https://a.de/k/d'],
+				[`${M}#4`, 'E', 'https://a.de/k/e'],
+			]);
+		});
+
+		it('never matches by a URL several sessions share: a new session does not take the id of a gone sibling', () => {
+			// A and B share one detail page. A is gone and Z is new on the same page: Z must not inherit A's history.
+			const previous = [prior('', 'A'), prior('#2', 'B')];
+			expect(ids([raw({ place: 'B' }), raw({ place: 'Z' })], previous)).toEqual([
+				[`${M}#2`, 'B', 'https://a.de/k/1'],
+				[`${M}#3`, 'Z', 'https://a.de/k/1'],
+			]);
+		});
+
+		it('gives a date whose URL and place both changed a new id', () => {
+			expect(ids([raw({ place: 'Q', source_url: 'https://a.de/k/q' })], [prior('', 'A', 'https://a.de/k/a')])).toEqual([[`${M}#2`, 'Q', 'https://a.de/k/q']]);
+		});
+
+		it('keeps shared-URL sessions with no place on their stored ids when all are still listed', () => {
+			const previous = [prior('', null), prior('#2', null)];
+			const listings = normaliseCentre(C, [raw({ status: 'booked_out' }), raw({ status: 'free' })], [], previous);
+			expect(listings.map((l) => l.id)).toEqual([M, `${M}#2`]);
+		});
+
+		it('prefers a live stored listing to a tombstoned one with the same match', () => {
+			const previous = [prior('', 'B', 'https://a.de/k/1', '2026-10-28T05:17:00.000Z'), prior('#2', 'B')];
+			expect(ids([raw({ place: 'B' })], previous)).toEqual([[`${M}#2`, 'B', 'https://a.de/k/1']]);
+		});
+
+		it('ignores stored listings of other minutes, other centres and malformed ids', () => {
+			const previous = [
+				{ id: 'c@2026-11-12T09:00#2', place: 'A', source_url: 'https://a.de/k/1' },
+				{ id: 'other@2026-11-12T10:00#2', place: 'A', source_url: 'https://a.de/k/1' },
+				{ id: `${M}#1`, place: 'A', source_url: 'https://a.de/k/1' },
+				{ id: `${M}#x`, place: 'A', source_url: 'https://a.de/k/1' },
+			];
+			expect(ids([raw({ place: 'A' })], previous)).toEqual([[M, 'A', 'https://a.de/k/1']]);
+		});
+	});
+
 	it('collapses exact duplicates into one listing without #2', () => {
 		expect(normaliseCentre(C, [raw(), raw()], []).map((l) => l.id)).toEqual(['c@2026-11-12T10:00']);
 	});
@@ -142,12 +210,12 @@ describe('normaliseCentre', () => {
 
 describe('normaliseOutcome', () => {
 	it('passes failed and skipped through unchanged', () => {
-		expect(normaliseOutcome(C, { kind: 'failed', reason: 'list-page' }, [])).toEqual({ kind: 'failed', reason: 'list-page' });
-		expect(normaliseOutcome(C, { kind: 'skipped', reason: 'budget' }, [])).toEqual({ kind: 'skipped', reason: 'budget' });
+		expect(normaliseOutcome(C, { kind: 'failed', reason: 'list-page' }, [], [])).toEqual({ kind: 'failed', reason: 'list-page' });
+		expect(normaliseOutcome(C, { kind: 'skipped', reason: 'budget' }, [], [])).toEqual({ kind: 'skipped', reason: 'budget' });
 	});
 
 	it('normalises an ok outcome with the pages', () => {
-		expect(normaliseOutcome(C, { kind: 'ok', listings: [raw()] }, [detail('https://a.de/k/1')])).toEqual({
+		expect(normaliseOutcome(C, { kind: 'ok', listings: [raw()] }, [detail('https://a.de/k/1')], [])).toEqual({
 			kind: 'ok',
 			listings: normaliseCentre(C, [raw()], [detail('https://a.de/k/1')]),
 			centreAddressIds: [],
@@ -158,7 +226,7 @@ describe('normaliseOutcome', () => {
 		['fallback first', [raw({ address: null }), raw({ address: 'Hauptstraße 1, 80331 München' })]],
 		['stated first', [raw({ address: 'Hauptstraße 1, 80331 München' }), raw({ address: null })]],
 	])('treats a same-minute duplicate as stated when one row gives the centre address (%s)', (_order, listings) => {
-		const outcome = normaliseOutcome(C, { kind: 'ok', listings }, []);
+		const outcome = normaliseOutcome(C, { kind: 'ok', listings }, [], []);
 		expect(outcome).toMatchObject({ kind: 'ok', centreAddressIds: [] });
 		expect(outcome.kind === 'ok' && outcome.listings).toHaveLength(1);
 	});
@@ -176,13 +244,14 @@ describe('normaliseOutcome', () => {
 				],
 			},
 			[],
+			[],
 		);
 		expect(outcome).toMatchObject({ kind: 'ok', centreAddressIds: ['c@2026-11-12T10:00', 'c@2026-11-13T10:00'] });
 	});
 
 	it('fails only this centre as schema when a normalised listing fails listingSchema', () => {
 		// A 1947 date (Berlin double summer time, +03:00) falls outside the +01:00/+02:00 offsets the schema accepts.
-		expect(normaliseOutcome(C, { kind: 'ok', listings: [raw({ date: '1947-06-01' })] }, [])).toEqual({ kind: 'failed', reason: 'schema' });
+		expect(normaliseOutcome(C, { kind: 'ok', listings: [raw({ date: '1947-06-01' })] }, [], [])).toEqual({ kind: 'failed', reason: 'schema' });
 	});
 });
 
@@ -268,7 +337,7 @@ describe('normalise on reader fixture results', () => {
 		const result = runReaderOnFixtures(fc.reader, fc.centre, fc.fixtures, { runAt: new Date('2026-10-29T12:00:00.000Z') }, fc.dir);
 		const pages = loadFixturePages(fc.reader, fc.centre, fc.fixtures, fc.dir).map(summarisePage);
 		expect(result.kind).toBe('ok');
-		const outcome = normaliseOutcome(fc.centre, result, pages);
+		const outcome = normaliseOutcome(fc.centre, result, pages, []);
 		if (outcome.kind !== 'ok') throw new Error(`expected ok, got ${outcome.kind}`);
 		expect(outcome.listings.length).toBeGreaterThan(0);
 		for (const listing of outcome.listings) expect(listingSchema.safeParse(listing).success, listing.id).toBe(true);

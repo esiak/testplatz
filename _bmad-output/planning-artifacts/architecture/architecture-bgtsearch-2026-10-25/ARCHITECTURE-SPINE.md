@@ -135,7 +135,7 @@ Arrows are the only allowed imports. `readers` never imports `fetch` or `stages`
 
 - **Binds:** CAP-6
 - **Prevents:** provider URL edits or same-minute sessions corrupting "new".
-- **Rule:** `normalise` alone builds the id `<centre_id>@<YYYY-MM-DDTHH:mm local>`. Sessions at the same centre and minute get suffixes `#2`, `#3` …, in order of `place`. The id never uses the provider URL.
+- **Rule:** `normalise` alone builds the id `<centre_id>@<YYYY-MM-DDTHH:mm local>`. Sessions at the same centre and minute get suffixes `#2`, `#3` …. A session that matches one of the centre's stored listings of that minute (live before tombstoned; each stored listing matches once) keeps its stored id. Matches, strongest first: same `source_url` and `place`; same `source_url` when that URL belongs to exactly one session on each side; same non-null `place`. Every other session takes the lowest `#n` no stored listing of that minute holds, in order of `place`. The id never uses the provider URL. (Amended 2026-10-31, Story 3.8; before, suffixes were assigned by order of `place` alone.)
 
 ### AD-8 — Directory is human-owned; every centre gets exactly one card type [ADOPTED]
 

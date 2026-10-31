@@ -147,7 +147,10 @@ export async function runPipeline(options: RunOptions = {}): Promise<number> {
 	const outcomes: Record<string, NormalisedOutcome> = {};
 	for (const centre of directory) {
 		const outcome = collected.outcomes[centre.centre_id];
-		if (outcome !== undefined) outcomes[centre.centre_id] = normaliseOutcome(centre, outcome, collected.pages[centre.centre_id] ?? []);
+		if (outcome !== undefined) {
+			const previous = state.centres[centre.centre_id]?.listings ?? [];
+			outcomes[centre.centre_id] = normaliseOutcome(centre, outcome, collected.pages[centre.centre_id] ?? [], previous);
+		}
 	}
 
 	const tally = { ok: 0, failed: 0, skipped: 0 };

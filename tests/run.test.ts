@@ -392,6 +392,24 @@ describe('runPipeline: save and replay', () => {
 		expect(logs.at(-1)).toMatch(/^run 2026-10-29T05:17:00\.000Z \(replay\): /);
 	});
 
+	it('numbers ids from the stored state: a stored #2 date keeps its id and history (Story 3.8)', async () => {
+		const original = setup();
+		const replayFile = join(original.dir, 'collect.json');
+		await pipeline(original, { saveCollect: replayFile });
+		const stored = readStateFile(original);
+		const [first, ...rest] = stored.centres.moosburg!.listings;
+		const earlier = '2026-10-01T05:17:00.000Z';
+		const renamed: State = {
+			...stored,
+			centres: { ...stored.centres, moosburg: { ...stored.centres.moosburg!, listings: [{ ...first!, id: `${first!.id}#2`, first_seen_at: earlier, baseline: true }, ...rest] } },
+		};
+		const replayed = setup({ state: renamed });
+		expect((await pipeline(replayed, { fromCollect: replayFile }, fakeNetwork({}))).code).toBe(0);
+		const after = readStateFile(replayed).centres.moosburg!.listings;
+		expect(after.find((l) => l.id === `${first!.id}#2`)).toMatchObject({ removed_at: null, first_seen_at: earlier, baseline: true });
+		expect(after.some((l) => l.id === first!.id)).toBe(false);
+	});
+
 	it('replays on top of a newer state and directory, dropping outcomes of centres no longer listed', async () => {
 		const original = setup();
 		const replayFile = join(original.dir, 'collect.json');
