@@ -699,8 +699,8 @@
 		},
 		"lat": 49.595651,
 		"lon": 11.006944,
-		"website": "https://www.stadt.erlangen.de/",
-		"test_page_url": null,
+		"website": "https://www.vhs-erlangen.de",
+		"test_page_url": "https://www.vhs-erlangen.de/p/sprachen/einbuergerungstest-480-CAT-KAT243?tx_itemkgconnect_categorys%5Bpage%5D=0&cHash=605553221af9fa4ea6ae8efd32d0874a",
 		"reader": "none",
 		"reader_config": null,
 		"opted_out": false,
@@ -876,24 +876,6 @@
 		"verified_at": "2026-10-27T07:25:45.068Z"
 	},
 	{
-		"centre_id": "vhs-herrsching",
-		"name": "VHS Herrsching",
-		"address": {
-			"street": "Kienbachstr. 3",
-			"postcode": "82211",
-			"city": "Herrsching"
-		},
-		"lat": 47.997757,
-		"lon": 11.174892,
-		"website": "https://www.vhs-herrsching.de/",
-		"test_page_url": null,
-		"reader": "none",
-		"reader_config": null,
-		"opted_out": false,
-		"source": "rtpartner",
-		"verified_at": null
-	},
-	{
 		"centre_id": "vhs-herzogenaurach",
 		"name": "VHS Herzogenaurach",
 		"address": {
@@ -903,7 +885,7 @@
 		},
 		"lat": 49.56811,
 		"lon": 10.881388,
-		"website": "https://www.herzogenaurach.de/",
+		"website": "https://www.vhs-herzogenaurach.de",
 		"test_page_url": null,
 		"reader": "none",
 		"reader_config": null,
