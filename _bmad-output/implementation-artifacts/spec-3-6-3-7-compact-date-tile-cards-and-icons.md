@@ -2,15 +2,22 @@
 title: 'Stories 3.6 + 3.7: Compact date-tile result cards with status, registration and eligibility icons'
 type: 'feature'
 created: '2026-10-31'
-status: 'in-review'
+status: 'done'
 baseline_revision: 'fe29cbf18b348d0256e988c7410624e78828176a'
 review_loop_iteration: 0
-followup_review_recommended: false
+followup_review_recommended: true
 context:
   - '{project-root}/_bmad-output/implementation-artifacts/epic-3-context.md'
   - '{project-root}/_bmad-output/planning-artifacts/ux-designs/ux-bgtsearch-2026-10-25/DESIGN.md'
 warnings: ['multiple-goals', 'oversized']
-deferred: []
+deferred:
+  - summary: >-
+      The recompiled epic-3-context.md drops binding constraints the old one carried and states skipped vs not_checked inconsistently.
+    evidence: |-
+      Blind review: lost rules include pure readers with ctx.runAt as the only clock, mapStatus precedence (waitlist > booked_out > free > unknown), ok-with-zero-dates needing proof of intact page structure, Nominatim only from tools/geocode and locate, publish refusing invalid output, Story 3.8 id-matching order, and "3.6 replaces Epic 2's card keys". Requirements say every centre ends ok/failed/not_checked while Technical Decisions keep merge outcome skipped (published as not_checked).
+    location: >-
+      _bmad-output/implementation-artifacts/epic-3-context.md
+    severity: low
 ---
 
 <intent-contract>
@@ -86,6 +93,46 @@ deferred: []
 - Given the built site at 320 px wide in German, when results render, then each card's tile, text and icon columns share one row, `document.documentElement.scrollWidth` equals 320, and icon buttons measure ≥ 36 × 36 px without overlapping each other or the map pin.
 - Given any card, when read by a screen reader, then no tile text or separator is exposed, and the dated link name follows the Always rule.
 
+## Spec Change Log
+
+## Review Triage Log
+
+### 2026-11-01 — Review pass
+- verdicts: 32 findings — high 0, medium 4, low 21, false 7, maybe-false 0
+- findings:
+  - `[low]` `[reject]` (intent) Layout ACs (320 px/200 % reflow, 36 px targets, label above icon, focus ring) are CSS-only, not measured by tests — happy-dom cannot lay out; checked in the built site at 320 px DE: 38 cards, `scrollWidth` 320, no child outside its card, every icon button ≥ 36 × 36, tile and text on one row.
+  - `[low]` `[reject]` (intent) Enter/Space toggling not tested — native `<button>` activation dispatches click; adding a keyboard simulation would not change code.
+  - `[false]` `[reject]` (intent) Waitlist icon aria-label "Booked out, waitlist open" differs from its visible label — EXPERIENCE.md Accessibility Floor says "Booked out · Waitlist" is spoken "Booked out, waitlist open", and the mockup's aria-label is the same.
+  - `[false]` `[reject]` (intent) Uncovered link name reworded beyond the ACs — recorded design choice (Design Notes): the Voice-and-Tone sentences must stay in en.json and now give the link its reason; nothing wrong is announced.
+  - `[low]` `[reject]` (intent) "Tapping an icon never opens the card" depends on z-index, not exercised — checked in the built site: clicking an icon expanded it and the URL stayed the same, no tab opened.
+  - `[false]` `[reject]` (intent) New tokens already existed before the diff — not a defect; the AC holds and the new extra-token test enforces removal.
+  - `[false]` `[reject]` (intent) Planning-only reading not implemented — the intent is to build the stories; that reading does not apply.
+  - `[low]` `[defer]` (intent) Epic-context rewrite mixed into the change — same root cause as the blind epic-context row; deferred (agent-context file).
+  - `[medium]` `[patch]` (verification-gap) No check that every `var(--x)` in base.css is declared — added a design-tokens test that fails on any var() declared in neither tokens.css nor base.css.
+  - `[medium]` `[patch]` (edge-case) Hover/focus label cannot be dismissed with Escape — `CardIcon` now sets `data-dismissed` on Escape (open or not), cleared on blur, pointer leave and open; hover/focus CSS skips it; test added.
+  - `[medium]` `[patch]` (edge-case) Sticky :hover on touch keeps a tapped-closed label visible — hover rule moved into `@media (hover: hover)`.
+  - `[low]` `[reject]` (edge-case) Hovering one icon while another is expanded shows two labels — transient, desktop pointer only; a fix needs cross-icon hover state.
+  - `[low]` `[patch]` (edge-case) Empty third grid track still takes a column-gap on no-dates/uncovered cards — added `.card:not(:has(.card__icons))` with two columns.
+  - `[low]` `[reject]` (edge-case) Empty-string href leaves the h3 nameless — `source_url` is a required URL in the snapshot contract; no caller passes ''.
+  - `[low]` `[reject]` (edge-case) Tile month/weekday may differ by browser ICU ("Dez"/"Dez.") — cosmetic; built-site Chrome shows "Nov"/"Fr" as tested.
+  - `[low]` `[patch]` (edge-case) `cardName` test helper silently mis-slices when the address is missing — now throws.
+  - `[false]` `[reject]` (edge-case) Removing the destination line hides where a dead link falls back — DESIGN.md explicitly removes the domain line ("no domain line"); the link name still says the domain.
+  - `[low]` `[reject]` (edge-case) Fallback `content: '·'` is spoken in browsers without alt-text support — deliberate trade-off: without it those browsers show no separator; current Safari/Firefox/Chrome use the silent form.
+  - `[medium]` `[patch]` (blind) Labels stay visible after closing (sticky hover, focus-visible ignores expanded state) — same fixes as the two edge-case rows above.
+  - `[low]` `[reject]` (blind) Words announced twice (aria-label plus live span) and many live regions — the AC requires the opened label to be announced politely; empty polite regions are inert.
+  - `[low]` `[reject]` (blind) German names in aria-label lose `lang="de"` — aria-label cannot carry lang; dated cards already worked this way before; fix needs aria-labelledby restructuring.
+  - `[low]` `[reject]` (blind) Link-name templates inconsistent and punctuation-dependent — cosmetic; both strings live side by side in the same catalogue.
+  - `[low]` `[patch]` (blind) "New" badge slot comment is in the wrong place — moved into `AddressLine` after the map pin.
+  - `[low]` `[reject]` (blind) `CardHeading` type allows an empty h3 — every undated caller passes `hiddenName`, dated cards always have an href.
+  - `[low]` `[patch]` (blind) `distanceText` lives in the dated-card module — moved to `card-parts.tsx`.
+  - `[low]` `[patch]` (blind) `cardName` helper fails silently — same fix as the edge-case row.
+  - `[low]` `[reject]` (blind) "Never says open to all" test is narrow — no code would change; no string in either catalogue says it.
+  - `[low]` `[reject]` (blind) Missing toggletip edge-case tests (unmount while open, Escape elsewhere) — cleanup effect resets `closeOpen`; tests would not change code.
+  - `[false]` `[reject]` (blind) Amber text bypasses component tokens and lacks contrast checks — DESIGN.md Colors assigns `status-unknown` to "Deadline passed" and the not-checked tile and records AA contrast for these pairs; the var() part is covered by the patched test.
+  - `[low]` `[defer]` (blind) Epic context rewrite drops binding constraints and adds a skipped/not_checked contradiction — agent-context file; recorded in `deferred`.
+  - `[false]` `[reject]` (blind) Diff mixes unrelated work and omits the spec — the spec is the claims file reviewed separately; the recompiled epic context is workflow output committed with the story, as in Story 3.2.
+  - `[low]` `[reject]` (blind) Untimed dates print 00:00 — Story 3.10 is a separate story and the spec's Never excludes it.
+
 ## Design Notes
 
 The full "Not checked automatically. See the centre's page." sentences stay in the catalogues (Voice-and-Tone test) and move into the uncovered link name, while the visible meta line uses the short form the AC requires: `Akademie Nürnberg, Not checked automatically. See the centre's page. Opens kurse.akademie.example.de in a new tab`.
@@ -101,3 +148,25 @@ Single-open: a module-level `closeOpen` callback; opening an icon calls the prev
 
 **Manual checks:**
 - `vite preview`, "Herrsching" 10 km EN and DE: tile/icons/meta render; tap icon shows label and does not open card; 320 px DE: no sideways scroll, icon targets 36 px.
+
+## Auto Run Result
+
+**Summary:** Result, no-dates and uncovered cards now use the variant B date-tile layout: tile | address with map pin, meta line ("10:00 · 14 km · Deadline 11 Nov"), centre, freshness | stacked icons, with the eligibility rule as a full-width line. Status, registration and missing eligibility are toggletip icon buttons (one open page-wide; Escape, outside tap or another icon closes). Key-facts row, status chip and destination line are gone, with their tokens and translation keys.
+
+**Files changed:**
+- `web/src/search/card-parts.tsx` -- new: glyphs, tiles, heading link, address line, meta line, `distanceText`, `CardIcon` toggletip.
+- `web/src/search/result-card.tsx`, `no-dates-card.tsx`, `uncovered-card.tsx` -- rebuilt to variant B.
+- `web/src/search/format.ts` -- `tileDate`, `cardTime`.
+- `web/src/styles/tokens.css`, `base.css` -- removed old tokens and rules; tile grid, meta, icon, label and eligibility styles.
+- `web/src/i18n/en.json`, `de.json` -- card keys replaced.
+- `tests/design-tokens.test.ts` -- no-extra-token and declared-var() tests.
+- `tests/format.test.ts`, `tests/search-page.test.tsx`, `tests/shell.test.tsx` -- new layout and icon tests.
+- `_bmad-output/implementation-artifacts/epic-3-context.md` -- recompiled at step 1 (epics.md was newer).
+
+**Review:** 32 findings. Patched: 2 medium entries (hover/focus labels not dismissible and sticky after tap; no check for undeclared var()) and 4 low entries (empty grid track, test helper, badge comment, `distanceText` location). Deferred: 1 (epic context lost constraints). Rejected: 7 false and 14 low, each with its reason in the Review Triage Log.
+
+**Follow-up review recommended:** true — two medium entries were patched after review (patched counts: high 0, medium 2, low 4). Unverified risk: the new `data-dismissed` state (Escape, blur, pointer leave) and the `(hover: hover)` rule have had no fresh review, and real touch-device behaviour was not tested.
+
+**Verification:** `npm test` 1,294 passed, 1 skipped; `npm run typecheck` clean; `npm run build` succeeds. Built site (`vite preview`), München 40 km, DE, 320 px: 38 cards with booked-out shown, `scrollWidth` 320, no element outside its card, icon buttons ≥ 36 × 36, tile and text start on one row; clicking an icon expands it, shows the label above and sets the live text without navigating.
+
+**Residual risks:** At 200 % zoom on a 320 px screen (160 CSS px) the three columns cannot all fit. Real screen-reader speech, touch devices and the Enter/Space keys were not tested. German centre names in link names are read in the UI language.
