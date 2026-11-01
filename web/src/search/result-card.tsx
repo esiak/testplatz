@@ -16,7 +16,7 @@ const STATUS_WORD: Record<StatusCode, MessageKey> = {
 const STATUS_ICON: Record<StatusCode, { glyph: GlyphName; tint: IconTint }> = {
 	free: { glyph: 'free', tint: 'free' },
 	booked_out: { glyph: 'booked', tint: 'booked' },
-	waitlist: { glyph: 'waitlist', tint: 'booked' },
+	waitlist: { glyph: 'waitlist', tint: 'waitlist' },
 	unknown: { glyph: 'unknown', tint: 'unknown' },
 };
 

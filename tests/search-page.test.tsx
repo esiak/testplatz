@@ -676,6 +676,7 @@ describe('result cards', () => {
 		expect(centre.getAttribute('lang')).toBe('de');
 
 		expect(iconShapes(card)).toEqual(['waitlist', 'online']);
+		expect(icons(card)[0]!.classList.contains('card-icon__button--waitlist')).toBe(true);
 		expect(iconLabels(card)).toEqual(['Booked out, waitlist open', 'Register online']);
 		expect(card.querySelectorAll('.card-icon__label')[0]!.textContent).toBe('Booked out · Waitlist');
 		for (const button of icons(card)) expect(link.contains(button)).toBe(false);

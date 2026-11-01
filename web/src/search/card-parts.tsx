@@ -205,7 +205,7 @@ export function MetaLine({ parts }: { parts: MetaPart[] }) {
 /** Closes the one open icon label on the page, if any. */
 let closeOpen: (() => void) | null = null;
 
-export type IconTint = 'free' | 'booked' | 'unknown' | 'info';
+export type IconTint = 'free' | 'waitlist' | 'booked' | 'unknown' | 'info';
 
 /**
  * A card icon as a toggletip: a button whose `aria-label` is its words, with a visible label above

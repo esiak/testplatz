@@ -10,7 +10,7 @@ body {
 	margin: 0;
 	font: var(--font-body);
 	color: var(--color-ink-primary);
-	background: var(--color-surface-base);
+	background: var(--color-surface-page);
 	overflow-wrap: break-word;
 }
 
@@ -35,11 +35,41 @@ a {
 	padding-inline: var(--space-gutter-mobile);
 }
 
-/* Header: "DE | EN" */
+/* Header: logo and tagline at the start, "DE | EN" at the end. */
 .site-header {
 	display: flex;
-	justify-content: flex-end;
-	padding-block: var(--space-2);
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--space-3);
+	padding-block: var(--space-3);
+}
+
+.site-brand {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-1);
+	min-width: 0;
+}
+
+.site-brand__link {
+	display: inline-flex;
+	align-self: flex-start;
+	border-radius: var(--radius-sm);
+}
+
+.site-brand__logo {
+	display: block;
+	block-size: calc(var(--space-6) + var(--space-4));
+	inline-size: auto;
+	max-inline-size: 100%;
+}
+
+.site-brand__tagline {
+	margin: 0;
+	font: var(--font-meta);
+	color: var(--color-ink-secondary);
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
 }
 
 .lang-switch {
@@ -216,7 +246,6 @@ a {
 	row-gap: var(--space-1);
 	align-items: end;
 	margin-block-end: var(--space-4);
-	background: var(--search-bar-background);
 }
 
 @media (min-width: 37.5em) {
@@ -618,7 +647,7 @@ a {
 	inline-size: var(--date-tile-width);
 	padding-block: var(--space-1);
 	text-align: center;
-	color: var(--color-ink-primary);
+	color: var(--date-tile-color);
 	background: var(--date-tile-background);
 	border-radius: var(--date-tile-rounded);
 }
@@ -794,6 +823,11 @@ a {
 .card-icon__button--free .card-icon__circle {
 	color: var(--status-icon-free-color);
 	background: var(--status-icon-free-background);
+}
+
+.card-icon__button--waitlist .card-icon__circle {
+	color: var(--status-icon-waitlist-color);
+	background: var(--status-icon-waitlist-background);
 }
 
 .card-icon__button--booked .card-icon__circle {

@@ -2,33 +2,37 @@
 name: bgtsearch
 description: Einbürgerungstest date search for Bavaria. Plain, factual, phone-first. Every fact shows how fresh it is.
 status: final
-updated: 2026-10-30
+updated: 2026-11-01
 colors:
+  surface-page: '#F8F9FA'
   surface-base: '#FFFFFF'
-  surface-muted: '#F4F5F7'
-  ink-primary: '#1B1F24'
+  surface-muted: '#F1F3F5'
+  ink-primary: '#1D2731'
   ink-secondary: '#5A6370'
   border: '#DDE1E6'
   control-border: '#7A838F'
-  action: '#0B5CAD'
-  status-free: '#1E7A3E'
-  status-free-bg: '#E6F4EA'
+  action: '#C8102E'
+  date-tile: '#E9C46A'
+  date-tile-ink: '#1D2731'
+  status-free: '#1B4332'
+  status-free-bg: '#A3D9A5'
+  status-waitlist: '#1D2731'
+  status-waitlist-bg: '#F4A261'
   status-booked: '#5A6370'
   status-booked-bg: '#EEF0F2'
   status-unknown: '#8A5A00'
   status-unknown-bg: '#FFF4D6'
   error: '#B3261E'
-  surface-base-dark: '#14171B'
-  surface-muted-dark: '#1E2227'
-  ink-primary-dark: '#ECEEF1'
+  surface-page-dark: '#12181E'
+  surface-base-dark: '#1D2731'
+  surface-muted-dark: '#28323D'
+  ink-primary-dark: '#F1F3F5'
   ink-secondary-dark: '#A3ABB5'
-  border-dark: '#2E343B'
-  control-border-dark: '#737C88'
-  action-dark: '#7DB7F5'
-  status-free-dark: '#7BD596'
-  status-free-bg-dark: '#16301F'
+  border-dark: '#2E3843'
+  control-border-dark: '#7F8995'
+  action-dark: '#FF7A8A'
   status-booked-dark: '#A3ABB5'
-  status-booked-bg-dark: '#262B31'
+  status-booked-bg-dark: '#2C3640'
   status-unknown-dark: '#F2C86B'
   status-unknown-bg-dark: '#3A2E10'
   error-dark: '#F2B8B5'
@@ -114,18 +118,20 @@ components:
     rounded: '{rounded.md}'
     padding: '{spacing.3}'
   date-tile:
-    background: '{colors.surface-muted}'
+    background: '{colors.date-tile}'
+    color: '{colors.date-tile-ink}'
     rounded: '{rounded.sm}'
     width: '{spacing.tile-width}'
     day-typography: '{typography.tile-day}'
     label-typography: '{typography.meta}'
-    label-color: '{colors.ink-secondary}'
+    label-color: '{colors.date-tile-ink}'
   status-icon:
     size: '{spacing.icon-size}'
     target: '{spacing.icon-target}'
     rounded: '{rounded.full}'
     variants:
       free: { color: '{colors.status-free}', background: '{colors.status-free-bg}' }
+      waitlist: { color: '{colors.status-waitlist}', background: '{colors.status-waitlist-bg}' }
       booked: { color: '{colors.status-booked}', background: '{colors.status-booked-bg}' }
       unknown: { color: '{colors.status-unknown}', background: '{colors.status-unknown-bg}' }
   info-icon:
@@ -175,28 +181,31 @@ components:
 
 ## Brand & Style
 
-A public utility, not a product pitch. People arrive anxious about a deadline and want one answer: where is there a date near me, and is it real? The look is plain and factual, close to a timetable. [ASSUMPTION] No illustrations, no marketing hero, no brand colour competing with the status colours. Trust comes from showing what is known, what isn't, and how old each fact is.
+A public utility, not a product pitch. People arrive anxious about a deadline and want one answer: where is there a date near me, and is it real? The look is plain and factual, close to a timetable. [ASSUMPTION] No illustrations, no marketing hero, no brand colour on the status icons. The only brand marks are the logo and the red accent. Trust comes from showing what is known, what isn't, and how old each fact is.
 
 ## Colors
 
-[ASSUMPTION] All hex values are a neutral starting palette; Eleni has not chosen colours.
+Brand palette chosen by Eleni on 2026-11-01: navy ink, a black-red-gold logo, red as the one accent, gold date tiles.
 
-- **Surface (`#FFFFFF` / `#14171B`)** and **Muted (`#F4F5F7` / `#1E2227`)**: page, date tile, eligibility line and icon backgrounds.
-- **Ink primary / secondary**: text. Secondary only for meta (time, distance, centre name, freshness), never for the date or the address.
-- **Border (`#DDE1E6` / `#2E343B`)**: card outlines and dividers only. Never the only boundary of a control.
-- **Control border (`#7A838F` / `#737C88`)**: outline of every input, select, checkbox and segmented control.
-- **Action (`#0B5CAD` / `#7DB7F5`)**: primary button, focus ring, map-pin and "Why?" links, "Opens the centre's test page".
-- **Status colours**: free (green), booked out (grey), unknown (amber). Each has a tinted background for the status icon. Status is never colour-only: each status has its own icon shape and a text label (see Components). Amber also marks "Deadline passed" and the not-checked tile.
-- **Error (`#B3261E` / `#F2B8B5`)**: field messages ("place not found") and "we couldn't load results". Never used for "booked out".
+- **Page (`#F8F9FA` / `#12181E`)**: page background behind the cards.
+- **Surface (`#FFFFFF` / `#1D2731`)**: cards, search field, place suggestions. **Muted (`#F1F3F5` / `#28323D`)**: eligibility line, "New" badge, info icons, skeleton bars.
+- **Ink primary (`#1D2731` / `#F1F3F5`) / secondary (`#5A6370` / `#A3ABB5`)**: text. Secondary only for meta (time, distance, centre name, freshness), never for the date or the address.
+- **Border (`#DDE1E6` / `#2E3843`)**: card outlines and dividers only. Never the only boundary of a control.
+- **Control border (`#7A838F` / `#7F8995`)**: outline of every input, select, checkbox and segmented control.
+- **Action (`#C8102E` / `#FF7A8A`)**: primary button, focus ring, links, map pin, inactive language. The brand red.
+- **Date tile (`#E9C46A`, ink `#1D2731`, both modes)**: background and text of the date tile on result cards.
+- **Status colours**: free (dark green on light green), waitlist (navy on orange), booked out (grey), unknown (amber). The free and waitlist tints are the same in both modes. Status is never colour-only: each status has its own icon shape and a text label (see Components). Amber also marks "Deadline passed" and the not-checked tile.
+- **Error (`#B3261E` / `#F2B8B5`)**: field messages ("place not found") and "we couldn't load results". It is close to the action red, so an error always carries its icon and the word "Error". Never used for "booked out".
 
-Contrast, checked 2026-10-25, both modes:
-- Text pairs meet AA (≥ 4.5:1); lowest is free on free-bg at 4.73:1.
-- Control border meets non-text 3:1: 3.84 / 3.52 (light, on base / muted), 4.25 / 3.78 (dark).
-- Focus ring (action) is ≥ 6.1:1 on every surface.
+Contrast, checked 2026-11-01, both modes:
+- Text pairs meet AA (≥ 4.5:1); lowest is action on muted in dark mode at 5.21:1.
+- Control border meets non-text 3:1: 3.84 / 3.45 (light, on base / muted), 4.26 / 3.66 (dark).
+- Focus ring (action) is ≥ 5.2:1 on every surface.
+- Gold `#F5A623` is used only inside the logo; it is 2:1 on white and never used for text.
 
 Re-check if any value changes.
 
-Avoid: red for booked out (it's normal, not an error), gradients, more than one accent, amber for staleness.
+Avoid: red for booked out (it's normal, not an error), gradients, more than one accent, amber for staleness, the logo gold as a text colour.
 
 ## Typography
 
@@ -244,7 +253,7 @@ Flat. Cards are separated by `{colors.border}` and spacing, not shadow. The only
 
   When an eligibility rule was found, the eligibility line spans the full card width below the three columns. No key-facts row, no status chip, no domain line.
 - **Address line**: full test address in `card-address`, `{colors.ink-primary}` ("Krankenhausstr. 40, 89312 Günzburg"), followed by a map-pin icon in `{colors.action}` that opens Google Maps (44 × 44 px target). Address text is selectable. A "New" badge follows the pin when the date is new.
-- **Status icon** (`{components.status-icon}`): tinted circle with a distinct shape per status, so colour is never the only cue: tick = "Free seats" (free), slashed circle = "Booked out" (booked), clock = "Booked out · Waitlist" (booked), question mark = "Status unknown" (unknown).
+- **Status icon** (`{components.status-icon}`): tinted circle with a distinct shape per status, so colour is never the only cue: tick = "Free seats" (free), slashed circle = "Booked out" (booked), clock = "Booked out · Waitlist" (waitlist), question mark = "Status unknown" (unknown).
 - **Registration icon** (`{components.info-icon}`): screen = "Register online", envelope = "Register by email", mailbox = "Register by post", person = "Register in person", form with question mark = "Registration: see website".
 - **Eligibility icon** (`{components.info-icon}`): person with question mark = "Who may register: not stated". Shown only when no rule was found; never shown as "open to all" (CAP-11).
 - **Icon label** (`{components.icon-label}`): the icon's words in a small dark label above the icon, on hover, keyboard focus or tap.
@@ -256,6 +265,7 @@ Flat. Cards are separated by `{colors.border}` and spacing, not shadow. The only
 - **Section heading**: `section` style, h2: "No dates to show" (Soonest sort only).
 - **Skeleton card**: result-card outline with three grey bars in `{colors.surface-muted}`; static, no shimmer.
 - **Retry / next-radius buttons**: `button-secondary`, full width on phones.
+- **Header**: the logo (pin in black, red and gold, then "testplatz" in navy, red and gold) at the start, linking to the search page, with the tagline under it in `meta`, `{colors.ink-secondary}` ("Ihr Einbürgerungstest-Finder" / "Your citizenship test finder"). The dark-mode logo has a light outline on the pin and a light "test". The language switch sits at the end. The favicon is the pin alone.
 - **Language switch**: "DE | EN" in the header; each a 44 px target; active one in `{colors.ink-primary}` and bold, inactive in `{colors.action}`.
 - **Footer**: `meta`. Links to About the data, Impressum, Privacy; attribution line "Place data © OpenStreetMap contributors (ODbL)".
 
