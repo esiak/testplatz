@@ -1,16 +1,57 @@
 // @vitest-environment happy-dom
+import { readFileSync } from 'node:fs';
 import { render } from 'preact';
 import { act } from 'preact/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ReaderRegistry } from '../pipeline/stages/collect.ts';
+import { readState } from '../pipeline/stages/merge.ts';
+import { DIRECTORY_PATH, STATE_PATH } from '../pipeline/stages/paths.ts';
+import { buildSnapshot } from '../pipeline/stages/publish.ts';
+import { READER_REGISTRY } from '../pipeline/stages/run.ts';
+import { directorySchema } from '../shared/directory.ts';
 import { SNAPSHOT_SCHEMA_VERSION, type SnapshotCentre, type SnapshotListing } from '../shared/snapshot.ts';
 import { App } from '../web/src/app.tsx';
 import { PLACES_URL } from '../web/src/data/places.ts';
 import { RELOAD_FLAG } from '../web/src/data/reload-once.ts';
-import { SNAPSHOT_URL } from '../web/src/data/snapshot.ts';
+import { isUnlocated, SNAPSHOT_URL } from '../web/src/data/snapshot.ts';
 import de from '../web/src/i18n/de.json' with { type: 'json' };
 import en from '../web/src/i18n/en.json' with { type: 'json' };
+import { unlocatedInPlace } from '../web/src/search/search.ts';
 import { PLACE_ROWS, placeRow, placesOf, smallPlaces } from './fixtures/places.ts';
 import { coveredCentre, jsonResponse, snapshotCentre, snapshotListing, snapshotOf } from './fixtures/snapshot.ts';
+
+// The pipeline's paths come from `new URL(…, import.meta.url)`, which the web transform this
+// happy-dom file runs under resolves against the page, so evaluating `paths.ts` or
+// `fetch/visits.ts` throws (`importOriginal()` included). Every export of `paths.ts` is rebuilt
+// from the file path instead; `fetch/visits.ts` keeps its path, and its functions, which building
+// a snapshot never calls, throw if reached.
+vi.mock('../pipeline/stages/paths.ts', async () => {
+	const { dirname, join } = await import('node:path');
+	const { fileURLToPath } = await import('node:url');
+	const data = join(dirname(fileURLToPath(import.meta.url)), '..', 'data');
+	const PUBLIC_DIR = join(data, 'public');
+	return {
+		DIRECTORY_PATH: join(data, 'directory/centres.json'),
+		PUBLIC_DIR,
+		SNAPSHOT_FILE: 'snapshot.json',
+		SNAPSHOT_PATH: join(PUBLIC_DIR, 'snapshot.json'),
+		STATE_PATH: join(data, 'state/state.json'),
+		VENUES_PATH: join(data, 'state/venues.json'),
+		VISIT_LOG_PATH: join(data, 'state/visits.json'),
+	};
+});
+vi.mock('../pipeline/fetch/visits.ts', async () => {
+	const { dirname, join } = await import('node:path');
+	const { fileURLToPath } = await import('node:url');
+	const unused = (name: string) => () => {
+		throw new Error(`${name} is not available in search-page.test.tsx`);
+	};
+	return {
+		VISIT_LOG_PATH: join(dirname(fileURLToPath(import.meta.url)), '..', 'data/state/visits.json'),
+		readVisitLog: unused('readVisitLog'),
+		overBudget: unused('overBudget'),
+	};
+});
 
 // ---------- fixtures ----------
 
@@ -1667,6 +1708,25 @@ describe('centres without a map position', () => {
 		expect(box.textContent).toBe('No test centres within 10 km.Search 20 km1 centre has no map position yet and may be nearby. See which');
 		expect(box.lastElementChild!.querySelector('a')!.getAttribute('href')).toBe('/about/#no-location=&lang=en');
 		expect(statusText()).toBe('No test centres within 10 km.');
+	});
+
+	it('shows the notice only when a snapshot built from the committed directory and state has unlocated centres elsewhere (Story 3.13)', async () => {
+		const centres = directorySchema.parse(JSON.parse(readFileSync(DIRECTORY_PATH, 'utf8')));
+		const readers = (Object.keys(READER_REGISTRY) as (keyof ReaderRegistry)[]).filter((system) => READER_REGISTRY[system] !== undefined);
+		const snapshot = buildSnapshot({ centres, state: readState(STATE_PATH), outcomes: {}, readers, runAt: new Date(DEFAULT_NOW) });
+		const unlocated = snapshot.centres.filter(isUnlocated);
+		for (const [place, row, km] of [['München', PLACE_ROWS.muenchen, 20], ['Augsburg', PLACE_ROWS.augsburg, 10]] as const) {
+			const hidden = unlocated.length - unlocatedInPlace(snapshot.centres, row).length;
+			serve(ok(snapshot));
+			setBrowser();
+			mount();
+			await settle();
+			await search(place, km);
+			expect(root.querySelector('.search__results')).not.toBeNull();
+			if (hidden === 0) expect(notice()).toBeNull();
+			else expect(notice()!.textContent).toMatch(new RegExp(`^${hidden} centres? `));
+			act(() => render(null, root));
+		}
 	});
 });
 

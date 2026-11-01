@@ -1,0 +1,619 @@
+diff --git a/AGENTS.md b/AGENTS.md
+new file mode 100644
+index 0000000..8402197
+--- /dev/null
++++ b/AGENTS.md
+@@ -0,0 +1,15 @@
++<!-- bmad:context -->
++<!-- Verified 2026-11-01 against 0cfa872cf5fafd10a9bb107e7e89603304a6b281. Managed by bmad-project-context; edits inside this block are replaced on refresh. Keep anything you want preserved outside the markers. -->
++
++## bgtsearch
++
++Finds Einbürgerungstest dates near you in Bavaria: a static Preact site on GitHub Pages, fed by a Node pipeline that reads test centres' pages into `data/public/snapshot.json`. TypeScript throughout, run directly by Node (version in `.nvmrc`), built with Vite, tested with Vitest. Planning lives in `_bmad-output/planning-artifacts/` (`epics.md`, `architecture/`), story specs in `_bmad-output/implementation-artifacts/`, operator runbook in `docs/operations.md`.
++
++## Running and verifying
++
++- Run `npm run typecheck` and `npm test` before calling a change done; CI (`.github/workflows/ci.yml`) also runs `npm run check:directory` and `npm run build`.
++- `npm test` gates publishing. Committed-data tests derive their expectations from the files and never fail on a legitimate data change.
++- Run one file while iterating: `npx vitest run tests/<name>.test.ts`.
++- Run `npm run geocode` after changing a centre address in `data/directory/centres.json`. Set coordinates by hand only when Nominatim cannot find the correct address, and then add the centre to `HAND_SET_CENTRES` in `tests/directory.test.ts`.
++
++<!-- /bmad:context -->
+diff --git a/_bmad-output/implementation-artifacts/deferred-work.md b/_bmad-output/implementation-artifacts/deferred-work.md
+index 039cbe6..4709623 100644
+--- a/_bmad-output/implementation-artifacts/deferred-work.md
++++ b/_bmad-output/implementation-artifacts/deferred-work.md
+@@ -19,3 +19,4 @@
+ - source_spec: `_bmad-output/implementation-artifacts/spec-1-12-search-shows-every-centre-and-the-right-place.md`
+   summary: Replace the blanket "no cache record is fine" rule in `tests/directory.test.ts` with a named allowlist of centres whose coordinates were set by hand.
+   evidence: Low. Story 1.12 allows hand-set coordinates so the operator can fix the 8 missing ones; as written, a geocode-cache record lost by accident would also pass. No hand-set centre exists yet — add the allowlist with the first one.
++  status: resolved 2026-11-01 (Story 3.13) — `HAND_SET_CENTRES` in `tests/directory.test.ts` lists `vhs-kreis-kronach-e-v`; a centre with coordinates and no record fails unless listed, and a stale entry fails.
+diff --git a/data/directory/centres.json b/data/directory/centres.json
+index f68c9d7..a19568e 100644
+--- a/data/directory/centres.json
++++ b/data/directory/centres.json
+@@ -39,12 +39,12 @@
+ 		"centre_id": "bayerisches-rotes-kreuz",
+ 		"name": "Bayerisches Rotes Kreuz",
+ 		"address": {
+-			"street": "Goethestr. 53",
+-			"postcode": "81379",
++			"street": "Goethestraße 53",
++			"postcode": "80336",
+ 			"city": "München"
+ 		},
+-		"lat": null,
+-		"lon": null,
++		"lat": 48.133064,
++		"lon": 11.558782,
+ 		"website": "https://www.brk-muenchen.de/",
+ 		"test_page_url": "https://www.brk-muenchen.de/start/angebote/migration-integration/einbuergerungstests-muenchen.html",
+ 		"reader": "none",
+@@ -291,12 +291,12 @@
+ 		"centre_id": "muenchner-vhs-gmbh",
+ 		"name": "Münchner VHS GmbH",
+ 		"address": {
+-			"street": "Orleanstraße 34",
++			"street": "Orleansstraße 34",
+ 			"postcode": "81667",
+ 			"city": "München"
+ 		},
+-		"lat": null,
+-		"lon": null,
++		"lat": 48.125379,
++		"lon": 11.600407,
+ 		"website": "https://www.mvhs.de/",
+ 		"test_page_url": "https://www.mvhs.de/kurse/deutsch-integration/pruefungen-einbuergerung/einbuergerung-460-CAT-KAT7868",
+ 		"reader": "itemkg",
+@@ -631,12 +631,12 @@
+ 		"centre_id": "vhs-der-gemeinden-im-landkreis-roth",
+ 		"name": "VHS der Gemeinden im Landkreis Roth",
+ 		"address": {
+-			"street": "Maria-Dorothea-Str. 8",
++			"street": "Maria-Dorothea-Straße 8",
+ 			"postcode": "91161",
+-			"city": "Hilpoldstein"
++			"city": "Hilpoltstein"
+ 		},
+-		"lat": null,
+-		"lon": null,
++		"lat": 49.189219,
++		"lon": 11.194283,
+ 		"website": "https://www.vhs-roth.de/",
+ 		"test_page_url": "https://www.vhs-roth.de/suche?tx_itemkgconnect_search%5Bsword%5D=Einb%C3%BCrgerungstest",
+ 		"reader": "itemkg",
+@@ -876,11 +876,11 @@
+ 		"name": "VHS Fichtelgebirge",
+ 		"address": {
+ 			"street": "Ludwigsmühle 10",
+-			"postcode": "95615",
++			"postcode": "95100",
+ 			"city": "Selb"
+ 		},
+-		"lat": null,
+-		"lon": null,
++		"lat": 50.166326,
++		"lon": 12.142697,
+ 		"website": "https://www.vhs-fichtelgebirge.de/",
+ 		"test_page_url": "https://www.vhs-fichtelgebirge.de/p/integration/einbuergerungstest-644-CAT-KAT223?tx_itemkgconnect_categorys%5Bpage%5D=0&tx_itemkgconnect_categorys%5Bsword%5D=&cHash=e885cf8b12db5f275383bc211595c590",
+ 		"reader": "itemkg",
+@@ -1131,12 +1131,12 @@
+ 		"centre_id": "vhs-kaufering",
+ 		"name": "VHS Kaufering",
+ 		"address": {
+-			"street": "Albert-Schweizer-Str.4a",
++			"street": "Albert-Schweitzer-Str. 4a",
+ 			"postcode": "86916",
+ 			"city": "Kaufering"
+ 		},
+-		"lat": null,
+-		"lon": null,
++		"lat": 48.089113,
++		"lon": 10.852478,
+ 		"website": "https://www.kaufering.de/",
+ 		"test_page_url": null,
+ 		"reader": "none",
+@@ -1171,8 +1171,8 @@
+ 			"postcode": "96317",
+ 			"city": "Kronach"
+ 		},
+-		"lat": null,
+-		"lon": null,
++		"lat": 50.2377498,
++		"lon": 11.325182,
+ 		"website": "https://www.vhs-kronach.de/",
+ 		"test_page_url": "https://www.vhs-kronach.de/fachbereich//programmbereich/sprachen/einbuergerungstest?",
+ 		"reader": "none",
+@@ -1967,12 +1967,12 @@
+ 		"centre_id": "volkshochschule-eching-e-v",
+ 		"name": "Volkshochschule Eching e.V.",
+ 		"address": {
+-			"street": "Roßbergstr. 8",
++			"street": "Roßbergerstr. 8",
+ 			"postcode": "85386",
+ 			"city": "Eching"
+ 		},
+-		"lat": null,
+-		"lon": null,
++		"lat": 48.298116,
++		"lon": 11.621663,
+ 		"website": "https://www.vhs-eching.de",
+ 		"test_page_url": "https://www.vhs-eching.de/programm/sprachen/kategorie/Einbuergerungstest/364",
+ 		"reader": "kuferweb",
+@@ -2077,12 +2077,12 @@
+ 		"centre_id": "volkshochschule-kitzingen",
+ 		"name": "Volkshochschule Kitzingen",
+ 		"address": {
+-			"street": "Paul-Eber-Haus, Schulhof 1",
++			"street": "Hindenburgring Süd 3",
+ 			"postcode": "97318",
+ 			"city": "Kitzingen"
+ 		},
+-		"lat": null,
+-		"lon": null,
++		"lat": 49.735157,
++		"lon": 10.162162,
+ 		"website": "https://www.stadt-kitzingen.de/",
+ 		"test_page_url": null,
+ 		"reader": "none",
+diff --git a/data/directory/geocode-cache.json b/data/directory/geocode-cache.json
+index f302f9e..c368589 100644
+--- a/data/directory/geocode-cache.json
++++ b/data/directory/geocode-cache.json
+@@ -10,6 +10,11 @@
+ 			"lon": 11.565015,
+ 			"query": "Hamburger Straße 32, 80809 München"
+ 		},
++		"bayerisches-rotes-kreuz": {
++			"lat": 48.133064,
++			"lon": 11.558782,
++			"query": "Goethestraße 53, 80336 München"
++		},
+ 		"berufliche-fortbildungszentren-der-bayerischen-wirtschaft": {
+ 			"lat": 48.707751,
+ 			"lon": 10.760546,
+@@ -75,6 +80,11 @@
+ 			"lon": 11.55555,
+ 			"query": "Lindwurmstr. 109, 80337 München"
+ 		},
++		"muenchner-vhs-gmbh": {
++			"lat": 48.125379,
++			"lon": 11.600407,
++			"query": "Orleansstraße 34, 81667 München"
++		},
+ 		"oberallgaeuer-vhs": {
+ 			"lat": 47.512522,
+ 			"lon": 10.291026,
+@@ -160,6 +170,11 @@
+ 			"lon": 12.962494,
+ 			"query": "Amanstr. 11, 94469 Deggendorf"
+ 		},
++		"vhs-der-gemeinden-im-landkreis-roth": {
++			"lat": 49.189219,
++			"lon": 11.194283,
++			"query": "Maria-Dorothea-Straße 8, 91161 Hilpoltstein"
++		},
+ 		"vhs-der-stadt-landsberg-lech": {
+ 			"lat": 48.048261,
+ 			"lon": 10.876275,
+@@ -220,6 +235,11 @@
+ 			"lon": 12.192745,
+ 			"query": "Pommernstr. 4, 93073 Neutraubling"
+ 		},
++		"vhs-fichtelgebirge": {
++			"lat": 50.166326,
++			"lon": 12.142697,
++			"query": "Ludwigsmühle 10, 95100 Selb"
++		},
+ 		"vhs-freising-e-v": {
+ 			"lat": 48.403015,
+ 			"lon": 11.744462,
+@@ -285,6 +305,11 @@
+ 			"lon": 10.623901,
+ 			"query": "Spitaltor 5, 87600 Kaufbeuren"
+ 		},
++		"vhs-kaufering": {
++			"lat": 48.089113,
++			"lon": 10.852478,
++			"query": "Albert-Schweitzer-Str. 4a, 86916 Kaufering"
++		},
+ 		"vhs-kempten": {
+ 			"lat": 47.725671,
+ 			"lon": 10.311269,
+@@ -510,6 +535,11 @@
+ 			"lon": 12.342591,
+ 			"query": "Mähringer Str. 9, 95643 Tirschenreuth"
+ 		},
++		"volkshochschule-eching-e-v": {
++			"lat": 48.298116,
++			"lon": 11.621663,
++			"query": "Roßbergerstr. 8, 85386 Eching"
++		},
+ 		"volkshochschule-guenzburg": {
+ 			"lat": 48.45406,
+ 			"lon": 10.277895,
+@@ -535,6 +565,11 @@
+ 			"lon": 9.766674,
+ 			"query": "Langgasse 17, 97753 Karlstadt"
+ 		},
++		"volkshochschule-kitzingen": {
++			"lat": 49.735157,
++			"lon": 10.162162,
++			"query": "Hindenburgring Süd 3, 97318 Kitzingen"
++		},
+ 		"volkshochschule-rottenburg-an-der-laaber-e-v": {
+ 			"lat": 48.703834,
+ 			"lon": 12.04102,
+@@ -584,6 +619,17 @@
+ 				"state_code": "DE-BY"
+ 			}
+ 		},
++		"Albert-Schweitzer-Str. 4a, 86916 Kaufering": {
++			"fetched_at": "2026-11-01T17:00:37.774Z",
++			"result": {
++				"display_name": "Marktbücherei, 4a, Albert-Schweitzer-Straße, Kaufering, Landkreis Landsberg am Lech, Bayern, 86916, Deutschland",
++				"lat": 48.089113,
++				"lon": 10.8524781,
++				"place_rank": 30,
++				"postcode": "86916",
++				"state_code": "DE-BY"
++			}
++		},
+ 		"Albert-Schweizer-Str.4a, 86916 Kaufering": {
+ 			"fetched_at": "2026-10-27T18:55:27.484Z",
+ 			"result": null
+@@ -874,6 +920,17 @@
+ 				"state_code": "DE-BY"
+ 			}
+ 		},
++		"Goethestraße 53, 80336 München": {
++			"fetched_at": "2026-11-01T17:00:32.472Z",
++			"result": {
++				"display_name": "Internationales Beratungszentrum, 53, Goethestraße, Am Alten Südlichen Friedhof, Klinikviertel, Ludwigsvorstadt, Ludwigsvorstadt-Isarvorstadt, München, Bayern, 80336, Deutschland",
++				"lat": 48.1330636,
++				"lon": 11.5587817,
++				"place_rank": 30,
++				"postcode": "80336",
++				"state_code": "DE-BY"
++			}
++		},
+ 		"Goldbacher Str. 6, 63739 Aschaffenburg": {
+ 			"fetched_at": "2026-10-27T18:54:17.598Z",
+ 			"result": {
+@@ -973,6 +1030,17 @@
+ 				"state_code": "DE-BY"
+ 			}
+ 		},
++		"Hindenburgring Süd 3, 97318 Kitzingen": {
++			"fetched_at": "2026-11-01T17:00:40.724Z",
++			"result": {
++				"display_name": "Luitpoldbau, 3, Hindenburgring Süd, Etwashausen, Kitzingen, Landkreis Kitzingen, Bayern, 97318, Deutschland",
++				"lat": 49.7351572,
++				"lon": 10.1621621,
++				"place_rank": 30,
++				"postcode": "97318",
++				"state_code": "DE-BY"
++			}
++		},
+ 		"Hirschenstr. 27/29, 90762 Fürth": {
+ 			"fetched_at": "2026-10-27T18:55:12.417Z",
+ 			"result": {
+@@ -1226,6 +1294,17 @@
+ 				"state_code": "DE-BY"
+ 			}
+ 		},
++		"Ludwigsmühle 10, 95100 Selb": {
++			"fetched_at": "2026-11-01T17:00:36.598Z",
++			"result": {
++				"display_name": "10, Ludwigsmühle, Stopfersfurth, Selb, Landkreis Wunsiedel im Fichtelgebirge, Bayern, 95100, Deutschland",
++				"lat": 50.1663262,
++				"lon": 12.142697,
++				"place_rank": 30,
++				"postcode": "95100",
++				"state_code": "DE-BY"
++			}
++		},
+ 		"Ludwigsmühle 10, 95615 Selb": {
+ 			"fetched_at": "2026-10-27T18:55:09.467Z",
+ 			"result": {
+@@ -1329,6 +1408,17 @@
+ 			"fetched_at": "2026-10-27T18:54:52.981Z",
+ 			"result": null
+ 		},
++		"Maria-Dorothea-Straße 8, 91161 Hilpoltstein": {
++			"fetched_at": "2026-11-01T17:00:34.955Z",
++			"result": {
++				"display_name": "Haus des Gastes, 8, Maria-Dorothea-Straße, Hilpoltstein, Landkreis Roth, Bayern, 91161, Deutschland",
++				"lat": 49.1892185,
++				"lon": 11.1942825,
++				"place_rank": 30,
++				"postcode": "91161",
++				"state_code": "DE-BY"
++			}
++		},
+ 		"Marienstr. 20, 83301 Traunreut": {
+ 			"fetched_at": "2026-10-27T18:56:06.139Z",
+ 			"result": {
+@@ -1494,6 +1584,17 @@
+ 				"state_code": "DE-BY"
+ 			}
+ 		},
++		"Orleansstraße 34, 81667 München": {
++			"fetched_at": "2026-11-01T17:00:33.711Z",
++			"result": {
++				"display_name": "34, Orleansstraße, Haidhausen-Nord, Haidhausen, Au-Haidhausen, München, Bayern, 81667, Deutschland",
++				"lat": 48.1253793,
++				"lon": 11.6004065,
++				"place_rank": 30,
++				"postcode": "81667",
++				"state_code": "DE-BY"
++			}
++		},
+ 		"Orleanstraße 34, 81667 München": {
+ 			"fetched_at": "2026-10-27T18:54:29.570Z",
+ 			"result": null
+@@ -1590,6 +1691,17 @@
+ 				"state_code": "DE-BY"
+ 			}
+ 		},
++		"Roßbergerstr. 8, 85386 Eching": {
++			"fetched_at": "2026-11-01T17:00:39.075Z",
++			"result": {
++				"display_name": "Volkshochschule Eching, 8, Rossbergerstraße, Eching-Ost, Eching, Landkreis Freising, Bayern, 85386, Deutschland",
++				"lat": 48.2981157,
++				"lon": 11.6216633,
++				"place_rank": 30,
++				"postcode": "85386",
++				"state_code": "DE-BY"
++			}
++		},
+ 		"Roßbergstr. 8, 85386 Eching": {
+ 			"fetched_at": "2026-10-27T18:56:29.576Z",
+ 			"result": null
+diff --git a/data/directory/geocode-note.md b/data/directory/geocode-note.md
+index 7b32bc3..8d64056 100644
+--- a/data/directory/geocode-note.md
++++ b/data/directory/geocode-note.md
+@@ -4,29 +4,22 @@ Coordinates from Nominatim structured search. Data © OpenStreetMap contributors
+ 
+ ## Run
+ 
+-- Run at: 2026-10-27T18:54:07.729Z
+-- Centres in directory: 120
+-- Requests sent: 119
+-- Cache hits: 1
+-- Accepted: 112
+-- Rejected: 8
+-- Unchanged (already geocoded, same address): 0
+-- Coordinates set by hand: 0
++- Run at: 2026-11-01T17:00:32.161Z
++- Centres in directory: 119
++- Requests sent: 7
++- Cache hits: 0
++- Accepted: 7
++- Rejected: 0
++- Unchanged (already geocoded, same address): 111
++- Coordinates set by hand: 1
+ - Failed: 0
+ - Every request sent User-Agent `bgtsearch-bot/0.1.0 (+https://esiak.github.io/testplatz/about/)`: yes
+ - Every request went to https://nominatim.openstreetmap.org/search: yes
+-- Smallest gap between two requests: 1161 ms
++- Smallest gap between two requests: 1175 ms
+ 
+ ## Rejected (no coordinates)
+ 
+-- bayerisches-rotes-kreuz (Goethestr. 53, 81379 München): postcode mismatch (80336)
+-- muenchner-vhs-gmbh (Orleanstraße 34, 81667 München): no match
+-- vhs-der-gemeinden-im-landkreis-roth (Maria-Dorothea-Str. 8, 91161 Hilpoldstein): no match
+-- vhs-fichtelgebirge (Ludwigsmühle 10, 95615 Selb): postcode mismatch (95100)
+-- vhs-kaufering (Albert-Schweizer-Str.4a, 86916 Kaufering): no match
+-- vhs-kreis-kronach-e-v (Kulmbacher Str. 1, 96317 Kronach): postcode mismatch (96369)
+-- volkshochschule-eching-e-v (Roßbergstr. 8, 85386 Eching): no match
+-- volkshochschule-kitzingen (Paul-Eber-Haus, Schulhof 1, 97318 Kitzingen): no match
++None.
+ 
+ ## Failures (entry unchanged, rerun to retry)
+ 
+@@ -34,4 +27,4 @@ None.
+ 
+ ## Coordinates set by hand (left alone)
+ 
+-None.
++- vhs-kreis-kronach-e-v (Kulmbacher Str. 1, 96317 Kronach): no geocode record
+diff --git a/tests/directory.test.ts b/tests/directory.test.ts
+index f38369c..b7f6d84 100644
+--- a/tests/directory.test.ts
++++ b/tests/directory.test.ts
+@@ -185,51 +185,108 @@ describe('committed data/directory/centres.json', () => {
+ 		expect(serializeDirectory(directorySchema.parse(JSON.parse(text)))).toBe(text);
+ 	});
+ 
+-	it('holds one rtpartner entry per source row, every coordinate inside Bavaria', () => {
+-		const centres = directorySchema.parse(JSON.parse(text));
+-		expect(centres).toHaveLength(119);
++	it('has unique ids, every snapshot centre, and coordinates inside Bavaria for every centre', () => {
++		const centres = JSON.parse(text) as Centre[];
++		const ids = centres.map((c) => c.centre_id);
++		expect(duplicateIds(ids)).toEqual([]);
++		const snapshot = JSON.parse(readFileSync(join(repoRoot, 'data/public/snapshot.json'), 'utf8')) as { centres: { centre_id: string }[] };
++		const known = new Set(ids);
++		expect(snapshot.centres.map((c) => c.centre_id).filter((id) => !known.has(id))).toEqual([]);
+ 		expect(centres.every((c) => c.source === 'rtpartner')).toBe(true);
+-		expect(centres.every((c) => c.lat === null || isInBavariaBox(c.lat, c.lon!))).toBe(true);
++		expect(centres.filter((c) => c.lat === null || c.lon === null).map((c) => c.centre_id)).toEqual([]);
++		expect(centres.filter((c) => !isInBavariaBox(c.lat!, c.lon!)).map((c) => c.centre_id)).toEqual([]);
+ 	});
+ 
+-	it('agrees with the committed geocode cache (coordinates set by hand have no record)', () => {
++	it('agrees with the committed geocode cache (only allowlisted centres are set by hand)', () => {
+ 		const centres = directorySchema.parse(JSON.parse(text));
+ 		const loaded = loadCache(GEOCODE_CACHE_PATH);
+ 		expect(loaded.ok).toBe(true);
+ 		const { cache } = loaded as Extract<typeof loaded, { ok: true }>;
+ 		expect(serializeCache(cache)).toBe(readFileSync(GEOCODE_CACHE_PATH, 'utf8'));
+-		expect(cacheDisagreements(centres, cache.centres)).toEqual([]);
++		expect(cacheDisagreements(centres, cache.centres, HAND_SET_CENTRES)).toEqual([]);
+ 	});
+ });
+ 
+ type CacheCentres = Extract<ReturnType<typeof loadCache>, { ok: true }>['cache']['centres'];
+ 
+ /**
+- * Centres whose coordinates disagree with the geocode cache: a centre without coordinates must
+- * have no record; coordinates set by hand have no record; a record that exists must match.
++ * Centres whose coordinates were set by hand rather than geocoded: they have coordinates and no
++ * geocode-cache record. Each needs a one-line reason; add one only after `npm run geocode` cannot
++ * find the correct address.
+  */
+-function cacheDisagreements(centres: readonly Centre[], records: CacheCentres): string[] {
+-	return centres
++const HAND_SET_CENTRES: readonly string[] = [
++	// Kulmbacher Str. 1, 96317 Kronach is not in OpenStreetMap; operator-set position (Story 3.13).
++	'vhs-kreis-kronach-e-v',
++];
++
++/** Ids that occur more than once, each named once. */
++function duplicateIds(ids: readonly string[]): string[] {
++	return [...new Set(ids.filter((id, i) => ids.indexOf(id) !== i))];
++}
++
++/**
++ * Centres (and allowlist ids) that disagree with the geocode cache: a centre without coordinates
++ * must have no record; a centre with coordinates and no record must be on `handSet`; a record that
++ * exists must match the address and coordinates; every `handSet` id must be a directory centre
++ * with coordinates and no record.
++ */
++function cacheDisagreements(centres: readonly Centre[], records: CacheCentres, handSet: readonly string[]): string[] {
++	const allowed = new Set(handSet);
++	const flagged = centres
+ 		.filter((c) => {
+ 			const record = records[c.centre_id];
+ 			if (c.lat === null) return record !== undefined;
+-			return record !== undefined && (record.query !== queryKey(c.address) || record.lat !== c.lat || record.lon !== c.lon);
++			if (record === undefined) return !allowed.has(c.centre_id);
++			return record.query !== queryKey(c.address) || record.lat !== c.lat || record.lon !== c.lon;
+ 		})
+ 		.map((c) => c.centre_id);
++	const byId = new Map(centres.map((c) => [c.centre_id, c]));
++	const stale = handSet.filter((id) => {
++		const c = byId.get(id);
++		return c === undefined || c.lat === null || records[id] !== undefined;
++	});
++	return [...new Set([...flagged, ...stale])];
+ }
+ 
+ describe('geocode cache agreement', () => {
+ 	const geocoded = centre({ centre_id: 'geocoded', lat: 49.47, lon: 10.99 });
+ 	const record = { query: queryKey(geocoded.address), lat: 49.47, lon: 10.99 };
+ 
+-	it('accepts coordinates set by hand, with no cache record', () => {
++	it('accepts coordinates set by hand, with no cache record, when the centre is on the allowlist', () => {
++		const handSet = centre({ centre_id: 'hand-set', lat: 48.14, lon: 11.58 });
++		const centres = [geocoded, handSet, centre({ centre_id: 'none' })];
++		expect(cacheDisagreements(centres, { geocoded: record } as CacheCentres, ['hand-set'])).toEqual([]);
++	});
++
++	it('names a hand-set centre that is not on the allowlist', () => {
+ 		const handSet = centre({ centre_id: 'hand-set', lat: 48.14, lon: 11.58 });
+-		expect(cacheDisagreements([geocoded, handSet, centre({ centre_id: 'none' })], { geocoded: record } as CacheCentres)).toEqual([]);
++		expect(cacheDisagreements([geocoded, handSet], { geocoded: record } as CacheCentres, [])).toEqual(['hand-set']);
++	});
++
++	it.each([
++		['has a cache record', [geocoded], 'geocoded'],
++		['has no coordinates', [centre({ centre_id: 'none' })], 'none'],
++		['is not in the directory', [geocoded], 'gone'],
++	])('names a stale allowlist entry that %s', (_, centres, id) => {
++		expect(cacheDisagreements(centres, { geocoded: record } as CacheCentres, [id])).toEqual([id]);
+ 	});
+ 
+ 	it('flags a record that disagrees, and a record for a centre without coordinates', () => {
+ 		const moved = centre({ centre_id: 'geocoded', lat: 49.5, lon: 10.99 });
+-		expect(cacheDisagreements([moved], { geocoded: record } as CacheCentres)).toEqual(['geocoded']);
+-		expect(cacheDisagreements([centre({ centre_id: 'geocoded' })], { geocoded: record } as CacheCentres)).toEqual(['geocoded']);
++		expect(cacheDisagreements([moved], { geocoded: record } as CacheCentres, [])).toEqual(['geocoded']);
++		expect(cacheDisagreements([centre({ centre_id: 'geocoded' })], { geocoded: record } as CacheCentres, [])).toEqual(['geocoded']);
++	});
++
++	it('flags a record whose query is not the current address', () => {
++		const readdressed = centre({ centre_id: 'geocoded', lat: 49.47, lon: 10.99, address: { street: 'Neue Str. 1', postcode: '90762', city: 'Fürth' } });
++		expect(cacheDisagreements([readdressed], { geocoded: record } as CacheCentres, [])).toEqual(['geocoded']);
++	});
++});
++
++describe('committed-data id checks', () => {
++	it('names duplicate ids and passes when ids are unique, whatever the count', () => {
++		expect(duplicateIds(['a', 'b', 'a', 'c', 'a'])).toEqual(['a']);
++		expect(duplicateIds(['a', 'b'])).toEqual([]);
++		expect(duplicateIds(Array.from({ length: 250 }, (_, i) => `c${i}`))).toEqual([]);
+ 	});
+ });
+diff --git a/tests/search-page.test.tsx b/tests/search-page.test.tsx
+index cebfe43..cb88b4b 100644
+--- a/tests/search-page.test.tsx
++++ b/tests/search-page.test.tsx
+@@ -1,7 +1,15 @@
+ // @vitest-environment happy-dom
++import { readFileSync } from 'node:fs';
+ import { render } from 'preact';
+ import { act } from 'preact/test-utils';
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
++import { itemkgReader } from '../pipeline/readers/itemkg/index.ts';
++import { kuferwebReader } from '../pipeline/readers/kuferweb/index.ts';
++import type { ReaderRegistry } from '../pipeline/stages/collect.ts';
++import { readState } from '../pipeline/stages/merge.ts';
++import { DIRECTORY_PATH, STATE_PATH } from '../pipeline/stages/paths.ts';
++import { buildSnapshot } from '../pipeline/stages/publish.ts';
++import { directorySchema } from '../shared/directory.ts';
+ import { SNAPSHOT_SCHEMA_VERSION, type SnapshotCentre, type SnapshotListing } from '../shared/snapshot.ts';
+ import { App } from '../web/src/app.tsx';
+ import { PLACES_URL } from '../web/src/data/places.ts';
+@@ -12,6 +20,23 @@ import en from '../web/src/i18n/en.json' with { type: 'json' };
+ import { PLACE_ROWS, placeRow, placesOf, smallPlaces } from './fixtures/places.ts';
+ import { coveredCentre, jsonResponse, snapshotCentre, snapshotListing, snapshotOf } from './fixtures/snapshot.ts';
+ 
++// The pipeline's paths come from `new URL(…, import.meta.url)`, which the web transform this
++// happy-dom file runs under resolves against the page, so they are rebuilt from the file path.
++vi.mock('../pipeline/stages/paths.ts', async () => {
++	const { dirname, join } = await import('node:path');
++	const { fileURLToPath } = await import('node:url');
++	const data = join(dirname(fileURLToPath(import.meta.url)), '..', 'data');
++	return {
++		DIRECTORY_PATH: join(data, 'directory/centres.json'),
++		STATE_PATH: join(data, 'state/state.json'),
++		VENUES_PATH: join(data, 'state/venues.json'),
++		VISIT_LOG_PATH: join(data, 'state/visits.json'),
++	};
++});
++
++/** The readers a scheduled run registers (`READER_REGISTRY` in pipeline/stages/run.ts). */
++const RUN_READERS: ReaderRegistry = { kuferweb: kuferwebReader, itemkg: itemkgReader };
++
+ // ---------- fixtures ----------
+ 
+ const NBG = PLACE_ROWS.nuernberg;
+@@ -1668,6 +1693,24 @@ describe('centres without a map position', () => {
+ 		expect(box.lastElementChild!.querySelector('a')!.getAttribute('href')).toBe('/about/#no-location=&lang=en');
+ 		expect(statusText()).toBe('No test centres within 10 km.');
+ 	});
++
++	it('shows no notice for a snapshot built from the committed directory and state (Story 3.13)', async () => {
++		const centres = directorySchema.parse(JSON.parse(readFileSync(DIRECTORY_PATH, 'utf8')));
++		const readers = (Object.keys(RUN_READERS) as (keyof ReaderRegistry)[]).filter((system) => RUN_READERS[system] !== undefined);
++		const snapshot = buildSnapshot({ centres, state: readState(STATE_PATH), outcomes: {}, readers, runAt: new Date(DEFAULT_NOW) });
++		expect(snapshot.centres.filter((c) => c.lat === null || c.lon === null).map((c) => c.centre_id)).toEqual([]);
++		for (const [place, km] of [['München', 20], ['Augsburg', 10]] as const) {
++			serve(ok(snapshot));
++			setBrowser();
++			mount();
++			await settle();
++			await search(place, km);
++			expect(root.querySelector('.search__results')).not.toBeNull();
++			expect(notice()).toBeNull();
++			expect(root.textContent).not.toContain('no map position');
++			act(() => render(null, root));
++		}
++	});
+ });
+ 
+ describe('Bavarian names with a qualifier and places outside Bavaria', () => {

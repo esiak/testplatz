@@ -19,3 +19,4 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-12-search-shows-every-centre-and-the-right-place.md`
   summary: Replace the blanket "no cache record is fine" rule in `tests/directory.test.ts` with a named allowlist of centres whose coordinates were set by hand.
   evidence: Low. Story 1.12 allows hand-set coordinates so the operator can fix the 8 missing ones; as written, a geocode-cache record lost by accident would also pass. No hand-set centre exists yet — add the allowlist with the first one.
+  status: resolved 2026-11-01 (Story 3.13) — `HAND_SET_CENTRES` in `tests/directory.test.ts` lists `vhs-kreis-kronach-e-v`; a centre with coordinates and no record fails unless listed, and a stale entry fails.

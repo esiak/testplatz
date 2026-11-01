@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { BAVARIA_BBOX, centreSchema, directorySchema, isInBavariaBox, isPlausibleHostname, serializeDirectory, slugify, type Centre } from '../shared/directory.ts';
+import { snapshotSchema } from '../shared/snapshot.ts';
 import { checkDirectoryText } from '../tools/check-directory.ts';
 import { loadCache, queryKey, serializeCache } from '../tools/geocode.ts';
 import { GEOCODE_CACHE_PATH } from '../tools/paths.ts';
@@ -185,51 +186,107 @@ describe('committed data/directory/centres.json', () => {
 		expect(serializeDirectory(directorySchema.parse(JSON.parse(text)))).toBe(text);
 	});
 
-	it('holds one rtpartner entry per source row, every coordinate inside Bavaria', () => {
+	it('has unique ids, holds every snapshot centre, and every coordinate that is set lies inside Bavaria', () => {
 		const centres = directorySchema.parse(JSON.parse(text));
-		expect(centres).toHaveLength(119);
+		const ids = centres.map((c) => c.centre_id);
+		expect(duplicateIds(ids)).toEqual([]);
+		const snapshot = snapshotSchema.parse(JSON.parse(readFileSync(join(repoRoot, 'data/public/snapshot.json'), 'utf8')));
+		const known = new Set(ids);
+		expect(snapshot.centres.map((c) => c.centre_id).filter((id) => !known.has(id))).toEqual([]);
 		expect(centres.every((c) => c.source === 'rtpartner')).toBe(true);
-		expect(centres.every((c) => c.lat === null || isInBavariaBox(c.lat, c.lon!))).toBe(true);
+		expect(centres.filter((c) => c.lat !== null && !isInBavariaBox(c.lat, c.lon!)).map((c) => c.centre_id)).toEqual([]);
 	});
 
-	it('agrees with the committed geocode cache (coordinates set by hand have no record)', () => {
+	it('agrees with the committed geocode cache (only allowlisted centres are set by hand)', () => {
 		const centres = directorySchema.parse(JSON.parse(text));
 		const loaded = loadCache(GEOCODE_CACHE_PATH);
 		expect(loaded.ok).toBe(true);
 		const { cache } = loaded as Extract<typeof loaded, { ok: true }>;
 		expect(serializeCache(cache)).toBe(readFileSync(GEOCODE_CACHE_PATH, 'utf8'));
-		expect(cacheDisagreements(centres, cache.centres)).toEqual([]);
+		expect(cacheDisagreements(centres, cache.centres, HAND_SET_CENTRES)).toEqual([]);
 	});
 });
 
 type CacheCentres = Extract<ReturnType<typeof loadCache>, { ok: true }>['cache']['centres'];
 
 /**
- * Centres whose coordinates disagree with the geocode cache: a centre without coordinates must
- * have no record; coordinates set by hand have no record; a record that exists must match.
+ * Centres whose coordinates were set by hand rather than geocoded: they have coordinates and no
+ * geocode-cache record. Each needs a one-line reason; add one only after `npm run geocode` cannot
+ * find the correct address.
  */
-function cacheDisagreements(centres: readonly Centre[], records: CacheCentres): string[] {
-	return centres
+const HAND_SET_CENTRES: readonly string[] = [
+	// No Kulmbacher Str. 1 in Kronach in OSM (Nominatim only finds Weißenbrunn 96369); operator-approved 2026-11-01 position of the OSM "Volkshochschule", Rodacher Straße 1, Kronach (Story 3.13).
+	'vhs-kreis-kronach-e-v',
+];
+
+/** Ids that occur more than once, each named once. */
+function duplicateIds(ids: readonly string[]): string[] {
+	return [...new Set(ids.filter((id, i) => ids.indexOf(id) !== i))];
+}
+
+/**
+ * Centres (and allowlist ids) that disagree with the geocode cache: a centre without coordinates
+ * must have no record; a centre with coordinates and no record must be on `handSet`; a record that
+ * exists must match the address and coordinates; every `handSet` id must be a directory centre
+ * with coordinates and no record.
+ */
+function cacheDisagreements(centres: readonly Centre[], records: CacheCentres, handSet: readonly string[]): string[] {
+	const allowed = new Set(handSet);
+	const flagged = centres
 		.filter((c) => {
 			const record = records[c.centre_id];
 			if (c.lat === null) return record !== undefined;
-			return record !== undefined && (record.query !== queryKey(c.address) || record.lat !== c.lat || record.lon !== c.lon);
+			if (record === undefined) return !allowed.has(c.centre_id);
+			return record.query !== queryKey(c.address) || record.lat !== c.lat || record.lon !== c.lon;
 		})
 		.map((c) => c.centre_id);
+	const byId = new Map(centres.map((c) => [c.centre_id, c]));
+	const stale = handSet.filter((id) => {
+		const c = byId.get(id);
+		return c === undefined || c.lat === null || records[id] !== undefined;
+	});
+	return [...new Set([...flagged, ...stale])];
 }
 
 describe('geocode cache agreement', () => {
 	const geocoded = centre({ centre_id: 'geocoded', lat: 49.47, lon: 10.99 });
 	const record = { query: queryKey(geocoded.address), lat: 49.47, lon: 10.99 };
 
-	it('accepts coordinates set by hand, with no cache record', () => {
+	it('accepts coordinates set by hand, with no cache record, when the centre is on the allowlist', () => {
 		const handSet = centre({ centre_id: 'hand-set', lat: 48.14, lon: 11.58 });
-		expect(cacheDisagreements([geocoded, handSet, centre({ centre_id: 'none' })], { geocoded: record } as CacheCentres)).toEqual([]);
+		const centres = [geocoded, handSet, centre({ centre_id: 'none' })];
+		expect(cacheDisagreements(centres, { geocoded: record } as CacheCentres, ['hand-set'])).toEqual([]);
+	});
+
+	it('names a hand-set centre that is not on the allowlist', () => {
+		const handSet = centre({ centre_id: 'hand-set', lat: 48.14, lon: 11.58 });
+		expect(cacheDisagreements([geocoded, handSet], { geocoded: record } as CacheCentres, [])).toEqual(['hand-set']);
+	});
+
+	it.each([
+		['has a cache record', [geocoded], 'geocoded'],
+		['has no coordinates', [centre({ centre_id: 'none' })], 'none'],
+		['is not in the directory', [geocoded], 'gone'],
+	])('names a stale allowlist entry that %s', (_, centres, id) => {
+		expect(cacheDisagreements(centres, { geocoded: record } as CacheCentres, [id])).toEqual([id]);
 	});
 
 	it('flags a record that disagrees, and a record for a centre without coordinates', () => {
 		const moved = centre({ centre_id: 'geocoded', lat: 49.5, lon: 10.99 });
-		expect(cacheDisagreements([moved], { geocoded: record } as CacheCentres)).toEqual(['geocoded']);
-		expect(cacheDisagreements([centre({ centre_id: 'geocoded' })], { geocoded: record } as CacheCentres)).toEqual(['geocoded']);
+		expect(cacheDisagreements([moved], { geocoded: record } as CacheCentres, [])).toEqual(['geocoded']);
+		expect(cacheDisagreements([centre({ centre_id: 'geocoded' })], { geocoded: record } as CacheCentres, [])).toEqual(['geocoded']);
+	});
+
+	it('flags a record whose query is not the current address', () => {
+		const readdressed = centre({ centre_id: 'geocoded', lat: 49.47, lon: 10.99, address: { street: 'Neue Str. 1', postcode: '90762', city: 'Fürth' } });
+		expect(cacheDisagreements([readdressed], { geocoded: record } as CacheCentres, [])).toEqual(['geocoded']);
+	});
+});
+
+describe('committed-data id checks', () => {
+	it('names duplicate ids and passes when ids are unique, whatever the count', () => {
+		expect(duplicateIds(['a', 'b', 'a', 'c', 'a'])).toEqual(['a']);
+		expect(duplicateIds(['a', 'b'])).toEqual([]);
+		expect(duplicateIds(Array.from({ length: 250 }, (_, i) => `c${i}`))).toEqual([]);
 	});
 });

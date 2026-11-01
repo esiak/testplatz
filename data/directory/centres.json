@@ -39,12 +39,12 @@
 		"centre_id": "bayerisches-rotes-kreuz",
 		"name": "Bayerisches Rotes Kreuz",
 		"address": {
-			"street": "Goethestr. 53",
-			"postcode": "81379",
+			"street": "Goethestraße 53",
+			"postcode": "80336",
 			"city": "München"
 		},
-		"lat": null,
-		"lon": null,
+		"lat": 48.133064,
+		"lon": 11.558782,
 		"website": "https://www.brk-muenchen.de/",
 		"test_page_url": "https://www.brk-muenchen.de/start/angebote/migration-integration/einbuergerungstests-muenchen.html",
 		"reader": "none",
@@ -291,12 +291,12 @@
 		"centre_id": "muenchner-vhs-gmbh",
 		"name": "Münchner VHS GmbH",
 		"address": {
-			"street": "Orleanstraße 34",
+			"street": "Orleansstraße 34",
 			"postcode": "81667",
 			"city": "München"
 		},
-		"lat": null,
-		"lon": null,
+		"lat": 48.125379,
+		"lon": 11.600407,
 		"website": "https://www.mvhs.de/",
 		"test_page_url": "https://www.mvhs.de/kurse/deutsch-integration/pruefungen-einbuergerung/einbuergerung-460-CAT-KAT7868",
 		"reader": "itemkg",
@@ -631,12 +631,12 @@
 		"centre_id": "vhs-der-gemeinden-im-landkreis-roth",
 		"name": "VHS der Gemeinden im Landkreis Roth",
 		"address": {
-			"street": "Maria-Dorothea-Str. 8",
+			"street": "Maria-Dorothea-Straße 8",
 			"postcode": "91161",
-			"city": "Hilpoldstein"
+			"city": "Hilpoltstein"
 		},
-		"lat": null,
-		"lon": null,
+		"lat": 49.189219,
+		"lon": 11.194283,
 		"website": "https://www.vhs-roth.de/",
 		"test_page_url": "https://www.vhs-roth.de/suche?tx_itemkgconnect_search%5Bsword%5D=Einb%C3%BCrgerungstest",
 		"reader": "itemkg",
@@ -876,11 +876,11 @@
 		"name": "VHS Fichtelgebirge",
 		"address": {
 			"street": "Ludwigsmühle 10",
-			"postcode": "95615",
+			"postcode": "95100",
 			"city": "Selb"
 		},
-		"lat": null,
-		"lon": null,
+		"lat": 50.166326,
+		"lon": 12.142697,
 		"website": "https://www.vhs-fichtelgebirge.de/",
 		"test_page_url": "https://www.vhs-fichtelgebirge.de/p/integration/einbuergerungstest-644-CAT-KAT223?tx_itemkgconnect_categorys%5Bpage%5D=0&tx_itemkgconnect_categorys%5Bsword%5D=&cHash=e885cf8b12db5f275383bc211595c590",
 		"reader": "itemkg",
@@ -1131,12 +1131,12 @@
 		"centre_id": "vhs-kaufering",
 		"name": "VHS Kaufering",
 		"address": {
-			"street": "Albert-Schweizer-Str.4a",
+			"street": "Albert-Schweitzer-Str. 4a",
 			"postcode": "86916",
 			"city": "Kaufering"
 		},
-		"lat": null,
-		"lon": null,
+		"lat": 48.089113,
+		"lon": 10.852478,
 		"website": "https://www.kaufering.de/",
 		"test_page_url": null,
 		"reader": "none",
@@ -1171,8 +1171,8 @@
 			"postcode": "96317",
 			"city": "Kronach"
 		},
-		"lat": null,
-		"lon": null,
+		"lat": 50.2377498,
+		"lon": 11.325182,
 		"website": "https://www.vhs-kronach.de/",
 		"test_page_url": "https://www.vhs-kronach.de/fachbereich//programmbereich/sprachen/einbuergerungstest?",
 		"reader": "none",
@@ -1967,12 +1967,12 @@
 		"centre_id": "volkshochschule-eching-e-v",
 		"name": "Volkshochschule Eching e.V.",
 		"address": {
-			"street": "Roßbergstr. 8",
+			"street": "Roßbergerstr. 8",
 			"postcode": "85386",
 			"city": "Eching"
 		},
-		"lat": null,
-		"lon": null,
+		"lat": 48.298116,
+		"lon": 11.621663,
 		"website": "https://www.vhs-eching.de",
 		"test_page_url": "https://www.vhs-eching.de/programm/sprachen/kategorie/Einbuergerungstest/364",
 		"reader": "kuferweb",
@@ -2077,12 +2077,12 @@
 		"centre_id": "volkshochschule-kitzingen",
 		"name": "Volkshochschule Kitzingen",
 		"address": {
-			"street": "Paul-Eber-Haus, Schulhof 1",
+			"street": "Hindenburgring Süd 3",
 			"postcode": "97318",
 			"city": "Kitzingen"
 		},
-		"lat": null,
-		"lon": null,
+		"lat": 49.735157,
+		"lon": 10.162162,
 		"website": "https://www.stadt-kitzingen.de/",
 		"test_page_url": null,
 		"reader": "none",

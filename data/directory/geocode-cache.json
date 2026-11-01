@@ -10,6 +10,11 @@
 			"lon": 11.565015,
 			"query": "Hamburger Straße 32, 80809 München"
 		},
+		"bayerisches-rotes-kreuz": {
+			"lat": 48.133064,
+			"lon": 11.558782,
+			"query": "Goethestraße 53, 80336 München"
+		},
 		"berufliche-fortbildungszentren-der-bayerischen-wirtschaft": {
 			"lat": 48.707751,
 			"lon": 10.760546,
@@ -74,6 +79,11 @@
 			"lat": 48.12803,
 			"lon": 11.55555,
 			"query": "Lindwurmstr. 109, 80337 München"
+		},
+		"muenchner-vhs-gmbh": {
+			"lat": 48.125379,
+			"lon": 11.600407,
+			"query": "Orleansstraße 34, 81667 München"
 		},
 		"oberallgaeuer-vhs": {
 			"lat": 47.512522,
@@ -160,6 +170,11 @@
 			"lon": 12.962494,
 			"query": "Amanstr. 11, 94469 Deggendorf"
 		},
+		"vhs-der-gemeinden-im-landkreis-roth": {
+			"lat": 49.189219,
+			"lon": 11.194283,
+			"query": "Maria-Dorothea-Straße 8, 91161 Hilpoltstein"
+		},
 		"vhs-der-stadt-landsberg-lech": {
 			"lat": 48.048261,
 			"lon": 10.876275,
@@ -219,6 +234,11 @@
 			"lat": 48.981128,
 			"lon": 12.192745,
 			"query": "Pommernstr. 4, 93073 Neutraubling"
+		},
+		"vhs-fichtelgebirge": {
+			"lat": 50.166326,
+			"lon": 12.142697,
+			"query": "Ludwigsmühle 10, 95100 Selb"
 		},
 		"vhs-freising-e-v": {
 			"lat": 48.403015,
@@ -284,6 +304,11 @@
 			"lat": 47.880883,
 			"lon": 10.623901,
 			"query": "Spitaltor 5, 87600 Kaufbeuren"
+		},
+		"vhs-kaufering": {
+			"lat": 48.089113,
+			"lon": 10.852478,
+			"query": "Albert-Schweitzer-Str. 4a, 86916 Kaufering"
 		},
 		"vhs-kempten": {
 			"lat": 47.725671,
@@ -510,6 +535,11 @@
 			"lon": 12.342591,
 			"query": "Mähringer Str. 9, 95643 Tirschenreuth"
 		},
+		"volkshochschule-eching-e-v": {
+			"lat": 48.298116,
+			"lon": 11.621663,
+			"query": "Roßbergerstr. 8, 85386 Eching"
+		},
 		"volkshochschule-guenzburg": {
 			"lat": 48.45406,
 			"lon": 10.277895,
@@ -534,6 +564,11 @@
 			"lat": 49.962251,
 			"lon": 9.766674,
 			"query": "Langgasse 17, 97753 Karlstadt"
+		},
+		"volkshochschule-kitzingen": {
+			"lat": 49.735157,
+			"lon": 10.162162,
+			"query": "Hindenburgring Süd 3, 97318 Kitzingen"
 		},
 		"volkshochschule-rottenburg-an-der-laaber-e-v": {
 			"lat": 48.703834,
@@ -581,6 +616,17 @@
 				"lon": 11.5991248,
 				"place_rank": 30,
 				"postcode": "82024",
+				"state_code": "DE-BY"
+			}
+		},
+		"Albert-Schweitzer-Str. 4a, 86916 Kaufering": {
+			"fetched_at": "2026-11-01T17:00:37.774Z",
+			"result": {
+				"display_name": "Marktbücherei, 4a, Albert-Schweitzer-Straße, Kaufering, Landkreis Landsberg am Lech, Bayern, 86916, Deutschland",
+				"lat": 48.089113,
+				"lon": 10.8524781,
+				"place_rank": 30,
+				"postcode": "86916",
 				"state_code": "DE-BY"
 			}
 		},
@@ -874,6 +920,17 @@
 				"state_code": "DE-BY"
 			}
 		},
+		"Goethestraße 53, 80336 München": {
+			"fetched_at": "2026-11-01T17:00:32.472Z",
+			"result": {
+				"display_name": "Internationales Beratungszentrum, 53, Goethestraße, Am Alten Südlichen Friedhof, Klinikviertel, Ludwigsvorstadt, Ludwigsvorstadt-Isarvorstadt, München, Bayern, 80336, Deutschland",
+				"lat": 48.1330636,
+				"lon": 11.5587817,
+				"place_rank": 30,
+				"postcode": "80336",
+				"state_code": "DE-BY"
+			}
+		},
 		"Goldbacher Str. 6, 63739 Aschaffenburg": {
 			"fetched_at": "2026-10-27T18:54:17.598Z",
 			"result": {
@@ -970,6 +1027,17 @@
 				"lon": 10.2910262,
 				"place_rank": 30,
 				"postcode": "87527",
+				"state_code": "DE-BY"
+			}
+		},
+		"Hindenburgring Süd 3, 97318 Kitzingen": {
+			"fetched_at": "2026-11-01T17:00:40.724Z",
+			"result": {
+				"display_name": "Luitpoldbau, 3, Hindenburgring Süd, Etwashausen, Kitzingen, Landkreis Kitzingen, Bayern, 97318, Deutschland",
+				"lat": 49.7351572,
+				"lon": 10.1621621,
+				"place_rank": 30,
+				"postcode": "97318",
 				"state_code": "DE-BY"
 			}
 		},
@@ -1226,6 +1294,17 @@
 				"state_code": "DE-BY"
 			}
 		},
+		"Ludwigsmühle 10, 95100 Selb": {
+			"fetched_at": "2026-11-01T17:00:36.598Z",
+			"result": {
+				"display_name": "10, Ludwigsmühle, Stopfersfurth, Selb, Landkreis Wunsiedel im Fichtelgebirge, Bayern, 95100, Deutschland",
+				"lat": 50.1663262,
+				"lon": 12.142697,
+				"place_rank": 30,
+				"postcode": "95100",
+				"state_code": "DE-BY"
+			}
+		},
 		"Ludwigsmühle 10, 95615 Selb": {
 			"fetched_at": "2026-10-27T18:55:09.467Z",
 			"result": {
@@ -1328,6 +1407,17 @@
 		"Maria-Dorothea-Str. 8, 91161 Hilpoldstein": {
 			"fetched_at": "2026-10-27T18:54:52.981Z",
 			"result": null
+		},
+		"Maria-Dorothea-Straße 8, 91161 Hilpoltstein": {
+			"fetched_at": "2026-11-01T17:00:34.955Z",
+			"result": {
+				"display_name": "Haus des Gastes, 8, Maria-Dorothea-Straße, Hilpoltstein, Landkreis Roth, Bayern, 91161, Deutschland",
+				"lat": 49.1892185,
+				"lon": 11.1942825,
+				"place_rank": 30,
+				"postcode": "91161",
+				"state_code": "DE-BY"
+			}
 		},
 		"Marienstr. 20, 83301 Traunreut": {
 			"fetched_at": "2026-10-27T18:56:06.139Z",
@@ -1494,6 +1584,17 @@
 				"state_code": "DE-BY"
 			}
 		},
+		"Orleansstraße 34, 81667 München": {
+			"fetched_at": "2026-11-01T17:00:33.711Z",
+			"result": {
+				"display_name": "34, Orleansstraße, Haidhausen-Nord, Haidhausen, Au-Haidhausen, München, Bayern, 81667, Deutschland",
+				"lat": 48.1253793,
+				"lon": 11.6004065,
+				"place_rank": 30,
+				"postcode": "81667",
+				"state_code": "DE-BY"
+			}
+		},
 		"Orleanstraße 34, 81667 München": {
 			"fetched_at": "2026-10-27T18:54:29.570Z",
 			"result": null
@@ -1587,6 +1688,17 @@
 				"lon": 11.4705943,
 				"place_rank": 30,
 				"postcode": "92339",
+				"state_code": "DE-BY"
+			}
+		},
+		"Roßbergerstr. 8, 85386 Eching": {
+			"fetched_at": "2026-11-01T17:00:39.075Z",
+			"result": {
+				"display_name": "Volkshochschule Eching, 8, Rossbergerstraße, Eching-Ost, Eching, Landkreis Freising, Bayern, 85386, Deutschland",
+				"lat": 48.2981157,
+				"lon": 11.6216633,
+				"place_rank": 30,
+				"postcode": "85386",
 				"state_code": "DE-BY"
 			}
 		},
