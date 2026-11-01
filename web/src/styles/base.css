@@ -685,6 +685,23 @@ a {
 	block-size: 1.125em;
 }
 
+/* "New" badge after the map pin: visible text, ink-primary on surface-muted, never blue or a link. */
+.card__new {
+	display: inline-block;
+	margin-inline-start: var(--space-1);
+	padding: 0.25em 0.5em;
+	/* Transparent border: forced-colours mode drops the fill but draws this outline. */
+	border: 0.0625rem solid transparent;
+	border-radius: var(--new-badge-rounded);
+	background: var(--new-badge-background);
+	color: var(--new-badge-color);
+	font: var(--new-badge-typography);
+	vertical-align: 0.125em;
+	white-space: nowrap;
+	/* Copying the address must not copy "New" with it. */
+	user-select: none;
+}
+
 /* Meta lines: time · distance · deadline; the separators are CSS, never text or speech, and end the previous part. */
 .card__meta,
 .card__centre,

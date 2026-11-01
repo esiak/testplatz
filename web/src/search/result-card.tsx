@@ -1,7 +1,7 @@
 import type { RegistrationMethod, StatusCode } from '../../../shared/listing.ts';
 import { useI18n, type MessageKey } from '../i18n/i18n.tsx';
 import { AddressLine, CardHeading, CardIcon, DateTile, distanceText, Glyph, MetaLine, type GlyphName, type IconTint, type MetaPart } from './card-parts.tsx';
-import { cardDate, cardTime, deadlineState, freshness, tileDate } from './format.ts';
+import { cardDate, cardTime, deadlineState, freshness, isNew, tileDate } from './format.ts';
 import type { DatedResult } from './results.ts';
 import { destinationDomain } from './search.ts';
 
@@ -95,7 +95,8 @@ export function ResultCard({ result, now }: { result: DatedResult; now: number }
 				: { text: t('card.deadline', { date: deadline.date }) },
 	];
 
-	const label = t('card.result_link_label', {
+	const fresh = isNew(listing, now);
+	const label = t(fresh ? 'card.result_link_label_new' : 'card.result_link_label', {
 		date: cardDate(listing.starts_at, lang),
 		address: listing.address,
 		name: centre.name,
@@ -112,7 +113,7 @@ export function ResultCard({ result, now }: { result: DatedResult; now: number }
 			</CardHeading>
 
 			<div class="card__text">
-				<AddressLine address={listing.address} />
+				<AddressLine address={listing.address} isNew={fresh} />
 				<MetaLine parts={meta} />
 				<p class="card__centre" lang="de">
 					{centre.name}

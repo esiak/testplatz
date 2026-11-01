@@ -1,4 +1,4 @@
-import { FRESHNESS_MS } from '../../../shared/snapshot.ts';
+import { FRESHNESS_MS, NEW_MS, type SnapshotListing } from '../../../shared/snapshot.ts';
 import type { Lang } from '../i18n/i18n.tsx';
 
 /**
@@ -116,4 +116,12 @@ export function freshness(lastSuccessAt: string, now: number, lang: Lang): Fresh
 	const withinWeek = `${parts.year}-${pad(parts.month)}-${pad(parts.day)}` > berlinToday(now - WEEK_MS);
 	const time = withinWeek ? `${calendar(parts, lang, { weekday: 'short' })} ${parts.time}` : `${calendar(parts, lang, WEEKDAY_DAY_MONTH)}, ${parts.time}`;
 	return { kind: 'exact', time };
+}
+
+/**
+ * Whether a date is "New": first seen less than 24 h before `now` and not found in its centre's
+ * first successful check (`baseline`). A future `first_seen_at` counts as age 0.
+ */
+export function isNew(listing: Pick<SnapshotListing, 'first_seen_at' | 'baseline'>, now: number): boolean {
+	return !listing.baseline && Math.max(0, now - Date.parse(listing.first_seen_at)) < NEW_MS;
 }

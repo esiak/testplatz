@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { berlinToday, cardDate, cardTime, deadlineState, freshness, tileDate } from '../web/src/search/format.ts';
+import { NEW_MS } from '../shared/snapshot.ts';
+import { berlinToday, cardDate, cardTime, deadlineState, freshness, isNew, tileDate } from '../web/src/search/format.ts';
 
 const HOUR = 60 * 60 * 1000;
 const MINUTE = 60 * 1000;
@@ -117,5 +118,31 @@ describe('freshness', () => {
 	it('does not depend on the browser time zone', () => {
 		process.env.TZ = 'Pacific/Kiritimati';
 		expect(freshness('2026-10-27T13:00:00Z', now, 'en')).toEqual({ kind: 'exact', time: 'Tue 14:00' });
+	});
+});
+
+describe('isNew', () => {
+	const now = at('2026-10-29T12:00:00Z');
+	const listing = (ageMs: number, baseline = false) => ({ first_seen_at: iso(now - ageMs), baseline });
+
+	it('uses a 24 h threshold', () => {
+		expect(NEW_MS).toBe(24 * HOUR);
+	});
+
+	it('is new under 24 h and not at or after it', () => {
+		expect(isNew(listing(2 * HOUR), now)).toBe(true);
+		expect(isNew(listing(24 * HOUR - 1), now)).toBe(true);
+		expect(isNew(listing(24 * HOUR), now)).toBe(false);
+		expect(isNew(listing(3 * 24 * HOUR), now)).toBe(false);
+		// Reappeared date: merge keeps its original first_seen_at, days old.
+		expect(isNew(listing(5 * 24 * HOUR), now)).toBe(false);
+	});
+
+	it('is never new for a baseline listing', () => {
+		expect(isNew(listing(HOUR, true), now)).toBe(false);
+	});
+
+	it('counts a future first_seen_at as age 0', () => {
+		expect(isNew(listing(-HOUR), now)).toBe(true);
 	});
 });

@@ -149,8 +149,11 @@ export function CardHeading({
 	);
 }
 
-/** The test address, selectable, then an icon-only map-pin link to Google Maps; above the link layer. */
-export function AddressLine({ address }: { address: string }) {
+/**
+ * The test address, selectable, then an icon-only map-pin link to Google Maps and, for a fresh
+ * date, the "New" badge (visible text, not a link); above the link layer.
+ */
+export function AddressLine({ address, isNew = false }: { address: string; isNew?: boolean }) {
 	const { t } = useI18n();
 	return (
 		<p class="card__address">
@@ -158,7 +161,7 @@ export function AddressLine({ address }: { address: string }) {
 			<a class="card__map" href={mapsUrl(address)} target="_blank" rel="noopener noreferrer" aria-label={t('card.map_label', { address })}>
 				<Glyph name="pin" />
 			</a>
-			{/* "New" badge slot (Story 3.1): here, after the map pin. */}
+			{isNew ? <span class="card__new">{t('card.new')}</span> : null}
 		</p>
 	);
 }

@@ -709,6 +709,33 @@ describe('result cards', () => {
 		expect(statusText()).toBe('2 Termine und 1 nicht geprüftes Testzentrum im Umkreis von 20 km');
 	});
 
+	it('shows a "New" badge after the map pin and "new" in the link name for a date first seen under 24 h ago', async () => {
+		const fresh = { ...waitlist, baseline: false, first_seen_at: '2026-10-29T10:00:00Z' };
+		const [card] = await showWith([kufer], [fresh]);
+		const badge = card!.querySelector('.card__address > .card__new')!;
+		expect(badge.textContent).toBe('New');
+		expect(badge.previousElementSibling!.classList.contains('card__map')).toBe(true);
+		expect(badge.closest('a')).toBeNull();
+		expect(badge.getAttribute('aria-hidden')).toBeNull();
+		expect(card!.querySelector('h3 a')!.getAttribute('aria-label')).toBe(
+			'Wed 9 Dec, 10:00, new, Gewerbemuseumsplatz 1, 90403 Nürnberg, vhs Nürnberg, Booked out, waitlist open, Register online, opens vhs-nuernberg.de in a new tab',
+		);
+
+		const [de] = await showWith([kufer], [fresh], 'de');
+		expect(de!.querySelector('.card__new')!.textContent).toBe('Neu');
+		expect(de!.querySelector('h3 a')!.getAttribute('aria-label')).toMatch(/^Mi\., 9\. Dez\., 10:00, neu, Gewerbemuseumsplatz 1, /);
+	});
+
+	it('shows no badge for a baseline date or one first seen 24 h or more ago', async () => {
+		const baseline = { ...waitlist, baseline: true, first_seen_at: '2026-10-29T11:00:00Z' };
+		const atThreshold = { ...deadLink, baseline: false, first_seen_at: '2026-10-28T12:00:00Z' };
+		const old = listingOf(kufer, '2026-12-10T10:00:00+01:00', { baseline: false, first_seen_at: '2026-10-28T11:00:00Z' });
+		await showWith([kufer, item], [baseline, atThreshold, old]);
+		expect(cards()).toHaveLength(3);
+		expect(root.querySelector('.card__new')).toBeNull();
+		for (const card of cards()) expect(card.querySelector('h3 a')!.getAttribute('aria-label')).not.toMatch(/, new, /);
+	});
+
 	it('never says "open to all"', async () => {
 		await show();
 		expect(root.textContent).not.toMatch(/open to all|no restrictions/i);

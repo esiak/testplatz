@@ -95,6 +95,8 @@
 	"card.why": "Why?",
 	"card.why_label": "Why is {name} not checked?",
 	"card.result_link_label": "{date}, {address}, {name}, {status}, {registration}, opens {domain} in a new tab",
+	"card.result_link_label_new": "{date}, new, {address}, {name}, {status}, {registration}, opens {domain} in a new tab",
+	"card.new": "New",
 	"card.destination_test_page": "Opens the centre's test page",
 	"card.eligibility_label": "Who may register:",
 	"card.eligibility_not_stated": "Who may register: not stated",

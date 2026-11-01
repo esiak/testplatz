@@ -11,6 +11,12 @@ export const SNAPSHOT_SCHEMA_VERSION = 3;
  */
 export const FRESHNESS_MS = 36 * 60 * 60 * 1000;
 
+/**
+ * "New" threshold (FR16, AD-11): a non-baseline listing whose `first_seen_at` is less than this
+ * before the search's `now` shows the "New" badge.
+ */
+export const NEW_MS = 24 * 60 * 60 * 1000;
+
 /** Whether a centre is read automatically. `not_checked` = uncovered card. */
 export const COVERAGE = ['covered', 'not_checked'] as const;
 export type Coverage = (typeof COVERAGE)[number];

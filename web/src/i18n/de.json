@@ -95,6 +95,8 @@
 	"card.why": "Warum?",
 	"card.why_label": "Warum wird {name} nicht geprüft?",
 	"card.result_link_label": "{date}, {address}, {name}, {status}, {registration}, öffnet {domain} in einem neuen Tab",
+	"card.result_link_label_new": "{date}, neu, {address}, {name}, {status}, {registration}, öffnet {domain} in einem neuen Tab",
+	"card.new": "Neu",
 	"card.destination_test_page": "Öffnet die Testseite des Testzentrums",
 	"card.eligibility_label": "Wer sich anmelden darf:",
 	"card.eligibility_not_stated": "Wer sich anmelden darf: nicht angegeben",
