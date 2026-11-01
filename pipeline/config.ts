@@ -54,3 +54,9 @@ export const VISIT_LIMIT_PER_HOST = 4;
 
 /** The rolling window of the visit budget: 24 h. */
 export const VISIT_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Alerting (Story 3.4): a reader system with no centre `ok` whose newest success is older than
+ * this before the run (or that never succeeded) gets a "Reader <reader>: needs attention" issue.
+ */
+export const SYSTEM_DOWN_MS = 24 * 60 * 60 * 1000;

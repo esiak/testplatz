@@ -517,9 +517,11 @@ describe('runPipeline: bad inputs write nothing', () => {
 		mkdirSync(stateDir);
 		chmodSync(stateDir, 0o555);
 		try {
-			const { code, errors } = await pipeline({ ...paths, statePath: join(stateDir, 'state.json') });
+			const reportPath = join(paths.dir, 'report.json');
+			const { code, errors } = await pipeline({ ...paths, statePath: join(stateDir, 'state.json') }, { reportPath });
 			expect(code).toBe(1);
 			expect(errors.join('\n')).toContain('cannot write the state');
+			expect(JSON.parse(readFileSync(reportPath, 'utf8'))).toMatchObject({ stage: 'state write', runAt: RUN_AT.toISOString(), systems: [] });
 			expect(readdirSync(stateDir)).toEqual([]);
 			expect(existsSync(paths.snapshotPath)).toBe(false);
 			// The visit log was written before the state, so the budget never under-counts.
@@ -577,6 +579,140 @@ describe('runPipeline: an invalid snapshot', () => {
 	});
 });
 
+describe('runPipeline: the run report (Story 3.4)', () => {
+	afterEach(() => {
+		vi.doUnmock('../pipeline/stages/publish.ts');
+		vi.resetModules();
+	});
+
+	const readReport = (path: string) => JSON.parse(readFileSync(path, 'utf8'));
+
+	it('writes the report on success: stage null, per-system health', async () => {
+		const paths = setup();
+		const reportPath = join(paths.dir, 'report.json');
+		const { code } = await pipeline(paths, { reportPath });
+		expect(code).toBe(0);
+		expect(readFileSync(reportPath, 'utf8').trimEnd().split('\n')).toHaveLength(1);
+		expect(readReport(reportPath)).toEqual({
+			stage: null,
+			runAt: RUN_AT.toISOString(),
+			all_fetched_failed: false,
+			systems: [
+				{ reader: 'itemkg', problem_down: null, disappeared: [] },
+				{ reader: 'kuferweb', problem_down: null, disappeared: [] },
+			],
+		});
+	});
+
+	it('reports fetch when collect throws', async () => {
+		const paths = setup();
+		const reportPath = join(paths.dir, 'report.json');
+		// A registry that throws on any access makes collect itself throw.
+		const throwing = new Proxy({}, { get: () => { throw new Error('boom'); } }) as RunOptions['readers'];
+		const { code, errors } = await pipeline(paths, { reportPath, readers: throwing });
+		expect(errors.join('\n')).toContain('collect failed');
+		expect(code).toBe(1);
+		expect(readReport(reportPath)).toMatchObject({ stage: 'fetch', all_fetched_failed: false, systems: [] });
+	});
+
+	it('reports input for an invalid directory, before anything is read', async () => {
+		const paths = setup({ directory: '{nope' });
+		const reportPath = join(paths.dir, 'report.json');
+		const { code } = await pipeline(paths, { reportPath });
+		expect(code).toBe(1);
+		expect(readReport(reportPath)).toEqual({ stage: 'input', runAt: null, all_fetched_failed: false, systems: [] });
+	});
+
+	it('reports publish validation when the snapshot is invalid', async () => {
+		const paths = setup();
+		vi.resetModules();
+		vi.doMock('../pipeline/stages/publish.ts', async (importOriginal) => {
+			const original = await importOriginal<typeof import('../pipeline/stages/publish.ts')>();
+			return {
+				...original,
+				writeSnapshot: () => {
+					throw new Error('snapshot fails the schema');
+				},
+			};
+		});
+		const { runPipeline: mocked } = await import('../pipeline/stages/run.ts');
+		const reportPath = join(paths.dir, 'report.json');
+		const code = await mocked({
+			...paths,
+			reportPath,
+			now: () => RUN_AT,
+			clientOptions: { fetchImpl: fakeNetwork().fetchImpl, delayMs: 0, timeoutMs: 1000, sleep: async () => {} },
+			locate: { fetchImpl: fakeNominatim().fetchImpl, timeoutMs: 1000, sleep: async () => {} },
+			log: () => {},
+			error: () => {},
+		});
+		expect(code).toBe(1);
+		expect(readReport(reportPath)).toMatchObject({ stage: 'publish validation', runAt: RUN_AT.toISOString() });
+	});
+
+	it('every fetched centre failed: exits 0, writes state and snapshot, and reports all_fetched_failed', async () => {
+		const directory = [centre('down-a'), centre('down-b', { reader: 'itemkg' }), centre('none-centre', { reader: 'none', reader_config: null })];
+		const paths = setup({ directory, state: null, log: null });
+		const reportPath = join(paths.dir, 'report.json');
+		const { code, errors } = await pipeline(paths, { reportPath }, fakeNetwork({}));
+		expect(code).toBe(0);
+		expect(errors.join('\n')).toContain('every fetched centre failed');
+		const state = readStateFile(paths);
+		expect(state.centres['down-a']!.last_result).toBe('failed');
+		expect(existsSync(paths.visitLogPath)).toBe(true);
+		expect(existsSync(paths.snapshotPath)).toBe(true);
+		const report = readReport(reportPath);
+		expect(report).toMatchObject({ stage: null, all_fetched_failed: true });
+		// Never succeeded: both systems are down at once.
+		expect(report.systems).toEqual([
+			{ reader: 'itemkg', problem_down: { since: null }, disappeared: [] },
+			{ reader: 'kuferweb', problem_down: { since: null }, disappeared: [] },
+		]);
+	});
+
+	it('reports input for --save-collect combined with --from-collect', async () => {
+		const paths = setup();
+		const reportPath = join(paths.dir, 'report.json');
+		const { code } = await pipeline(paths, { reportPath, saveCollect: join(paths.dir, 'a.json'), fromCollect: join(paths.dir, 'b.json') });
+		expect(code).toBe(1);
+		expect(readReport(reportPath)).toEqual({ stage: 'input', runAt: null, all_fetched_failed: false, systems: [] });
+	});
+
+	it('reports fetch when the replay file cannot be saved', async () => {
+		const paths = setup();
+		const reportPath = join(paths.dir, 'report.json');
+		// A file where the directory should be: neither mkdir nor write can succeed.
+		writeFileSync(join(paths.dir, 'blocker'), '');
+		const { code, errors } = await pipeline(paths, { reportPath, saveCollect: join(paths.dir, 'blocker', 'collect.json') });
+		expect(code).toBe(1);
+		expect(errors.join('\n')).toContain('cannot save the replay file');
+		expect(readReport(reportPath)).toMatchObject({ stage: 'fetch', runAt: RUN_AT.toISOString() });
+	});
+
+	it('keeps exit 0 and the snapshot when the report cannot be written', async () => {
+		const paths = setup();
+		writeFileSync(join(paths.dir, 'blocker'), '');
+		const reportPath = join(paths.dir, 'blocker', 'report.json');
+		const { code, errors } = await pipeline(paths, { reportPath });
+		expect(code).toBe(0);
+		expect(existsSync(paths.snapshotPath)).toBe(true);
+		expect(errors.join('\n')).toContain(`cannot write the run report ${reportPath}`);
+	});
+
+	it('names a centre whose upcoming dates disappeared', async () => {
+		const directory = [centre('moosburg', { reader_config: { list_url: MOOSBURG_LIST } })];
+		const state: State = { stateVersion: STATE_VERSION, centres: { moosburg: okHistory([stored('moosburg', '2026-11-20T10:00:00+01:00')]) } };
+		const paths = setup({ directory, state, log: null });
+		const reportPath = join(paths.dir, 'report.json');
+		const empty = readFileSync(join(KUFERWEB_FIXTURES, 'moosburg/list.html'), 'utf8');
+		const routes = { [MOOSBURG_LIST]: () => new Response(empty.replace(/Einbürgerungstest|Einbuergerungstest/g, 'Kochkurs'), { status: 200, headers: { 'content-type': 'text/html; charset=utf-8' } }) };
+		const { code, logs } = await pipeline(paths, { reportPath }, fakeNetwork(routes));
+		expect(code).toBe(0);
+		if (!logs.includes('moosburg kuferweb ok 0 0ms')) return expect.fail(`fixture edit did not yield ok 0: ${logs.join('\n')}`);
+		expect(readReport(reportPath).systems).toContainEqual({ reader: 'kuferweb', problem_down: null, disappeared: [{ centre_id: 'moosburg', name: 'Centre moosburg' }] });
+	});
+});
+
 describe('npm run pipeline (CLI)', () => {
 	const RUN = join(REPO, 'pipeline/stages/run.ts');
 
@@ -587,6 +723,8 @@ describe('npm run pipeline (CLI)', () => {
 		expect(() => parseCliArgs(['--bogus'])).toThrow();
 		expect(() => parseCliArgs(['--from-collect'])).toThrow();
 		expect(() => parseCliArgs(['stray'])).toThrow();
+		expect(parseCliArgs(['--save-collect', 'a.json', '--report', 'r.json'])).toEqual({ saveCollect: 'a.json', fromCollect: undefined, reportPath: 'r.json' });
+		expect(() => parseCliArgs(['--report'])).toThrow();
 	});
 
 	it.each([

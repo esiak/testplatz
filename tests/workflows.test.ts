@@ -52,6 +52,7 @@ describe('pipeline.yml', () => {
 	const publish = job(pipeline, 'publish');
 	const build = job(pipeline, 'build');
 	const deploy = job(pipeline, 'deploy');
+	const monitor = job(pipeline, 'monitor');
 
 	it('is scheduled once a day at 05:17 UTC, and also runs on push to main and on dispatch', () => {
 		const on = (parse(pipeline) as { on: Record<string, unknown> }).on;
@@ -78,7 +79,7 @@ describe('pipeline.yml', () => {
 			'run: npm ci',
 			'run: npm run typecheck',
 			'run: npm test',
-			'run: npm run pipeline -- --save-collect "$RUNNER_TEMP/collect.json"',
+			'run: npm run pipeline -- --save-collect "$RUNNER_TEMP/collect.json" --report "$RUNNER_TEMP/report.json"',
 			'.github/scripts/commit-public.sh',
 		].map((s) => publish.indexOf(s));
 		expect(steps.every((i) => i >= 0)).toBe(true);
@@ -90,7 +91,7 @@ describe('pipeline.yml', () => {
 	it('type-checks and tests a moved upstream, then replays the saved reader results on a retry, without installing', () => {
 		const commitStep = publish.slice(publish.indexOf('- id: commit'));
 		const match = commitStep.match(/^\s+PUBLISH_CMD: (.*)$/m);
-		expect(match?.[1]).toBe('npm run typecheck && npm test && npm run pipeline -- --from-collect "$RUNNER_TEMP/collect.json"');
+		expect(match?.[1]).toBe('npm run typecheck && npm test && npm run pipeline -- --from-collect "$RUNNER_TEMP/collect.json" --report "$RUNNER_TEMP/report.json"');
 		expect(match?.[1]).not.toContain('npm ci');
 	});
 
@@ -102,7 +103,7 @@ describe('pipeline.yml', () => {
 
 	it('never leaves a credential on disk after checkout', () => {
 		const checkouts = pipeline.match(/uses: actions\/checkout@v\d+\n\s+with:\n(?:\s{10}.*\n)*/g) ?? [];
-		expect(checkouts).toHaveLength(2);
+		expect(checkouts).toHaveLength(3);
 		for (const checkout of checkouts) expect(checkout).toContain('persist-credentials: false');
 	});
 
@@ -120,5 +121,73 @@ describe('pipeline.yml', () => {
 		expect(deploy).not.toContain('contents: write');
 		expect(publish).not.toMatch(/pages: write|id-token: write/);
 		expect(deploy).toMatch(/permissions:\n\s+pages: write\n\s+id-token: write/);
+		expect(monitor).toMatch(/^    permissions:\n      contents: read\n      issues: write\n    \S/m);
+		expect(monitor).not.toMatch(/contents: write|pages: write|id-token: write/);
+		expect(publish).not.toContain('issues: write');
+	});
+
+	describe('alerts (Story 3.4)', () => {
+		type Step = { id?: string; name?: string; if?: string; uses?: string; run?: string; with?: Record<string, unknown>; env?: Record<string, string> };
+		type Job = { needs?: string | string[]; if?: string; outputs?: Record<string, string>; steps: Step[] };
+		const jobs = (parse(pipeline) as { jobs: Record<string, Job> }).jobs;
+
+		it('runs the monitor after publish, build and deploy, always, on main only', () => {
+			expect(jobs.monitor!.needs).toEqual(['publish', 'build', 'deploy']);
+			expect(jobs.monitor!.if).toBe("always() && github.ref == 'refs/heads/main'");
+		});
+
+		it('installs nothing in the monitor job and checks out without credentials', () => {
+			expect(monitor).not.toContain('npm ci');
+			expect(monitor).not.toContain('cache: npm');
+			const steps = jobs.monitor!.steps;
+			expect(steps.filter((s) => s.uses?.startsWith('actions/checkout@'))).toEqual([expect.objectContaining({ with: expect.objectContaining({ 'persist-credentials': false }) })]);
+			const uses = steps.map((s) => s.uses).filter((u) => u !== undefined).map((u) => u.split('@')[0]);
+			expect(uses).toEqual(['actions/checkout', 'actions/setup-node']);
+			const alerts = steps.find((s) => s.id === 'alerts')!;
+			expect(alerts.run).toBe('node tools/alerts.ts');
+			expect(alerts.env).toMatchObject({
+				GH_TOKEN: '${{ github.token }}',
+				STAGE: '${{ needs.publish.outputs.stage }}',
+				REPORT: '${{ needs.publish.outputs.report }}',
+				PUBLISH_RESULT: '${{ needs.publish.result }}',
+				BUILD_RESULT: '${{ needs.build.result }}',
+				DEPLOY_RESULT: '${{ needs.deploy.result }}',
+			});
+		});
+
+		it('pings the dead-man check only when the alerts step says so, with the secret from env', () => {
+			const steps = jobs.monitor!.steps;
+			const pings = steps.filter((s) => s.run?.includes('curl'));
+			expect(pings).toHaveLength(1);
+			const ping = pings[0]!;
+			expect(ping.if).toMatch(/steps\.alerts\.outputs\.ping == 'true'$/);
+			expect(ping.env).toEqual({ DEADMAN_PING_URL: '${{ secrets.DEADMAN_PING_URL }}' });
+			expect(ping.run).toContain('curl -fsS -m 10 --retry 3 "$DEADMAN_PING_URL"');
+			expect(ping.run).toContain('::warning::');
+			expect(pipeline.match(/secrets\.DEADMAN_PING_URL/g)).toHaveLength(1);
+		});
+
+		it('fails the publish job when every fetched centre failed, only after the commit', () => {
+			const steps = jobs.publish!.steps;
+			const commit = steps.findIndex((s) => s.id === 'commit');
+			const allFailed = steps.findIndex((s) => s.id === 'all-failed');
+			expect(commit).toBeGreaterThanOrEqual(0);
+			expect(allFailed).toBeGreaterThan(commit);
+			expect(publish.indexOf('- id: all-failed')).toBeGreaterThan(publish.indexOf('- id: commit'));
+			expect(steps[allFailed]!.run).toContain('all_fetched_failed');
+		});
+
+		it('names the failed stage and passes the report from a final always() step', () => {
+			const steps = jobs.publish!.steps;
+			const stage = steps.at(-1)!;
+			expect(stage.id).toBe('stage');
+			expect(stage.if).toBe('always()');
+			for (const id of ['checkout', 'setup-node', 'install', 'typecheck', 'test', 'pipeline', 'commit', 'all-failed']) {
+				expect(steps.some((s) => s.id === id)).toBe(true);
+				expect(Object.values(stage.env ?? {})).toContain(`\${{ steps.${id}.outcome }}`);
+			}
+			for (const name of ['setup', 'tests', 'input', 'push', 'every fetched centre failed']) expect(stage.run).toContain(`'${name}'`);
+			expect(jobs.publish!.outputs).toMatchObject({ stage: '${{ steps.stage.outputs.stage }}', report: '${{ steps.stage.outputs.report }}' });
+		});
 	});
 });

@@ -9,6 +9,12 @@
  *   node pipeline/stages/run.ts                          # collect and publish
  *   node pipeline/stages/run.ts --save-collect <file>    # … and save the replay input after collect
  *   node pipeline/stages/run.ts --from-collect <file>    # no provider fetch: normalise → locate → merge → publish from the file
+ *   node pipeline/stages/run.ts --report <file>          # … and write the run report (Story 3.4) on every exit
+ *
+ * The run report (see `report.ts`) names the failing stage (`input`, `fetch`, `state write`,
+ * `publish validation`), whether every fetched centre failed (the run still writes its data and
+ * exits 0; the workflow fails the job after committing), and per-system health for the alerts.
+ * It can be combined with either of the other flags.
  *
  * `--from-collect` re-reads the directory, state, visit log and venue cache from disk and reuses
  * the saved `runAt`, so after a rejected push it applies the same run on top of the newest
@@ -18,6 +24,7 @@
 import { readFileSync } from 'node:fs';
 import { parseArgs } from 'node:util';
 import { directorySchema, type Centre } from '../../shared/directory.ts';
+import type { Snapshot } from '../../shared/snapshot.ts';
 import type { State } from '../../shared/state.ts';
 import type { Venues } from '../../shared/venues.ts';
 import type { Visit } from '../../shared/visits.ts';
@@ -31,6 +38,7 @@ import { normaliseOutcome, type NormalisedOutcome } from './normalise.ts';
 import { DIRECTORY_PATH, SNAPSHOT_PATH, STATE_PATH, VENUES_PATH, VISIT_LOG_PATH } from './paths.ts';
 import { buildSnapshot, writeSnapshot } from './publish.ts';
 import { loadReplay, saveReplay, type Replay } from './replay.ts';
+import { buildRunReport, failedReport, writeReport, type RunReport } from './report.ts';
 
 /** The readers a scheduled run uses. */
 export const READER_REGISTRY: ReaderRegistry = { kuferweb: kuferwebReader, itemkg: itemkgReader };
@@ -53,6 +61,8 @@ export interface RunOptions {
 	saveCollect?: string;
 	/** Skip fetch and replay this file. */
 	fromCollect?: string;
+	/** Write the run report here on every exit (Story 3.4). */
+	reportPath?: string;
 	log?: (line: string) => void;
 	error?: (line: string) => void;
 }
@@ -76,8 +86,26 @@ const outcomeCode = (outcome: NormalisedOutcome | undefined): string =>
 
 const compare = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
 
-/** Runs the pipeline. Returns the exit code. */
+/** Runs the pipeline and writes the run report when `reportPath` is set. Returns the exit code. */
 export async function runPipeline(options: RunOptions = {}): Promise<number> {
+	const { code, report } = await run(options);
+	if (options.reportPath !== undefined) {
+		try {
+			writeReport(options.reportPath, report);
+		} catch (caught) {
+			// The run's own result stands; the monitor treats a missing report as unknown.
+			(options.error ?? console.error)(`cannot write the run report ${options.reportPath}: ${(caught as Error).message}`);
+		}
+	}
+	return code;
+}
+
+interface RunResult {
+	code: number;
+	report: RunReport;
+}
+
+async function run(options: RunOptions): Promise<RunResult> {
 	const {
 		directoryPath = DIRECTORY_PATH,
 		statePath = STATE_PATH,
@@ -97,7 +125,7 @@ export async function runPipeline(options: RunOptions = {}): Promise<number> {
 
 	if (saveCollect !== undefined && fromCollect !== undefined) {
 		error('--save-collect and --from-collect cannot be combined; nothing written');
-		return 1;
+		return { code: 1, report: failedReport('input') };
 	}
 
 	let directory: Centre[];
@@ -113,7 +141,7 @@ export async function runPipeline(options: RunOptions = {}): Promise<number> {
 		if (fromCollect !== undefined) replay = loadReplay(fromCollect);
 	} catch (caught) {
 		error(`${(caught as Error).message}\nnothing written`);
-		return 1;
+		return { code: 1, report: failedReport('input') };
 	}
 
 	// Fetch and parse, or the saved result of both.
@@ -129,14 +157,14 @@ export async function runPipeline(options: RunOptions = {}): Promise<number> {
 			durations = result.durations;
 		} catch (caught) {
 			error(`collect failed, nothing written: ${(caught as Error).message}`);
-			return 1;
+			return { code: 1, report: failedReport('fetch', runAt) };
 		}
 		if (saveCollect !== undefined) {
 			try {
 				saveReplay(collected, saveCollect);
 			} catch (caught) {
 				error(`cannot save the replay file ${saveCollect}, nothing else written: ${(caught as Error).message}`);
-				return 1;
+				return { code: 1, report: failedReport('fetch', runAt) };
 			}
 		}
 	}
@@ -176,7 +204,7 @@ export async function runPipeline(options: RunOptions = {}): Promise<number> {
 			writeMergeResult(merged, { statePath, visitLogPath, venuesPath });
 		} catch (caught) {
 			error(`cannot write the state, snapshot not published: ${(caught as Error).message}`);
-			return 1;
+			return { code: 1, report: failedReport('state write', runAt) };
 		}
 	}
 
@@ -184,39 +212,43 @@ export async function runPipeline(options: RunOptions = {}): Promise<number> {
 	const registered = (Object.keys(readers) as (keyof ReaderRegistry)[]).filter((system) => readers[system] !== undefined);
 	let published: 'written' | 'unchanged';
 	let listingCount: number;
+	let systems: Snapshot['systems'];
 	try {
 		const snapshot = buildSnapshot({ centres: directory, state: merged.state, outcomes: located.outcomes, readers: registered, runAt });
 		listingCount = snapshot.listings.length;
+		systems = snapshot.systems;
 		published = writeSnapshot(snapshot, snapshotPath);
 	} catch (caught) {
 		error(`cannot publish the snapshot, the last good file is left as it is: ${(caught as Error).message}`);
-		return 1;
+		return { code: 1, report: failedReport('publish validation', runAt) };
 	}
 
 	log(
 		`run ${runAt.toISOString()}${replay !== null ? ' (replay)' : ''}: ${directory.length} centres, ${tally.ok} ok, ${tally.failed} failed, ` +
 			`${tally.skipped} skipped; state ${stateChanged ? 'written' : 'unchanged'}; ${listingCount} listings, snapshot ${published}`,
 	);
-	return 0;
+	const report = buildRunReport({ runAt, tally, systems, directory, priorState: state, outcomes: located.outcomes });
+	if (report.all_fetched_failed) error(`every fetched centre failed (${tally.failed} failed, ${tally.skipped} skipped); the data is written`);
+	return { code: 0, report };
 }
 
 /** Parses the CLI arguments into run options. Throws on unknown or incomplete arguments. */
-export function parseCliArgs(args: readonly string[]): Pick<RunOptions, 'saveCollect' | 'fromCollect'> {
+export function parseCliArgs(args: readonly string[]): Pick<RunOptions, 'saveCollect' | 'fromCollect' | 'reportPath'> {
 	const { values } = parseArgs({
 		args: [...args],
-		options: { 'save-collect': { type: 'string' }, 'from-collect': { type: 'string' } },
+		options: { 'save-collect': { type: 'string' }, 'from-collect': { type: 'string' }, report: { type: 'string' } },
 		strict: true,
 		allowPositionals: false,
 	});
-	return { saveCollect: values['save-collect'], fromCollect: values['from-collect'] };
+	return { saveCollect: values['save-collect'], fromCollect: values['from-collect'], reportPath: values.report };
 }
 
 if (import.meta.main) {
-	let cli: Pick<RunOptions, 'saveCollect' | 'fromCollect'>;
+	let cli: Pick<RunOptions, 'saveCollect' | 'fromCollect' | 'reportPath'>;
 	try {
 		cli = parseCliArgs(process.argv.slice(2));
 	} catch (caught) {
-		console.error(`${(caught as Error).message}\nusage: node pipeline/stages/run.ts [--save-collect <file> | --from-collect <file>]`);
+		console.error(`${(caught as Error).message}\nusage: node pipeline/stages/run.ts [--save-collect <file> | --from-collect <file>] [--report <file>]`);
 		process.exit(1);
 	}
 	process.exitCode = await runPipeline(cli);

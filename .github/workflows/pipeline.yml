@@ -28,19 +28,28 @@ jobs:
       contents: write
     outputs:
       sha: ${{ steps.commit.outputs.sha }}
+      # For the monitor job (Story 3.4): the failed stage (empty on success) and the run report.
+      stage: ${{ steps.stage.outputs.stage }}
+      report: ${{ steps.stage.outputs.report }}
     steps:
-      - uses: actions/checkout@v7
+      - id: checkout
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
-      - uses: actions/setup-node@v7
+      - id: setup-node
+        uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: npm
-      - run: npm ci
-      - run: npm run typecheck
-      - run: npm test
-      - run: npm run pipeline -- --save-collect "$RUNNER_TEMP/collect.json"
+      - id: install
+        run: npm ci
+      - id: typecheck
+        run: npm run typecheck
+      - id: test
+        run: npm test
+      - id: pipeline
+        run: npm run pipeline -- --save-collect "$RUNNER_TEMP/collect.json" --report "$RUNNER_TEMP/report.json"
       - id: commit
         name: Commit and push data/state/ and data/public/
         env:
@@ -54,12 +63,57 @@ jobs:
           # in this step. The retry reuses node_modules from the `npm ci` step above; if upstream
           # changed dependencies, the tests fail, this run fails without deploying, and the queued
           # run for that upstream push publishes instead.
-          PUBLISH_CMD: npm run typecheck && npm test && npm run pipeline -- --from-collect "$RUNNER_TEMP/collect.json"
+          PUBLISH_CMD: npm run typecheck && npm test && npm run pipeline -- --from-collect "$RUNNER_TEMP/collect.json" --report "$RUNNER_TEMP/report.json"
         run: |
           basic="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 | tr -d '\n')"
           echo "::add-mask::$basic"
           unset GH_TOKEN
           GIT_AUTH_HEADER="AUTHORIZATION: basic $basic" .github/scripts/commit-public.sh
+      # After the commit, so this run's visits.json and data are kept; failing here skips build and
+      # deploy, and the monitor job files "Pipeline failed: every fetched centre failed".
+      - id: all-failed
+        name: Fail when every fetched centre failed
+        run: |
+          report="$RUNNER_TEMP/report.json"
+          if [ ! -f "$report" ]; then
+            echo "::warning::no run report at $report"
+          elif [ "$(jq -r '.all_fetched_failed' "$report")" = true ]; then
+            echo "::error::every fetched centre failed; the data was committed, nothing is deployed"
+            exit 1
+          fi
+      # Names the first failed stage for the monitor job and passes the run report on.
+      - id: stage
+        if: always()
+        env:
+          CHECKOUT: ${{ steps.checkout.outcome }}
+          SETUP_NODE: ${{ steps.setup-node.outcome }}
+          INSTALL: ${{ steps.install.outcome }}
+          TYPECHECK: ${{ steps.typecheck.outcome }}
+          TEST: ${{ steps.test.outcome }}
+          PIPELINE: ${{ steps.pipeline.outcome }}
+          COMMIT: ${{ steps.commit.outcome }}
+          ALL_FAILED: ${{ steps.all-failed.outcome }}
+        run: |
+          file="$RUNNER_TEMP/report.json"
+          report="$(jq -c . "$file" 2>/dev/null || true)"
+          stage=''
+          if [ "$CHECKOUT" = failure ] || [ "$SETUP_NODE" = failure ] || [ "$INSTALL" = failure ]; then
+            stage='setup'
+          elif [ "$TYPECHECK" = failure ] || [ "$TEST" = failure ]; then
+            stage='tests'
+          elif [ "$PIPELINE" = failure ]; then
+            stage="$(printf '%s' "$report" | jq -r '.stage // empty' 2>/dev/null || true)"
+            # No report (e.g. bad CLI arguments): an input error.
+            if [ -z "$stage" ]; then stage='input'; fi
+          elif [ "$COMMIT" = failure ]; then
+            # A replay after a rejected push rewrites the report; its failing stage wins.
+            stage="$(printf '%s' "$report" | jq -r '.stage // empty' 2>/dev/null || true)"
+            if [ -z "$stage" ]; then stage='push'; fi
+          elif [ "$ALL_FAILED" = failure ]; then
+            stage='every fetched centre failed'
+          fi
+          echo "stage=$stage" >> "$GITHUB_OUTPUT"
+          echo "report=$report" >> "$GITHUB_OUTPUT"
 
   # Build exactly the SHA the publish job pushed (pushes made with the workflow token do not
   # trigger another workflow run, so there is no loop).
@@ -101,3 +155,47 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v5
+
+  # Alerts (Story 3.4): opens or comments on a "Pipeline failed: <stage>" issue for a failed run,
+  # opens, comments on or closes one "Reader <reader>: needs attention" issue per reader system,
+  # and pings the dead-man check (healthchecks.io) after a fully successful run. No `npm ci`: no
+  # install scripts run next to the issues token; tools/alerts.ts imports only Node built-ins.
+  monitor:
+    needs: [publish, build, deploy]
+    if: always() && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - id: alerts
+        name: Open, comment on or close alert issues
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          STAGE: ${{ needs.publish.outputs.stage }}
+          REPORT: ${{ needs.publish.outputs.report }}
+          PUBLISH_RESULT: ${{ needs.publish.result }}
+          BUILD_RESULT: ${{ needs.build.result }}
+          DEPLOY_RESULT: ${{ needs.deploy.result }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          EVENT: ${{ github.event_name }}
+        run: node tools/alerts.ts
+      # `ping` is written before any issue call, so a failed issue call never stops the ping.
+      - name: Ping the dead-man check
+        if: always() && steps.alerts.outputs.ping == 'true'
+        env:
+          DEADMAN_PING_URL: ${{ secrets.DEADMAN_PING_URL }}
+        run: |
+          if [ -z "$DEADMAN_PING_URL" ]; then
+            echo "::warning::DEADMAN_PING_URL is not set; no dead-man ping sent"
+          elif ! curl -fsS -m 10 --retry 3 "$DEADMAN_PING_URL" > /dev/null; then
+            echo "::warning::the dead-man ping failed"
+          fi

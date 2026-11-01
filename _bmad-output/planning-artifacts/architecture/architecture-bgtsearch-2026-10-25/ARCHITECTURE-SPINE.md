@@ -246,7 +246,7 @@ flowchart LR
 ```
 
 - **Environments:** local (`npm run pipeline`, `npm run dev`) and production. Private beta = production, unlisted, `noindex`, Impressum/Privacy links hidden.
-- **Monitoring:** any failed run opens or updates a GitHub issue. Each run pings an external dead-man check, which alerts if no ping arrives for 13 h. GitHub's 60-day inactivity email is the last resort; re-enable via `workflow_dispatch` / the Actions tab.
+- **Monitoring:** any failed run opens or updates a GitHub issue. Each successful run pings an external dead-man check, which alerts if no ping arrives for 36 h (operator decision 2026-11-01). GitHub's 60-day inactivity email is the last resort; re-enable via `workflow_dispatch` / the Actions tab.
 - **Fallback:** if centre sites block GitHub's IPs, a home machine runs `npm run pipeline` on cron and pushes with a fine-grained token; deploy still runs on GitHub. No self-hosted runner on the public repo.
 - **Recovery:** git history is the backup; reverting `data/` to an earlier commit restores state.
 - **Cost:** €0. A custom domain is the only optional paid item.
@@ -303,7 +303,7 @@ bgtsearch/
 ## Deferred
 
 - **Places dataset source:** resolved in Story 1.5 as OpenStreetMap via the Overpass API (ODbL), queried by `tools/build-places` (AD-5 exemption). AD-9 fixes the shape. Revisit if `places.json` exceeds ~300 KB gzipped (then lazy-load or split).
-- **Dead-man check provider:** pick a free one at setup; AD-12/monitoring fixes that it exists.
+- **Dead-man check provider:** resolved in Story 3.4 as healthchecks.io (free Hobbyist plan; period 1 day, grace 12 h = alert after 36 h). AD-12/monitoring fixes that it exists.
 - **Snapshot splitting:** one file until it passes ~1 MB.
 - **Custom domain, Impressum operator, privacy policy text:** before public launch. The policy must name GitHub Pages as host.
 - **Readers for further systems:** follow AD-3/AD-4; no architecture change.
