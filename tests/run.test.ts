@@ -289,10 +289,10 @@ describe('runPipeline: one collection run end to end', () => {
 		expect(thisRun).not.toContain('budget.example.de');
 	});
 
-	it('logs one line per centre sorted by centre_id, then a summary, with no page content or URLs', async () => {
+	it('logs one line per centre sorted by centre_id, then the locate, run summary and coverage lines, with no page content or URLs', async () => {
 		const { logs } = await pipeline(setup());
 		const ids = DIRECTORY.map((c) => c.centre_id).sort();
-		expect(logs).toHaveLength(ids.length + 2);
+		expect(logs).toHaveLength(ids.length + 3);
 		expect(logs.slice(0, ids.length).map((line) => line.split(' ')[0])).toEqual(ids);
 		expect(logs).toEqual(
 			expect.arrayContaining([
@@ -306,8 +306,10 @@ describe('runPipeline: one collection run end to end', () => {
 				'never-run kuferweb skipped:budget 0 0ms',
 			]),
 		);
-		expect(logs.at(-2)).toBe('locate: 3 at venue, 0 at centre; 2 requests, 0 cache hits');
-		expect(logs.at(-1)).toBe('run 2026-10-29T05:17:00.000Z: 8 centres, 2 ok, 1 failed, 5 skipped; state written; 5 listings, snapshot written');
+		expect(logs.at(-3)).toBe('locate: 3 at venue, 0 at centre; 2 requests, 0 cache hits');
+		expect(logs.at(-2)).toBe('run 2026-10-29T05:17:00.000Z: 8 centres, 2 ok, 1 failed, 5 skipped; state written; 5 listings, snapshot written');
+		// Story 4.1: failed:list-page is unreachable, outside the denominator.
+		expect(logs.at(-1)).toBe('coverage 2/3 (66.7%): parsed 2, parsed-empty 0, failed 0, no-reader 1, unreachable 1, no-test-page 0, pdf-only 0, robots 1, opted-out 1, budget 2');
 		for (const line of logs) expect(line).not.toMatch(/https?:|<|example\.de|vhs-/);
 	});
 
@@ -328,12 +330,12 @@ describe('runPipeline: one collection run end to end', () => {
 		const before = tree(paths.dir);
 		const second = await pipeline(paths);
 		expect(second.code).toBe(0);
-		expect(second.logs.at(-1)).toContain('state unchanged; 0 listings, snapshot unchanged');
+		expect(second.logs.at(-2)).toContain('state unchanged; 0 listings, snapshot unchanged');
 		expect(tree(paths.dir)).toEqual(before);
 		// A later run only moves the skip time; the snapshot content stays the same.
 		const later = new Date(RUN_AT.getTime() + HOUR);
 		const third = await pipeline(paths, { now: () => later });
-		expect(third.logs.at(-1)).toContain('state written; 0 listings, snapshot unchanged');
+		expect(third.logs.at(-2)).toContain('state written; 0 listings, snapshot unchanged');
 		expect(readStateFile(paths).centres['none-centre']!.last_skip_at).toBe(later.toISOString());
 	});
 
@@ -443,7 +445,7 @@ describe('runPipeline: save and replay', () => {
 			expect(readFileSync(replayed[file], 'utf8')).toBe(readFileSync(original[file], 'utf8'));
 		}
 		expect(logs).toContain('moosburg kuferweb ok 2 -');
-		expect(logs.at(-1)).toMatch(/^run 2026-10-29T05:17:00\.000Z \(replay\): /);
+		expect(logs.at(-2)).toMatch(/^run 2026-10-29T05:17:00\.000Z \(replay\): /);
 	});
 
 	it('numbers ids from the stored state: a stored #2 date keeps its id and history (Story 3.8)', async () => {
@@ -488,7 +490,9 @@ describe('runPipeline: save and replay', () => {
 		expect(code).toBe(0);
 		expect(net.calls).toEqual([]);
 		expect(logs).toContain('added kuferweb - 0 -');
-		expect(logs.at(-1)).toMatch(/: 9 centres, 2 ok, 1 failed, 5 skipped;/);
+		expect(logs.at(-2)).toMatch(/: 9 centres, 2 ok, 1 failed, 5 skipped;/);
+		// The added centre has a reader but no outcome: failed, reason not-run.
+		expect(logs.at(-1)).toMatch(/^coverage 2\/4 \(50%\): parsed 2, parsed-empty 0, failed 1, no-reader 1, /);
 		expect(centreOf(readSnapshot(newer), 'added')).toMatchObject({ coverage: 'covered', last_result: null, last_checked_at: null, last_success_at: null });
 		expect(listingIds(readSnapshot(newer), 'added')).toEqual([]);
 		expect(readStateFile(newer).centres.added).toBeUndefined();
@@ -572,10 +576,11 @@ describe('runPipeline: bad inputs write nothing', () => {
 		chmodSync(stateDir, 0o555);
 		try {
 			const reportPath = join(paths.dir, 'report.json');
-			const { code, errors } = await pipeline({ ...paths, statePath: join(stateDir, 'state.json') }, { reportPath });
+			const { code, errors, logs } = await pipeline({ ...paths, statePath: join(stateDir, 'state.json') }, { reportPath });
 			expect(code).toBe(1);
 			expect(errors.join('\n')).toContain('cannot write the state');
-			expect(JSON.parse(readFileSync(reportPath, 'utf8'))).toMatchObject({ stage: 'state write', runAt: RUN_AT.toISOString(), systems: [] });
+			expect(logs.some((line) => line.startsWith('coverage '))).toBe(false);
+			expect(JSON.parse(readFileSync(reportPath, 'utf8'))).toMatchObject({ stage: 'state write', runAt: RUN_AT.toISOString(), systems: [], coverage: null });
 			expect(readdirSync(stateDir)).toEqual([]);
 			expect(existsSync(paths.snapshotPath)).toBe(false);
 			// The visit log was written before the state, so the budget never under-counts.
@@ -655,7 +660,18 @@ describe('runPipeline: the run report (Story 3.4)', () => {
 				{ reader: 'itemkg', problem_down: null, disappeared: [] },
 				{ reader: 'kuferweb', problem_down: null, disappeared: [] },
 			],
+			coverage: {
+				by_category: { parsed: 2, 'parsed-empty': 0, failed: 0, 'no-reader': 1, unreachable: 1, 'no-test-page': 0, 'pdf-only': 0, robots: 1, 'opted-out': 1, budget: 2 },
+				by_reason: {},
+				by_reader: {
+					itemkg: { assigned: 2, parsed: 1, 'parsed-empty': 0, failed: 0, unreachable: 1, skipped: 0 },
+					kuferweb: { assigned: 5, parsed: 1, 'parsed-empty': 0, failed: 0, unreachable: 0, skipped: 4 },
+				},
+				coverage: { percent: 66.7, numerator: 2, denominator: 3 },
+			},
 		});
+		const { by_category } = readReport(reportPath).coverage as { by_category: Record<string, number> };
+		expect(Object.values(by_category).reduce((sum, n) => sum + n, 0)).toBe(DIRECTORY.length);
 	});
 
 	it('reports fetch when collect throws', async () => {
@@ -666,7 +682,7 @@ describe('runPipeline: the run report (Story 3.4)', () => {
 		const { code, errors } = await pipeline(paths, { reportPath, readers: throwing });
 		expect(errors.join('\n')).toContain('collect failed');
 		expect(code).toBe(1);
-		expect(readReport(reportPath)).toMatchObject({ stage: 'fetch', all_fetched_failed: false, systems: [] });
+		expect(readReport(reportPath)).toMatchObject({ stage: 'fetch', all_fetched_failed: false, systems: [], coverage: null });
 	});
 
 	it('reports input for an invalid directory, before anything is read', async () => {
@@ -674,7 +690,7 @@ describe('runPipeline: the run report (Story 3.4)', () => {
 		const reportPath = join(paths.dir, 'report.json');
 		const { code } = await pipeline(paths, { reportPath });
 		expect(code).toBe(1);
-		expect(readReport(reportPath)).toEqual({ stage: 'input', runAt: null, all_fetched_failed: false, systems: [] });
+		expect(readReport(reportPath)).toEqual({ stage: 'input', runAt: null, all_fetched_failed: false, systems: [], coverage: null });
 	});
 
 	it('reports publish validation when the snapshot is invalid', async () => {
@@ -701,7 +717,7 @@ describe('runPipeline: the run report (Story 3.4)', () => {
 			error: () => {},
 		});
 		expect(code).toBe(1);
-		expect(readReport(reportPath)).toMatchObject({ stage: 'publish validation', runAt: RUN_AT.toISOString() });
+		expect(readReport(reportPath)).toMatchObject({ stage: 'publish validation', runAt: RUN_AT.toISOString(), coverage: null });
 	});
 
 	it('every fetched centre failed: exits 0, writes state and snapshot, and reports all_fetched_failed', async () => {
@@ -729,7 +745,7 @@ describe('runPipeline: the run report (Story 3.4)', () => {
 		const reportPath = join(paths.dir, 'report.json');
 		const { code } = await pipeline(paths, { reportPath, saveCollect: join(paths.dir, 'a.json'), fromCollect: join(paths.dir, 'b.json') });
 		expect(code).toBe(1);
-		expect(readReport(reportPath)).toEqual({ stage: 'input', runAt: null, all_fetched_failed: false, systems: [] });
+		expect(readReport(reportPath)).toEqual({ stage: 'input', runAt: null, all_fetched_failed: false, systems: [], coverage: null });
 	});
 
 	it('reports fetch when the replay file cannot be saved', async () => {

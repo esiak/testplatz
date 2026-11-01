@@ -8,9 +8,13 @@
  *   `SYSTEM_DOWN_MS`, or never) and which of its centres' dates disappeared (`ok` with zero
  *   listings while the state before merge still held an upcoming live listing).
  *
- * Systems are empty on a failed run: the monitor only evaluates them from a run that published.
+ * - `coverage`: the parse coverage statistics (Story 4.1, `shared/coverage.ts`).
+ *
+ * Systems are empty and coverage is `null` on a failed run: the monitor only evaluates them from a
+ * run that published.
  */
 import { writeFileSync } from 'node:fs';
+import type { Coverage } from '../../shared/coverage.ts';
 import type { Centre } from '../../shared/directory.ts';
 import type { SnapshotSystem } from '../../shared/snapshot.ts';
 import type { State } from '../../shared/state.ts';
@@ -33,6 +37,8 @@ export interface RunReport {
 	runAt: string | null;
 	all_fetched_failed: boolean;
 	systems: SystemReport[];
+	/** Parse coverage of a run that published; `null` on a failed run. */
+	coverage: Coverage | null;
 }
 
 export interface RunReportInput {
@@ -45,12 +51,14 @@ export interface RunReportInput {
 	priorState: State;
 	/** This run's located outcomes per `centre_id`. */
 	outcomes: Readonly<Record<string, LocatedOutcome>>;
+	/** This run's parse coverage. */
+	coverage: Coverage;
 }
 
 const compare = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
 
 /** The report of a run that published. */
-export function buildRunReport({ runAt, tally, systems, directory, priorState, outcomes }: RunReportInput): RunReport {
+export function buildRunReport({ runAt, tally, systems, directory, priorState, outcomes, coverage }: RunReportInput): RunReport {
 	const now = runAt.getTime();
 	const disappeared = new Map<string, SystemReport['disappeared']>();
 	for (const centre of [...directory].sort((a, b) => compare(a.centre_id, b.centre_id))) {
@@ -73,6 +81,7 @@ export function buildRunReport({ runAt, tally, systems, directory, priorState, o
 				system.centres_covered >= 1 && system.centres_ok === 0 && (since === null || now - Date.parse(since) > SYSTEM_DOWN_MS);
 			return { reader: system.reader, problem_down: down ? { since } : null, disappeared: disappeared.get(system.reader) ?? [] };
 		}),
+		coverage,
 	};
 }
 
@@ -82,6 +91,7 @@ export const failedReport = (stage: ReportStage, runAt: Date | null = null): Run
 	runAt: runAt === null ? null : runAt.toISOString(),
 	all_fetched_failed: false,
 	systems: [],
+	coverage: null,
 });
 
 /** Writes the report as one line of JSON. Throws when the file cannot be written. */

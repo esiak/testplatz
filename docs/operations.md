@@ -95,6 +95,22 @@ Reasons: `no provider address`, `unparseable address` (not `street, NNNNN city`)
 for its normalised address. An `unparseable address` cannot be fixed that way: it is checked
 before the cache, so such an entry is never read.
 
+### Parse coverage
+
+Every run that publishes logs one coverage line right after the run summary (Story 4.1):
+
+```
+coverage <num>/<den> (<percent>%): parsed N, parsed-empty N, failed N, no-reader N, unreachable N, no-test-page N, pdf-only N, robots N, opted-out N, budget N
+```
+
+Each directory centre is counted in exactly one category. Coverage is (`parsed` + `parsed-empty`)
+over (`parsed` + `parsed-empty` + `failed` + `no-reader`); `-` replaces the percentage when that
+denominator is 0. The run report (`--report`) carries the same numbers as a `coverage` object
+(`by_category`, `by_reason` per failure code, `by_reader`, `coverage`); it is `null` on a failed
+run. A centre whose test page publishes its dates only as PDFs can be marked with `pdf_only: true`
+in `data/directory/centres.json` (reader `none` only): it counts as `pdf-only`, outside the
+denominator, and stays "not checked automatically" on the site.
+
 ## Alerts
 
 The `monitor` job runs after every `pipeline.yml` run on `main`, whatever the result. It holds only

@@ -3,7 +3,8 @@
  * merge → publish, with one `runAt` for the whole run. Logs one line per centre (id, reader,
  * outcome, listing count, duration; never page content or URLs), one line per origin whose
  * robots.txt was unusable (host and reason only, Story 3.12; not on replays), one line per test address that
- * fell back to its centre, a locate summary and a run summary line. Exits 1 when anything fails; a
+ * fell back to its centre, a locate summary, a run summary line and, on a run that publishes, a
+ * parse coverage line (Story 4.1, `shared/coverage.ts`). Exits 1 when anything fails; a
  * bad directory, state file, visit log, venue cache or replay file writes nothing. A failed
  * address lookup never fails the run.
  *
@@ -15,7 +16,8 @@
  *
  * The run report (see `report.ts`) names the failing stage (`input`, `fetch`, `state write`,
  * `publish validation`), whether every fetched centre failed (the run still writes its data and
- * exits 0; the workflow fails the job after committing), and per-system health for the alerts.
+ * exits 0; the workflow fails the job after committing), per-system health for the alerts and the
+ * parse coverage statistics (`null` on a failed run).
  * It can be combined with either of the other flags.
  *
  * `--save-visits` (Story 3.11) writes the hosts this run contacted as a visit array right after
@@ -29,6 +31,7 @@
  */
 import { readFileSync } from 'node:fs';
 import { parseArgs } from 'node:util';
+import { buildCoverage, formatCoverageLine } from '../../shared/coverage.ts';
 import { directorySchema, type Centre } from '../../shared/directory.ts';
 import type { Snapshot } from '../../shared/snapshot.ts';
 import type { State } from '../../shared/state.ts';
@@ -260,7 +263,9 @@ async function run(options: RunOptions): Promise<RunResult> {
 		`run ${runAt.toISOString()}${replay !== null ? ' (replay)' : ''}: ${directory.length} centres, ${tally.ok} ok, ${tally.failed} failed, ` +
 			`${tally.skipped} skipped; state ${stateChanged ? 'written' : 'unchanged'}; ${listingCount} listings, snapshot ${published}`,
 	);
-	const report = buildRunReport({ runAt, tally, systems, directory, priorState: state, outcomes: located.outcomes });
+	const coverage = buildCoverage(directory, located.outcomes);
+	log(formatCoverageLine(coverage));
+	const report = buildRunReport({ runAt, tally, systems, directory, priorState: state, outcomes: located.outcomes, coverage });
 	if (report.all_fetched_failed) error(`every fetched centre failed (${tally.failed} failed, ${tally.skipped} skipped); the data is written`);
 	return { code: 0, report };
 }

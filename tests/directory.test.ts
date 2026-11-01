@@ -58,10 +58,16 @@ describe('centreSchema', () => {
 		['a non-UTC verified_at', { verified_at: '2026-10-27T08:00:00+02:00' }, 'verified_at'],
 		['an id that is not a slug', { centre_id: 'VHS_Fürth' }, 'centre_id'],
 		['a non-strict reader_config', { reader: 'kuferweb', reader_config: { list_url: 'https://x.de/', extra: 1 } }, 'reader_config'],
+		['pdf_only with a reader', { reader: 'kuferweb', reader_config: { list_url: 'https://x.de/' }, pdf_only: true }, 'pdf_only'],
+		['pdf_only false', { pdf_only: false }, 'pdf_only'],
 	])('rejects %s', (_, overrides, field) => {
 		const result = centreSchema.safeParse({ ...centre(), ...overrides });
 		expect(result.success).toBe(false);
 		expect(result.error!.issues.map((i) => i.path.join('.'))).toContain(field);
+	});
+
+	it('accepts pdf_only: true with reader none (Story 4.1)', () => {
+		expect(centreSchema.safeParse({ ...centre(), test_page_url: 'https://www.vhs-fuerth.de/termine', pdf_only: true }).success).toBe(true);
 	});
 
 	it('rejects unknown keys and missing keys', () => {

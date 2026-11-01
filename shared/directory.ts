@@ -51,11 +51,13 @@ export const centreFieldsSchema = z.strictObject({
 	opted_out: z.boolean(),
 	source: z.enum(SOURCES),
 	verified_at: z.iso.datetime().nullable(),
+	/** Operator flag (Story 4.1): the test page publishes its dates only as PDFs; reader `none` only. */
+	pdf_only: z.literal(true).optional(),
 });
 
 type CentreFields = z.infer<typeof centreFieldsSchema>;
 
-/** Cross-field centre checks: coords pair, Bavaria box, `reader_config` null for reader `none`. */
+/** Cross-field centre checks: coords pair, Bavaria box, `reader_config` null and `pdf_only` only for reader `none`. */
 export function checkCentre(centre: CentreFields, ctx: z.RefinementCtx): void {
 	if ((centre.lat === null) !== (centre.lon === null)) {
 		ctx.addIssue({
@@ -72,6 +74,9 @@ export function checkCentre(centre: CentreFields, ctx: z.RefinementCtx): void {
 	}
 	if (centre.reader === 'none' && centre.reader_config !== null) {
 		ctx.addIssue({ code: 'custom', path: ['reader_config'], message: 'must be null when reader is "none"' });
+	}
+	if (centre.pdf_only === true && centre.reader !== 'none') {
+		ctx.addIssue({ code: 'custom', path: ['pdf_only'], message: 'is allowed only when reader is "none"' });
 	}
 }
 

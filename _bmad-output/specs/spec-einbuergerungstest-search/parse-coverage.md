@@ -18,7 +18,7 @@ Every directory centre lands in exactly one category per run.
 | `no-reader` | test page reachable, no reader assigned or none matched | yes |
 | `unreachable` | test page answered non-2xx, timed out, or failed to decode | no |
 | `no-test-page` | no `test_page_url`, and discovery found none | no |
-| `pdf-only` | the test page publishes its dates only in PDF files (set by the operator in the reader config; no PDF parsing) | no |
+| `pdf-only` | the test page publishes its dates only in PDF files (operator sets `pdf_only: true` on the directory entry, reader `none` only; no PDF parsing) | no |
 | `robots` | robots.txt disallows the test page | no |
 | `opted-out` | centre opted out (CAP-8) | no |
 | `budget` | host's visit budget used up this run | no for the script; daily run reports it separately |

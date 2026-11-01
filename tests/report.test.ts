@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { SYSTEM_DOWN_MS } from '../pipeline/config.ts';
 import type { LocatedOutcome } from '../pipeline/stages/locate.ts';
 import { buildRunReport, failedReport, writeReport, type RunReportInput } from '../pipeline/stages/report.ts';
+import { buildCoverage } from '../shared/coverage.ts';
 import type { Centre } from '../shared/directory.ts';
 import type { SnapshotSystem } from '../shared/snapshot.ts';
 import { STATE_VERSION, type State, type StoredListing } from '../shared/state.ts';
@@ -69,6 +70,7 @@ const input = (extra: Partial<RunReportInput> = {}): RunReportInput => ({
 	directory: [centre('a'), centre('b', 'itemkg')],
 	priorState: priorState({}),
 	outcomes: {},
+	coverage: buildCoverage([], {}),
 	...extra,
 });
 
@@ -157,8 +159,16 @@ describe('buildRunReport: dates disappeared', () => {
 
 describe('failedReport and writeReport', () => {
 	it('reports the stage with no systems', () => {
-		expect(failedReport('input')).toEqual({ stage: 'input', runAt: null, all_fetched_failed: false, systems: [] });
+		expect(failedReport('input')).toEqual({ stage: 'input', runAt: null, all_fetched_failed: false, systems: [], coverage: null });
 		expect(failedReport('fetch', RUN_AT).runAt).toBe(RUN_AT.toISOString());
+	});
+
+	it('carries the run coverage (Story 4.1)', () => {
+		const directory = [centre('a'), centre('b', 'itemkg')];
+		const outcomes = { a: ok(2), b: { kind: 'failed', reason: 'structure-missing' } as LocatedOutcome };
+		const coverage = buildCoverage(directory, outcomes);
+		expect(buildRunReport(input({ directory, outcomes, coverage })).coverage).toEqual(coverage);
+		expect(coverage.coverage).toEqual({ percent: 50, numerator: 1, denominator: 2 });
 	});
 
 	it('writes one line of JSON', () => {

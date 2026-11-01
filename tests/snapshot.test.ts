@@ -146,6 +146,13 @@ describe('buildSnapshot', () => {
 		}
 	});
 
+	it('publishes a pdf_only centre without the operator flag (Story 4.1)', () => {
+		const snapshot = build({ centres: [centre('pdf', { pdf_only: true })] });
+		expect(snapshot.centres[0]).not.toHaveProperty('pdf_only');
+		expect(snapshot.centres[0]!.coverage).toBe('not_checked');
+		expect(snapshotSchema.safeParse(snapshot).success).toBe(true);
+	});
+
 	it('marks opted-out, reader none and unregistered-reader centres not_checked with null run fields and no listings', () => {
 		const listing = stored('opt', '2026-11-12T10:00:00+01:00');
 		const snapshot = build({

@@ -5,6 +5,7 @@ import { delimiter, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { buildRunReport, failedReport } from '../pipeline/stages/report.ts';
+import { buildCoverage } from '../shared/coverage.ts';
 import type { Centre } from '../shared/directory.ts';
 import { STATE_VERSION } from '../shared/state.ts';
 import { parseReport, planAlerts, resolveStage, type AlertInput, type Report } from '../tools/alerts.ts';
@@ -225,6 +226,7 @@ describe('the run report contract: pipeline/stages/report.ts → tools/alerts.ts
 				},
 			},
 			outcomes: { a: { kind: 'ok', listings: [] } },
+			coverage: buildCoverage([centre('a', 'kuferweb'), centre('b', 'itemkg')], { a: { kind: 'ok', listings: [] } }),
 		});
 		const report = parseReport(JSON.stringify(built));
 		expect(report).not.toBeNull();

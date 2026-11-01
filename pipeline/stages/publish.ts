@@ -71,10 +71,12 @@ export function buildSnapshot({ centres, state, outcomes, readers, runAt }: Snap
 	);
 
 	for (const centre of sortDirectory(centres)) {
+		// `pdf_only` is an operator flag (Story 4.1), not part of the public snapshot.
+		const { pdf_only: _pdfOnly, ...published } = centre;
 		const coverage = coverageOf(centre, registered, outcomes[centre.centre_id], state.centres[centre.centre_id]);
 		const history = coverage === 'covered' ? state.centres[centre.centre_id] : undefined;
 		snapshotCentres.push({
-			...centre,
+			...published,
 			coverage,
 			last_result: history?.last_result ?? null,
 			last_checked_at: history?.last_checked_at ?? null,
