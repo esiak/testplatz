@@ -59,6 +59,9 @@ const history = (lastResult: 'ok' | 'failed', listings: StoredListing[] = [], la
 	last_result: lastResult,
 	last_checked_at: EARLIER,
 	last_success_at: lastSuccess,
+	last_skip_reason: null,
+	last_skip_at: null,
+	last_robots_skip_at: null,
 	listings,
 });
 
@@ -237,6 +240,99 @@ describe('buildSnapshot', () => {
 	});
 });
 
+describe('buildSnapshot robots rule (Story 3.12)', () => {
+	const T1 = '2026-10-25T05:17:00.000Z';
+	const T2 = '2026-10-26T05:17:00.000Z';
+	const T3 = '2026-10-27T05:17:00.000Z';
+	const entry = (extra: Partial<CentreState>): CentreState => ({
+		last_result: null,
+		last_checked_at: null,
+		last_success_at: null,
+		last_skip_reason: null,
+		last_skip_at: null,
+		last_robots_skip_at: null,
+		listings: [],
+		...extra,
+	});
+	const budget: LocatedOutcome = { kind: 'skipped', reason: 'budget' };
+	const coverage = (state: CentreState, outcome: LocatedOutcome | undefined) => {
+		const snapshot = build({ centres: [itemkg('c')], state: stateOf({ c: state }), outcomes: outcome === undefined ? {} : { c: outcome } });
+		return snapshot.centres[0]!;
+	};
+
+	it.each<[string, CentreState, LocatedOutcome | undefined, 'covered' | 'not_checked']>([
+		['first robots skip', entry({ last_skip_reason: 'robots', last_skip_at: T1, last_robots_skip_at: T1 }), { kind: 'skipped', reason: 'robots' }, 'not_checked'],
+		['robots then budget', entry({ last_skip_reason: 'budget', last_skip_at: T2, last_robots_skip_at: T1 }), budget, 'not_checked'],
+		['robots then no outcome', entry({ last_skip_reason: 'robots', last_skip_at: T1, last_robots_skip_at: T1 }), undefined, 'not_checked'],
+		['robots then ok', entry({ last_result: 'ok', last_checked_at: T2, last_success_at: T2, last_skip_reason: 'robots', last_skip_at: T1, last_robots_skip_at: T1 }), { kind: 'ok', listings: [] }, 'covered'],
+		['ok then robots then budget', entry({ last_result: 'ok', last_checked_at: T1, last_success_at: T1, last_skip_reason: 'budget', last_skip_at: T3, last_robots_skip_at: T2 }), budget, 'not_checked'],
+		['robots, later check, then budget', entry({ last_result: 'ok', last_checked_at: T2, last_success_at: T2, last_skip_reason: 'budget', last_skip_at: T3, last_robots_skip_at: T1 }), budget, 'covered'],
+		['budget skip with history', entry({ last_result: 'ok', last_checked_at: T1, last_success_at: T1, last_skip_reason: 'budget', last_skip_at: T2 }), budget, 'covered'],
+		['budget skip, never checked', entry({ last_skip_reason: 'budget', last_skip_at: T1 }), budget, 'covered'],
+	])('%s → %s', (_case, state, outcome, expected) => {
+		const result = coverage(state, outcome);
+		expect(result.coverage).toBe(expected);
+		if (expected === 'not_checked') expect(result).toMatchObject({ last_result: null, last_checked_at: null, last_success_at: null });
+		else expect(result).toMatchObject({ last_result: state.last_result, last_checked_at: state.last_checked_at });
+	});
+
+	it('robots, later check, then budget publishes the later check with its listings', () => {
+		const listing = stored('c', '2026-11-12T10:00:00+01:00');
+		const snapshot = build({
+			centres: [itemkg('c')],
+			state: stateOf({ c: entry({ last_result: 'ok', last_checked_at: T2, last_success_at: T2, last_skip_reason: 'budget', last_skip_at: T3, last_robots_skip_at: T1, listings: [listing] }) }),
+			outcomes: { c: budget },
+		});
+		expect(snapshot.centres[0]).toMatchObject({ coverage: 'covered', last_result: 'ok', last_checked_at: T2 });
+		expect(snapshot.listings).toEqual([published(listing)]);
+	});
+
+	it('ok then robots then budget publishes none of the stored listings', () => {
+		const listing = stored('c', '2026-11-12T10:00:00+01:00');
+		const snapshot = build({
+			centres: [itemkg('c')],
+			state: stateOf({ c: entry({ last_result: 'ok', last_checked_at: T1, last_success_at: T1, last_skip_reason: 'budget', last_skip_at: T3, last_robots_skip_at: T2, listings: [listing] }) }),
+			outcomes: { c: budget },
+		});
+		expect(snapshot.centres[0]!.coverage).toBe('not_checked');
+		expect(snapshot.listings).toEqual([]);
+	});
+
+	it.each(['opted-out', 'no-reader'] as const)('a recorded %s skip stays not_checked by the directory rule', (reason) => {
+		const c = reason === 'opted-out' ? itemkg('c', { opted_out: true }) : centre('c');
+		const snapshot = build({ centres: [c], state: stateOf({ c: entry({ last_skip_reason: reason, last_skip_at: T1 }) }), outcomes: { c: { kind: 'skipped', reason } } });
+		expect(snapshot.centres[0]!.coverage).toBe('not_checked');
+	});
+
+	it('system sum: centres_covered = ok + failed + covered never checked', () => {
+		const ids = (prefix: string, n: number) => Array.from({ length: n }, (_, i) => `${prefix}${i + 1}`);
+		const okIds = ids('ok', 15);
+		const budgetIds = ids('budget', 2);
+		const robotsIds = ids('robots', 5);
+		const state: Record<string, CentreState> = {};
+		const outcomes: Record<string, LocatedOutcome> = {};
+		for (const id of okIds) {
+			state[id] = entry({ last_result: 'ok', last_checked_at: T3, last_success_at: T3 });
+			outcomes[id] = { kind: 'ok', listings: [] };
+		}
+		for (const id of budgetIds) {
+			state[id] = entry({ last_skip_reason: 'budget', last_skip_at: T3 });
+			outcomes[id] = budget;
+		}
+		for (const id of robotsIds) {
+			state[id] = entry({ last_skip_reason: 'budget', last_skip_at: T3, last_robots_skip_at: T2 });
+			outcomes[id] = budget;
+		}
+		const snapshot = build({ centres: [...okIds, ...budgetIds, ...robotsIds].map((id) => itemkg(id)), state: stateOf(state), outcomes, runAt: RUN_2 });
+		const system = snapshot.systems.find((s) => s.reader === 'itemkg')!;
+		expect(system).toMatchObject({ centres_covered: 17, centres_ok: 15, centres_failed: 0 });
+		const neverChecked = snapshot.centres.filter((c) => c.reader === 'itemkg' && c.coverage === 'covered' && c.last_result === null).length;
+		expect(system.centres_covered).toBe(system.centres_ok + system.centres_failed + neverChecked);
+		expect(snapshot.centres.filter((c) => c.coverage === 'not_checked').map((c) => c.centre_id).sort()).toEqual([...robotsIds].sort());
+		expect(snapshotSchema.safeParse(snapshot).success).toBe(true);
+	});
+});
+
 describe('writeSnapshot', () => {
 	it.each<[string, (s: Snapshot) => Snapshot]>([
 		['covered + opted out', (s) => ({ ...s, centres: s.centres.map((c) => (c.opted_out ? { ...c, coverage: 'covered' } : c)) })],
@@ -290,6 +386,8 @@ describe('committed data/public/snapshot.json', () => {
 			expect(system.centres_covered).toBe(covered.length);
 			expect(system.centres_ok).toBe(covered.filter((c) => c.last_result === 'ok').length);
 			expect(system.centres_failed).toBe(covered.filter((c) => c.last_result === 'failed').length);
+			// Story 3.12: ok + failed + covered never checked = covered.
+			expect(system.centres_ok + system.centres_failed + covered.filter((c) => c.last_result === null).length).toBe(system.centres_covered);
 		}
 	});
 });

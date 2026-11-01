@@ -10,7 +10,7 @@ import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync 
 import { basename, dirname, join } from 'node:path';
 import { sortDirectory, type Centre, type Reader as ReaderSystem } from '../../shared/directory.ts';
 import { SNAPSHOT_SCHEMA_VERSION, snapshotSchema, type Coverage, type Snapshot, type SnapshotListing, type SnapshotSystem } from '../../shared/snapshot.ts';
-import type { State } from '../../shared/state.ts';
+import type { CentreState, State } from '../../shared/state.ts';
 import type { LocatedOutcome } from './locate.ts';
 
 /** UTC ISO 8601 with `Z`, whole seconds. */
@@ -32,19 +32,28 @@ export interface SnapshotInput {
 
 /**
  * A centre's coverage: `not_checked` when it is opted out, has reader `none` or a reader that is
- * not registered, or robots.txt kept this run out; otherwise `covered` (a budget skip or a centre
- * with no state yet stays covered).
+ * not registered, or robots.txt kept this run out. Also `not_checked` (Story 3.12) when this run
+ * did not check it (no outcome, or a non-robots skip such as budget) and its stored newest robots
+ * skip is newer than its last check (or it was never checked): a robots skip uses up the host's
+ * visits, so the budget skips that follow must not make it look covered again. Otherwise
+ * `covered` (a budget skip or a centre with no state yet stays covered).
  */
-export function coverageOf(centre: Centre, readers: ReadonlySet<string>, outcome: LocatedOutcome | undefined): Coverage {
+export function coverageOf(centre: Centre, readers: ReadonlySet<string>, outcome: LocatedOutcome | undefined, stored?: CentreState): Coverage {
 	if (centre.opted_out || centre.reader === 'none' || !readers.has(centre.reader)) return 'not_checked';
 	if (outcome?.kind === 'skipped' && outcome.reason === 'robots') return 'not_checked';
+	if (outcome === undefined || outcome.kind === 'skipped') {
+		const robotsAt = stored?.last_robots_skip_at ?? null;
+		const checkedAt = stored?.last_checked_at ?? null;
+		if (robotsAt !== null && (checkedAt === null || Date.parse(robotsAt) > Date.parse(checkedAt))) return 'not_checked';
+	}
 	return 'covered';
 }
 
 /**
  * The snapshot for this run. Every directory centre appears once, sorted by `centre_id`, with run
  * fields from state when `covered` (null when it has no state yet) and null when `not_checked`.
- * `systems[]` has one entry per registered reader. `listings[]` holds the stored listings of
+ * `systems[]` has one entry per registered reader; its `centres_covered` is `centres_ok` +
+ * `centres_failed` + the covered centres never checked (`last_result` null). `listings[]` holds the stored listings of
  * covered centres that are not removed and start after `runAt`, without `removed_at`, by id. A
  * stored listing without location fields (kept from before Story 2.10) takes the centre's
  * coordinates with `location: centre`.
@@ -62,7 +71,7 @@ export function buildSnapshot({ centres, state, outcomes, readers, runAt }: Snap
 	);
 
 	for (const centre of sortDirectory(centres)) {
-		const coverage = coverageOf(centre, registered, outcomes[centre.centre_id]);
+		const coverage = coverageOf(centre, registered, outcomes[centre.centre_id], state.centres[centre.centre_id]);
 		const history = coverage === 'covered' ? state.centres[centre.centre_id] : undefined;
 		snapshotCentres.push({
 			...centre,

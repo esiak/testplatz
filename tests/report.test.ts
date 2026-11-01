@@ -58,7 +58,7 @@ const system = (reader: SnapshotSystem['reader'], extra: Partial<SnapshotSystem>
 const priorState = (listings: Record<string, StoredListing[]>): State => ({
 	stateVersion: STATE_VERSION,
 	centres: Object.fromEntries(
-		Object.entries(listings).map(([id, list]) => [id, { last_result: 'ok' as const, last_checked_at: hoursBefore(24), last_success_at: hoursBefore(24), listings: list }]),
+		Object.entries(listings).map(([id, list]) => [id, { last_result: 'ok' as const, last_checked_at: hoursBefore(24), last_success_at: hoursBefore(24), last_skip_reason: null, last_skip_at: null, last_robots_skip_at: null, listings: list }]),
 	),
 });
 

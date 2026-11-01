@@ -71,7 +71,7 @@ const stored = (centreId: string, startsAt: string, extra: Partial<StoredListing
 	...extra,
 });
 
-const okHistory = (listings: StoredListing[]): CentreState => ({ last_result: 'ok', last_checked_at: EARLIER, last_success_at: EARLIER, listings });
+const okHistory = (listings: StoredListing[]): CentreState => ({ last_result: 'ok', last_checked_at: EARLIER, last_success_at: EARLIER, last_skip_reason: null, last_skip_at: null, last_robots_skip_at: null, listings });
 
 const STATE: State = {
 	stateVersion: STATE_VERSION,
@@ -234,7 +234,10 @@ describe('runPipeline: one collection run end to end', () => {
 		// Robots skip: not checked, its stored listings excluded (state keeps them).
 		expect(centreOf(snapshot, 'robots-centre')).toMatchObject({ coverage: 'not_checked', last_result: null, last_success_at: null });
 		expect(listingIds(snapshot, 'robots-centre')).toEqual([]);
-		expect(state.centres['robots-centre']).toEqual(STATE.centres['robots-centre']);
+		// Story 3.12: state keeps the listings and the last check, and records the robots skip.
+		expect(state.centres['robots-centre']).toEqual({ ...STATE.centres['robots-centre'], last_skip_reason: 'robots', last_skip_at: at, last_robots_skip_at: at });
+		expect(state.stateVersion).toBe(2);
+		expect(state.centres['budget-centre']).toMatchObject({ last_result: 'ok', last_checked_at: EARLIER, last_skip_reason: 'budget', last_skip_at: at, last_robots_skip_at: null });
 
 		// Budget skip: covered, run fields untouched, only the upcoming listing that is not removed published.
 		expect(centreOf(snapshot, 'budget-centre')).toMatchObject({ coverage: 'covered', last_result: 'ok', last_checked_at: EARLIER, last_success_at: EARLIER });
@@ -243,7 +246,15 @@ describe('runPipeline: one collection run end to end', () => {
 
 		// Never run: covered with null run fields and no listings.
 		expect(centreOf(snapshot, 'never-run')).toMatchObject({ coverage: 'covered', last_result: null, last_checked_at: null, last_success_at: null });
-		expect(state.centres['never-run']).toBeUndefined();
+		expect(state.centres['never-run']).toEqual({
+			last_result: null,
+			last_checked_at: null,
+			last_success_at: null,
+			last_skip_reason: 'budget',
+			last_skip_at: at,
+			last_robots_skip_at: null,
+			listings: [],
+		});
 
 		expect(snapshot.systems).toEqual([
 			{ reader: 'itemkg', centres_covered: 2, centres_ok: 1, centres_failed: 1, last_success_at: at },
@@ -311,13 +322,55 @@ describe('runPipeline: one collection run end to end', () => {
 		const paths = setup({ directory: empty, state: null, log: null });
 		const first = await pipeline(paths);
 		expect(first.code).toBe(0);
-		expect(existsSync(paths.statePath)).toBe(false);
-		expect(existsSync(paths.visitLogPath)).toBe(false);
+		// Story 3.12: the skip is recorded; no host was contacted, so the visit log is empty.
+		expect(readStateFile(paths).centres['none-centre']).toMatchObject({ last_skip_reason: 'no-reader', last_skip_at: RUN_AT.toISOString() });
+		expect(readFileSync(paths.visitLogPath, 'utf8')).toBe('[]\n');
 		const before = tree(paths.dir);
-		const second = await pipeline(paths, { now: () => new Date(RUN_AT.getTime() + HOUR) });
+		const second = await pipeline(paths);
 		expect(second.code).toBe(0);
 		expect(second.logs.at(-1)).toContain('state unchanged; 0 listings, snapshot unchanged');
 		expect(tree(paths.dir)).toEqual(before);
+		// A later run only moves the skip time; the snapshot content stays the same.
+		const later = new Date(RUN_AT.getTime() + HOUR);
+		const third = await pipeline(paths, { now: () => later });
+		expect(third.logs.at(-1)).toContain('state written; 0 listings, snapshot unchanged');
+		expect(readStateFile(paths).centres['none-centre']!.last_skip_at).toBe(later.toISOString());
+	});
+
+	it('logs one line per origin whose robots.txt was unusable, host and reason only (Story 3.12)', async () => {
+		const routes: Record<string, () => Response> = {
+			...ROUTES,
+			'https://budget.example.de/robots.txt': () => new Response('', { status: 503 }),
+			'https://robots-centre.example.de/robots.txt': () => new Response('', { status: 503 }),
+		};
+		const { logs, code } = await pipeline(setup({ log: [] }), {}, fakeNetwork(routes));
+		expect(code).toBe(0);
+		const robotsLines = logs.filter((line) => line.startsWith('robots '));
+		expect(robotsLines).toEqual([
+			'robots budget.example.de: unusable (HTTP 503), treated as disallow all',
+			'robots robots-centre.example.de: unusable (HTTP 503), treated as disallow all',
+		]);
+		// Right after the last per-centre line, before the locate summary.
+		const lastCentre = Math.max(...DIRECTORY.map((c) => logs.findIndex((line) => line.startsWith(`${c.centre_id} `))));
+		const locate = logs.findIndex((line) => line.startsWith('locate:'));
+		expect(logs.slice(lastCentre + 1, locate)).toEqual(robotsLines);
+	});
+
+	it('reads a v1 state file, logs the upgrade once and writes v2 (Story 3.12)', async () => {
+		const v1 = {
+			stateVersion: 1,
+			centres: Object.fromEntries(
+				Object.entries(STATE.centres).map(([id, { last_skip_reason: _r, last_skip_at: _a, last_robots_skip_at: _ra, ...rest }]) => [id, rest]),
+			),
+		};
+		const paths = setup({ state: JSON.stringify(v1) });
+		const { code, logs, errors } = await pipeline(paths);
+		expect(errors).toEqual([]);
+		expect(code).toBe(0);
+		expect(logs.filter((line) => line.includes('upgraded'))).toEqual(['state v1 upgraded to v2']);
+		const state = readStateFile(paths);
+		expect(state.stateVersion).toBe(2);
+		expect(state.centres['failed-centre']).toMatchObject({ last_result: 'failed', last_skip_reason: null, last_skip_at: null, last_robots_skip_at: null });
 	});
 });
 
@@ -750,6 +803,21 @@ describe('runPipeline: --save-visits (Story 3.11)', () => {
 		expect(errors.join('\n')).toContain('collect failed');
 		expect(readVisits(visitsFile)).toEqual([{ host: 'www.vhs-moosburg.de', at: RUN_AT.toISOString() }]);
 		expect(existsSync(paths.visitLogPath)).toBe(false);
+	});
+
+	it('logs the unusable robots.txt origins when collect threw (Story 3.12)', async () => {
+		const directory = [centre('moosburg', { reader_config: { list_url: MOOSBURG_LIST } }), centre('ebersberg', { reader: 'itemkg', reader_config: { list_url: EBERSBERG_LIST } })];
+		const paths = setup({ directory, state: null, log: null });
+		const readers = {
+			kuferweb: kuferwebReader,
+			get itemkg(): never {
+				throw new Error('boom');
+			},
+		} as RunOptions['readers'];
+		const routes = { ...ROUTES, [`${new URL(MOOSBURG_LIST).origin}/robots.txt`]: () => new Response('', { status: 503 }) };
+		const { code, logs } = await pipeline(paths, { readers }, fakeNetwork(routes));
+		expect(code).toBe(1);
+		expect(logs).toEqual([`robots ${new URL(MOOSBURG_LIST).host}: unusable (HTTP 503), treated as disallow all`]);
 	});
 
 	it('writes an empty array when collect threw before any request', async () => {

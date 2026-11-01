@@ -126,7 +126,9 @@ Arrows are the only allowed imports. `readers` never imports `fetch` or `stages`
   - Only `pipeline/stages/merge` writes `data/state/`, including the per-host visit log.
   - `ok` sets `last_checked_at`, `last_success_at` and `last_result=ok`, and replaces that centre's current listings.
   - `failed` sets `last_checked_at` and `last_result=failed` and keeps the previous listings unchanged.
-  - `skipped` sets no timestamps.
+  - `skipped` sets no run timestamps (`last_checked_at`, `last_success_at`) and never changes `last_result` or the listings. It records the skip: `last_skip_reason` (`robots`, `budget`, `opted-out`, `no-reader`) and `last_skip_at`, and for a robots skip also `last_robots_skip_at`. A centre that was only ever skipped gets an entry with `last_result`, `last_checked_at`, `last_success_at` null and no listings. `ok` and `failed` keep the skip fields as history. (Amended 2026-11-01, Story 3.12; before, `skipped` changed nothing.)
+  - The state file is `stateVersion: 2`. Merge reads a version 1 file by upgrading it in memory (each centre gains the three skip fields as `null`, logged once as `state v1 upgraded to v2`); the next write is version 2. Any other version is refused. The state file is never hand-edited.
+  - Coverage and robots (with AD-8): a centre is `not_checked` when this run's outcome is a robots skip, and also when this run did not check it (no outcome, or a budget skip) while its `last_robots_skip_at` is newer than its `last_checked_at` (or it was never checked). A robots skip uses the host's visits, so the budget skips that follow must not make it look covered again.
   - A listing missing from an `ok` result gets `removed_at`, but stays in state until its `starts_at` passes. If it reappears, `removed_at` is cleared and `first_seen_at` is kept.
   - `first_seen_at` is set once and never changed. Listings found in a centre's first `ok` run are marked `baseline` and never shown as "new".
   - Merge also persists the test-address cache (`data/state/venues.json`) from locate's new lookups; locate only reads it.
@@ -144,7 +146,7 @@ Arrows are the only allowed imports. `readers` never imports `fetch` or `stages`
 - **Rule:**
   - `data/directory/centres.json` is edited only by people, or by a `tools/` script whose output a person commits. The pipeline never writes it.
   - Each entry has `centre_id`, name, address, lat/lon, website, `test_page_url`, `reader`, an optional `reader_config` typed per reader, `opted_out`, `source` and `verified_at`.
-  - Publish emits every directory centre with `coverage`: `not_checked` if the reader is `none`, opted out or robots-disallowed; otherwise `covered`. A `not_checked` centre publishes zero listings.
+  - Publish emits every directory centre with `coverage`: `not_checked` if the reader is `none`, opted out or robots-disallowed (this run, or newest robots skip newer than its last check; AD-6); otherwise `covered`. A `not_checked` centre publishes zero listings.
   - The web app picks the card from coverage first:
     - `not_checked` → uncovered card;
     - `covered` with current listings → one result card per listing whose own coordinates are in range (the centre is absent if none are);

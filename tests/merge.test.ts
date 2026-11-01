@@ -94,7 +94,7 @@ describe('mergeRun outcomes', () => {
 
 	it('a centre whose earlier runs all failed gets baseline on its first ok run', () => {
 		const first = merge(emptyState(), { a: failed }, RUN_1).state;
-		expect(first.centres.a).toEqual({ last_result: 'failed', last_checked_at: RUN_1.toISOString(), last_success_at: null, listings: [] });
+		expect(first.centres.a).toEqual({ last_result: 'failed', last_checked_at: RUN_1.toISOString(), last_success_at: null, last_skip_reason: null, last_skip_at: null, last_robots_skip_at: null, listings: [] });
 		const { state } = merge(first, { a: ok('a', [raw('2026-11-12')]) }, RUN_2);
 		expect(listingsOf(state, 'a')[0]!.baseline).toBe(true);
 	});
@@ -127,12 +127,64 @@ describe('mergeRun outcomes', () => {
 		expect(listingsOf(two, 'a')).toEqual(listingsOf(one, 'a'));
 	});
 
-	it('skipped: the centre state is byte-identical; an unseen skipped centre gets no entry', () => {
-		const one = merge(emptyState(), { a: ok('a', [raw('2026-11-12')]) }, RUN_1).state;
-		const two = merge(one, { a: skipped, b: skipped }, RUN_2).state;
-		expect(JSON.stringify(two.centres.a)).toBe(JSON.stringify(one.centres.a));
-		expect(serializeState(two)).toBe(serializeState(one));
-		expect(two.centres.b).toBeUndefined();
+	describe('skipped records the skip (Story 3.12)', () => {
+		const robots: LocatedOutcome = { kind: 'skipped', reason: 'robots' };
+		const T1 = RUN_1.toISOString();
+		const T2 = RUN_2.toISOString();
+		const T3 = RUN_3.toISOString();
+
+		it('first robots skip: an entry with null results, no listings and the robots time', () => {
+			const { state } = merge(emptyState(), { a: robots }, RUN_1);
+			expect(state.centres.a).toEqual({
+				last_result: null,
+				last_checked_at: null,
+				last_success_at: null,
+				last_skip_reason: 'robots',
+				last_skip_at: T1,
+				last_robots_skip_at: T1,
+				listings: [],
+			});
+			expect(stateSchema.safeParse(state).success).toBe(true);
+		});
+
+		it('robots then budget: reason and time move on, the robots time is kept', () => {
+			const one = merge(emptyState(), { a: robots }, RUN_1).state;
+			const two = merge(one, { a: skipped }, RUN_2).state;
+			expect(two.centres.a).toMatchObject({ last_result: null, last_checked_at: null, last_skip_reason: 'budget', last_skip_at: T2, last_robots_skip_at: T1 });
+		});
+
+		it('robots then ok: the check is recorded and the skip fields are kept as history', () => {
+			const one = merge(emptyState(), { a: robots }, RUN_1).state;
+			const two = merge(one, { a: ok('a', [raw('2026-11-12')]) }, RUN_2).state;
+			expect(two.centres.a).toMatchObject({ last_result: 'ok', last_checked_at: T2, last_success_at: T2, last_skip_reason: 'robots', last_skip_at: T1, last_robots_skip_at: T1 });
+			const three = merge(two, { a: failed }, RUN_3).state;
+			expect(three.centres.a).toMatchObject({ last_result: 'failed', last_checked_at: T3, last_success_at: T2, last_skip_reason: 'robots', last_skip_at: T1, last_robots_skip_at: T1 });
+		});
+
+		it('budget skip with history: results and listings unchanged, skip fields set', () => {
+			const one = merge(emptyState(), { a: ok('a', [raw('2026-11-12')]) }, RUN_1).state;
+			const two = merge(one, { a: skipped }, RUN_2).state;
+			expect(two.centres.a).toEqual({ ...one.centres.a, last_skip_reason: 'budget', last_skip_at: T2, last_robots_skip_at: null });
+			expect(listingsOf(two, 'a')).toEqual(listingsOf(one, 'a'));
+		});
+
+		it('budget skip, never checked: an entry with nulls and reason budget', () => {
+			const { state } = merge(emptyState(), { b: skipped }, RUN_1);
+			expect(state.centres.b).toEqual({ last_result: null, last_checked_at: null, last_success_at: null, last_skip_reason: 'budget', last_skip_at: T1, last_robots_skip_at: null, listings: [] });
+		});
+
+		it.each(['opted-out', 'no-reader'] as const)('records a %s skip', (reason) => {
+			const { state } = merge(emptyState(), { a: { kind: 'skipped', reason } }, RUN_1);
+			expect(state.centres.a).toMatchObject({ last_skip_reason: reason, last_skip_at: T1, last_robots_skip_at: null });
+		});
+
+		it('ok then robots then budget: listings and last check kept, robots time newer than the check', () => {
+			const one = merge(emptyState(), { a: ok('a', [raw('2026-11-12')]) }, RUN_1).state;
+			const two = merge(one, { a: robots }, RUN_2).state;
+			const three = merge(two, { a: skipped }, RUN_3).state;
+			expect(three.centres.a).toMatchObject({ last_result: 'ok', last_checked_at: T1, last_skip_reason: 'budget', last_skip_at: T3, last_robots_skip_at: T2 });
+			expect(listingsOf(three, 'a')).toEqual(listingsOf(one, 'a'));
+		});
 	});
 
 	it('leaves centres without an outcome untouched and never deletes a centre entry', () => {
@@ -330,13 +382,33 @@ describe('readState and writeMergeResult', () => {
 		writeMergeResult(two, paths);
 		const state = readState(paths.statePath);
 		expect(state).toEqual(two.state);
-		expect(stateSchema.parse(state).stateVersion).toBe(1);
+		expect(stateSchema.parse(state).stateVersion).toBe(2);
 		expect(readVisitLog(paths.visitLogPath)).toEqual(two.log);
 		expect(two.log).toHaveLength(2);
 		const text = readFileSync(paths.statePath, 'utf8');
 		expect(text).toBe(`${JSON.stringify(JSON.parse(text), null, '\t')}\n`);
 		expect(Object.keys(JSON.parse(text).centres)).toEqual(['a', 'b']);
 		expect(readdirSync(join(dir, 'state')).sort()).toEqual(['state.json', 'visits.json']);
+	});
+
+	it('upgrades a v1 file in memory, logs it once, and the next write is v2 (Story 3.12)', () => {
+		const one = merge(emptyState(), { a: ok('a', [raw('2026-11-12')]), b: failed }, RUN_1);
+		const v1 = {
+			stateVersion: 1,
+			centres: Object.fromEntries(
+				Object.entries(one.state.centres).map(([id, { last_skip_reason: _r, last_skip_at: _a, last_robots_skip_at: _ra, ...rest }]) => [id, rest]),
+			),
+		};
+		writeFileSync(join(dir, 'v1.json'), JSON.stringify(v1));
+		const lines: string[] = [];
+		const read = readState(join(dir, 'v1.json'), (line) => lines.push(line));
+		expect(lines).toEqual(['state v1 upgraded to v2']);
+		expect(read).toEqual(one.state);
+		writeMergeResult({ ...one, state: read }, paths);
+		expect(JSON.parse(readFileSync(paths.statePath, 'utf8')).stateVersion).toBe(2);
+		const again: string[] = [];
+		readState(paths.statePath, (line) => again.push(line));
+		expect(again).toEqual([]);
 	});
 
 	it('writes identical bytes for an identical result', () => {
@@ -349,7 +421,8 @@ describe('readState and writeMergeResult', () => {
 
 	it.each<[string, string, RegExp]>([
 		['invalid JSON', '{ nope', /not valid JSON/],
-		['another stateVersion', JSON.stringify({ stateVersion: 2, centres: {} }), /stateVersion 2, expected 1/],
+		['another stateVersion', JSON.stringify({ stateVersion: 3, centres: {} }), /stateVersion 3, expected 1 or 2/],
+		['a non-object', JSON.stringify([1]), /stateVersion undefined/],
 		['no stateVersion', JSON.stringify({ centres: {} }), /stateVersion undefined/],
 		['a schema failure', JSON.stringify({ stateVersion: 1, centres: { a: { last_result: 'ok' } } }), /invalid at centres\.a/],
 		[
@@ -362,6 +435,8 @@ describe('readState and writeMergeResult', () => {
 			),
 			/invalid at centres\.a\.listings\.0/,
 		],
+		['a v2 centre without the skip fields', JSON.stringify({ stateVersion: 2, centres: { a: { last_result: 'ok', last_checked_at: RUN_1.toISOString(), last_success_at: RUN_1.toISOString(), listings: [] } } }), /invalid at centres\.a/],
+		['a v1 centre that is not an object', JSON.stringify({ stateVersion: 1, centres: { a: 3 } }), /invalid at centres\.a/],
 	])('throws naming the path for %s', (_case, text, message) => {
 		writeFileSync(join(dir, 'bad.json'), text);
 		expect(() => readState(join(dir, 'bad.json'))).toThrow(message);
@@ -466,7 +541,8 @@ describe('venue cache: mergeRun, readVenues and writeMergeResult', () => {
 
 describe('stored listing location fields', () => {
 	const stored = () => merge(emptyState(), { a: ok('a', [raw('2026-11-12')]) }, RUN_1).state.centres.a!.listings[0]!;
-	const valid = (listing: unknown) => stateSchema.safeParse({ stateVersion: 1, centres: { a: { last_result: 'ok', last_checked_at: RUN_1.toISOString(), last_success_at: RUN_1.toISOString(), listings: [listing] } } }).success;
+	const valid = (listing: unknown) =>
+		stateSchema.safeParse({ stateVersion: STATE_VERSION, centres: { a: { last_result: 'ok', last_checked_at: RUN_1.toISOString(), last_success_at: RUN_1.toISOString(), last_skip_reason: null, last_skip_at: null, last_robots_skip_at: null, listings: [listing] } } }).success;
 
 	it('stores lat, lon and location from locate', () => {
 		expect(stored()).toMatchObject({ lat: 48.137, lon: 11.575, location: 'centre' });

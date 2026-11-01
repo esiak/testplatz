@@ -7,7 +7,7 @@
  */
 import { mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
-import { emptyState, sortListings, STATE_VERSION, stateSchema, type CentreState, type State, type StoredListing } from '../../shared/state.ts';
+import { emptyState, sortListings, STATE_VERSION, stateSchema, upgradeState, type CentreState, type State, type StoredListing } from '../../shared/state.ts';
 import { emptyVenues, VENUES_VERSION, venuesSchema, type VenueEntry, type Venues } from '../../shared/venues.ts';
 import { visitLogSchema, type Visit } from '../../shared/visits.ts';
 import { VISIT_WINDOW_MS } from '../config.ts';
@@ -37,6 +37,13 @@ export interface MergeResult {
 
 const compare = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
 
+/** The skip fields of `previous`, or all null for a centre without an entry. */
+const skipFields = (previous: CentreState | undefined): Pick<CentreState, 'last_skip_reason' | 'last_skip_at' | 'last_robots_skip_at'> => ({
+	last_skip_reason: previous?.last_skip_reason ?? null,
+	last_skip_at: previous?.last_skip_at ?? null,
+	last_robots_skip_at: previous?.last_robots_skip_at ?? null,
+});
+
 /** `ok`: upsert this run's listings (keeping `first_seen_at`/`baseline`), tombstone the rest. */
 function applyOk(previous: CentreState | undefined, listings: Extract<LocatedOutcome, { kind: 'ok' }>['listings'], at: string): CentreState {
 	const stored = new Map((previous?.listings ?? []).map((listing) => [listing.id, listing]));
@@ -50,7 +57,7 @@ function applyOk(previous: CentreState | undefined, listings: Extract<LocatedOut
 	for (const old of stored.values()) {
 		if (!seen.has(old.id)) merged.push({ ...old, removed_at: old.removed_at ?? at });
 	}
-	return { last_result: 'ok', last_checked_at: at, last_success_at: at, listings: sortListings(merged) };
+	return { last_result: 'ok', last_checked_at: at, last_success_at: at, ...skipFields(previous), listings: sortListings(merged) };
 }
 
 /**
@@ -74,7 +81,9 @@ export function mergeVisitLog(log: readonly Visit[], visits: readonly Visit[], n
 /**
  * The state and visit log after this run. Per outcome: `ok` sets `last_checked_at` and
  * `last_success_at`, replaces the listings and tombstones missing ones; `failed` sets
- * `last_checked_at` and keeps the listings; `skipped` changes nothing. Then every listing whose
+ * `last_checked_at` and keeps the listings; both keep the skip fields. `skipped` (Story 3.12) sets
+ * `last_skip_reason` and `last_skip_at` (and `last_robots_skip_at` for robots), creating the entry
+ * with null results and no listings when missing, and changes nothing else. Then every listing whose
  * `starts_at` is not after `runAt` is dropped. The log keeps entries newer than the 24 h window,
  * without exact `(host, at)` duplicates, so re-running merge for the same run charges no host twice.
  */
@@ -85,12 +94,24 @@ export function mergeRun({ state, log, outcomes, visits, venues, lookups, runAt 
 
 	for (const [centreId, outcome] of Object.entries(outcomes)) {
 		const previous = centres[centreId];
-		if (outcome.kind === 'skipped') continue;
+		if (outcome.kind === 'skipped') {
+			centres[centreId] = {
+				last_result: previous?.last_result ?? null,
+				last_checked_at: previous?.last_checked_at ?? null,
+				last_success_at: previous?.last_success_at ?? null,
+				last_skip_reason: outcome.reason,
+				last_skip_at: at,
+				last_robots_skip_at: outcome.reason === 'robots' ? at : (previous?.last_robots_skip_at ?? null),
+				listings: previous?.listings ?? [],
+			};
+			continue;
+		}
 		if (outcome.kind === 'failed') {
 			centres[centreId] = {
 				last_result: 'failed',
 				last_checked_at: at,
 				last_success_at: previous?.last_success_at ?? null,
+				...skipFields(previous),
 				listings: previous?.listings ?? [],
 			};
 			continue;
@@ -115,10 +136,11 @@ export function mergeRun({ state, log, outcomes, visits, venues, lookups, runAt 
 }
 
 /**
- * The state at `path`. A missing file is the empty state; any other read error, invalid JSON, a
- * different `stateVersion` or a schema failure throws, naming the path.
+ * The state at `path`. A missing file is the empty state. A version 1 file is upgraded in memory
+ * (Story 3.12), logging `state v1 upgraded to v2` once through `log`. Any other read error,
+ * invalid JSON, another `stateVersion` or a schema failure throws, naming the path.
  */
-export function readState(path: string = STATE_PATH): State {
+export function readState(path: string = STATE_PATH, log: (line: string) => void = () => {}): State {
 	let text: string;
 	try {
 		text = readFileSync(path, 'utf8');
@@ -132,15 +154,17 @@ export function readState(path: string = STATE_PATH): State {
 	} catch (error) {
 		throw new Error(`state file ${path} is not valid JSON: ${(error as Error).message}`);
 	}
-	const version = typeof data === 'object' && data !== null ? (data as { stateVersion?: unknown }).stateVersion : undefined;
-	if (version !== STATE_VERSION) {
-		throw new Error(`state file ${path} has stateVersion ${JSON.stringify(version)}, expected ${STATE_VERSION}`);
+	const upgraded = upgradeState(data);
+	if (upgraded === null) {
+		const version = typeof data === 'object' && data !== null ? (data as { stateVersion?: unknown }).stateVersion : undefined;
+		throw new Error(`state file ${path} has stateVersion ${JSON.stringify(version)}, expected 1 or ${STATE_VERSION}`);
 	}
-	const parsed = stateSchema.safeParse(data);
+	const parsed = stateSchema.safeParse(upgraded.data);
 	if (!parsed.success) {
 		const issue = parsed.error.issues[0]!;
 		throw new Error(`state file ${path} is invalid at ${issue.path.join('.') || '(root)'}: ${issue.message}`);
 	}
+	if (upgraded.upgradedFrom !== null) log(`state v${upgraded.upgradedFrom} upgraded to v${STATE_VERSION}`);
 	return parsed.data;
 }
 

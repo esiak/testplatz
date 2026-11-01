@@ -200,6 +200,9 @@ describe('the run report contract: pipeline/stages/report.ts → tools/alerts.ts
 						last_result: 'ok',
 						last_checked_at: '2026-10-28T05:17:00.000Z',
 						last_success_at: '2026-10-28T05:17:00.000Z',
+						last_skip_reason: null,
+						last_skip_at: null,
+						last_robots_skip_at: null,
 						listings: [
 							{
 								id: 'a@2026-11-20T10:00',

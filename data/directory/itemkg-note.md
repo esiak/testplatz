@@ -57,3 +57,56 @@ request"); both read as `ok` with no dates.
 - No residence rule ("Munich residents only") is published on the category or the detail pages
   today; the reader would copy it verbatim if it appeared.
 - The prep course "Deutsch Geschichte und Politik von A-Z" in the same category is not a test row.
+
+## Five centres never read (Story 3.12)
+
+Five ITEM KG centres have never been read by a scheduled or manual run:
+
+| centre_id | centre | robots.txt (checked 2026-11-01) |
+|-----------|--------|---------------------------------|
+| `vhs-straubing-ggmbh` | Straubing | 404 (allow all) |
+| `vhs-weiterbildungsakademie-kehlheim-e-v` | Kelheim | 200, allows the list page |
+| `vhs-wuerzburg` | Würzburg | 200, allows the list page |
+| `volkshochschule-im-landkreis-cham-e-v` | Cham | 200, allows the list page |
+| `zweckverband-vhs-im-landkreis-erding` | Erding | 404 (allow all) |
+
+**Log evidence.** GitHub Actions runs 40867599295 … 41303596263 (2026-10-29 11:43 UTC to
+2026-11-01 11:49 UTC). Across these 8 runs each centre logged `skipped:robots` 6 times
+(3.2–7.4 s each), then `skipped:budget` twice, once its host had used its 4 visits in 24 h. No
+run ever got to their list pages. The run log did not
+say why robots.txt was refused, and merge stored nothing for a `skipped` outcome, so the cause
+could only be guessed from the pattern.
+
+**robots.txt check (2026-11-01).** The three 200 files only disallow `/typo3*`, `/*?id=*` and
+`/*&type=98`, so the list pages are allowed. The two 404s mean allow all (RFC 9309). Node's
+`fetch` gets all five files fine from outside GitHub. So robots.txt as published does not keep us
+out.
+
+**Shared servers.** ITEM KG sites are hosted on a few shared servers (DNS: 84.246.120.147, .150,
+.151). The five hosts resolve to the same servers as ITEM KG sites that work every run (e.g.
+Bamberg and Coburg on .150). The five are exactly the five alphabetically last ITEM KG centres.
+None of the kuferweb hosts resolve to 84.246.120.x (checked 2026-11-01), so a per-reader limit
+covers the shared servers.
+
+**Likely cause.** Collect started all ~80 centres at once, so ~20 ITEM KG robots.txt requests
+reached those servers together. The last ones in the directory order most likely got a 5xx, a
+timeout or a refused connection, which the client (correctly, RFC 9309) treats as "disallow all"
+for that origin (`resolveRobots` in `pipeline/fetch/index.ts`). This stays the *likely* cause
+until a run log shows the reason (see below).
+
+**Fix (Story 3.12).**
+- Collect runs at most `MAX_PARALLEL_CENTRES_PER_READER` (2, `pipeline/config.ts`) centres of the
+  same reader system at a time; different systems still run in parallel. The per-host delay, the
+  visit budget and the robots rules are unchanged (no robots.txt retry).
+- The run log gets one line per origin whose robots.txt was unusable:
+  `robots <host>: unusable (<reason>), treated as disallow all`.
+- Merge records every skip (`last_skip_reason`, `last_skip_at`, `last_robots_skip_at`, state v2),
+  and publish keeps a centre `not_checked` while its newest robots skip is newer than its last
+  check, so the budget skips after a robots skip no longer show it as covered.
+- No centre is set to `reader: none`.
+
+**What the first daily run after the fix must show.** Either the five centres end `ok` or
+`failed` (the cause is confirmed: parallel load on the shared servers), or the log has a
+`robots <host>: unusable (…)` line for each of their hosts naming the real reason (then the cause
+is refuted or narrowed, and this note is updated). A centre still at `skipped:budget` on that run
+only means its host's visits from the previous 24 h are not used up yet; check the next run.

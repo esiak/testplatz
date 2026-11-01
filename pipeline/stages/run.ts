@@ -1,7 +1,8 @@
 /**
  * The pipeline entry point (`npm run pipeline`, AD-1, AD-12): fetch → parse → normalise → locate →
  * merge → publish, with one `runAt` for the whole run. Logs one line per centre (id, reader,
- * outcome, listing count, duration; never page content or URLs), one line per test address that
+ * outcome, listing count, duration; never page content or URLs), one line per origin whose
+ * robots.txt was unusable (host and reason only, Story 3.12; not on replays), one line per test address that
  * fell back to its centre, a locate summary and a run summary line. Exits 1 when anything fails; a
  * bad directory, state file, visit log, venue cache or replay file writes nothing. A failed
  * address lookup never fails the run.
@@ -93,6 +94,15 @@ const outcomeCode = (outcome: NormalisedOutcome | undefined): string =>
 
 const compare = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
 
+/** One log line per origin whose robots.txt was unusable, host only, sorted by host (Story 3.12). */
+function logRobotsUnavailable(robotsUnavailable: Readonly<Record<string, string>>, log: (line: string) => void): void {
+	for (const [host, reason] of Object.entries(robotsUnavailable)
+		.map(([origin, why]) => [URL.canParse(origin) ? new URL(origin).host : origin, why] as const)
+		.sort(([a], [b]) => compare(a, b))) {
+		log(`robots ${host}: unusable (${reason}), treated as disallow all`);
+	}
+}
+
 /** Runs the pipeline and writes the run report when `reportPath` is set. Returns the exit code. */
 export async function runPipeline(options: RunOptions = {}): Promise<number> {
 	const { code, report } = await run(options);
@@ -144,7 +154,7 @@ async function run(options: RunOptions): Promise<RunResult> {
 	try {
 		directory = readDirectory(directoryPath);
 		visitLog = readVisitLog(visitLogPath);
-		state = readState(statePath);
+		state = readState(statePath, log);
 		venues = readVenues(venuesPath);
 		if (fromCollect !== undefined) replay = loadReplay(fromCollect);
 	} catch (caught) {
@@ -155,6 +165,7 @@ async function run(options: RunOptions): Promise<RunResult> {
 	// Fetch and parse, or the saved result of both.
 	let collected: Replay;
 	let durations: Record<string, number> | null = null;
+	let robotsUnavailable: Record<string, string> = {};
 	if (replay !== null) {
 		collected = replay;
 	} else {
@@ -172,8 +183,10 @@ async function run(options: RunOptions): Promise<RunResult> {
 			const result = await collectRun(directory, readers, { log: visitLog, runAt, clientOptions, clock });
 			collected = { runAt, outcomes: result.outcomes, visits: result.visits, pages: result.pages };
 			durations = result.durations;
+			robotsUnavailable = result.robotsUnavailable;
 		} catch (caught) {
 			saveRunVisits(caught instanceof CollectError ? caught.visits : []);
+			if (caught instanceof CollectError) logRobotsUnavailable(caught.robotsUnavailable, log);
 			error(`collect failed, nothing written: ${(caught as Error).message}`);
 			return { code: 1, report: failedReport('fetch', runAt) };
 		}
@@ -208,6 +221,7 @@ async function run(options: RunOptions): Promise<RunResult> {
 		const duration = durations?.[centre.centre_id];
 		log(`${centre.centre_id} ${centre.reader} ${outcomeCode(outcome)} ${count} ${duration === undefined ? '-' : `${duration}ms`}`);
 	}
+	logRobotsUnavailable(robotsUnavailable, log);
 
 	// Locate: coordinates for every listing; new lookups go to merge. Never fails the run.
 	const located = await locateRun({ directory, outcomes, venues, runAt, log, ...locate });

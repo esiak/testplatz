@@ -60,3 +60,10 @@ export const VISIT_WINDOW_MS = 24 * 60 * 60 * 1000;
  * this before the run (or that never succeeded) gets a "Reader <reader>: needs attention" issue.
  */
 export const SYSTEM_DOWN_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Collect (Story 3.12): at most this many centres of the same reader system are in flight at once.
+ * Centres of one system often share a few servers; starting them all together made the last
+ * ITEM KG centres' robots.txt unusable (see `data/directory/itemkg-note.md`).
+ */
+export const MAX_PARALLEL_CENTRES_PER_READER = 2;

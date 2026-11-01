@@ -88,7 +88,7 @@ function stubReader(overrides: { plan?: (c: Centre) => Partial<ReaderPlan>; pars
 	return { reader, parsed, contexts };
 }
 
-/** Runs collect over a fake network; `result` leaves out `durations` (see the durations test). */
+/** Runs collect over a fake network; `result` leaves out `durations` and `robotsUnavailable` (tested on their own). */
 function run(centres: Centre[], routes: Record<string, Route>, readers: ReaderRegistry, log: Visit[] = []) {
 	const net = fakeNetwork(routes);
 	const result = collectRun(centres, readers, {
@@ -96,7 +96,7 @@ function run(centres: Centre[], routes: Record<string, Route>, readers: ReaderRe
 		runAt: RUN_AT,
 		clientOptions: { fetchImpl: net.fetchImpl, delayMs: 0, timeoutMs: 50, sleep: async () => {} },
 		clock: () => 0,
-	}).then(({ durations: _durations, ...rest }) => rest);
+	}).then(({ durations: _durations, robotsUnavailable: _robots, ...rest }) => rest);
 	return { net, result };
 }
 
@@ -523,6 +523,110 @@ describe('collectRun durations', () => {
 		const { reader } = stubReader();
 		const { durations } = await collectRun([centre('a', 'a.de', { opted_out: true })], { kuferweb: reader }, { log: [], runAt: RUN_AT });
 		expect(durations.a).toBeGreaterThanOrEqual(0);
+	});
+});
+
+describe('collectRun per-reader limit (Story 3.12)', () => {
+	/** A network that answers every URL after `ms`, tracking how many requests per host prefix are open. */
+	function trackingNetwork(ms: number) {
+		const open: Record<string, number> = {};
+		const max: Record<string, number> = {};
+		const fetchImpl: FetchImpl = async (url) => {
+			const system = new URL(url).host.split('-')[0]!;
+			open[system] = (open[system] ?? 0) + 1;
+			max[system] = Math.max(max[system] ?? 0, open[system]!);
+			await new Promise((r) => setTimeout(r, ms));
+			open[system]! -= 1;
+			return url.endsWith('/robots.txt') ? new Response('', { status: 404 }) : html('')();
+		};
+		return { fetchImpl, max };
+	}
+
+	it('runs at most 2 centres of one reader at a time, and different readers in parallel', async () => {
+		const { reader } = stubReader();
+		const centres = [
+			...[1, 2, 3, 4, 5, 6].map((n) => centre(`i${n}`, `itemkg-${n}.de`, { reader: 'itemkg' })),
+			...[1, 2, 3].map((n) => centre(`k${n}`, `kuferweb-${n}.de`)),
+		];
+		const net = trackingNetwork(5);
+		const result = await collectRun(centres, { itemkg: reader, kuferweb: reader }, {
+			log: [],
+			runAt: RUN_AT,
+			clientOptions: { fetchImpl: net.fetchImpl, delayMs: 0, timeoutMs: 1000, sleep: async () => {} },
+		});
+		// Each centre has its own host, so open requests per system = centres in flight per system.
+		expect(net.max).toEqual({ itemkg: 2, kuferweb: 2 });
+		expect(Object.keys(result.outcomes).sort()).toEqual(['i1', 'i2', 'i3', 'i4', 'i5', 'i6', 'k1', 'k2', 'k3']);
+		expect(Object.values(result.outcomes).every((o) => o.kind === 'ok')).toBe(true);
+	});
+
+	it('honours a custom limit', async () => {
+		const { reader } = stubReader();
+		const net = trackingNetwork(5);
+		await collectRun([1, 2, 3].map((n) => centre(`i${n}`, `itemkg-${n}.de`, { reader: 'itemkg' })), { itemkg: reader }, {
+			log: [],
+			runAt: RUN_AT,
+			clientOptions: { fetchImpl: net.fetchImpl, delayMs: 0, timeoutMs: 1000, sleep: async () => {} },
+			maxPerReader: 1,
+		});
+		expect(net.max).toEqual({ itemkg: 1 });
+	});
+
+	it('excludes the wait for a slot from each centre\'s duration', async () => {
+		const { reader } = stubReader();
+		const net = trackingNetwork(5);
+		let ticks = 0;
+		const { durations } = await collectRun([1, 2, 3].map((n) => centre(`i${n}`, `itemkg-${n}.de`, { reader: 'itemkg' })), { itemkg: reader }, {
+			log: [],
+			runAt: RUN_AT,
+			clientOptions: { fetchImpl: net.fetchImpl, delayMs: 0, timeoutMs: 1000, sleep: async () => {} },
+			maxPerReader: 1,
+			// Each reading advances 10 ms; centres run one at a time, so each spans exactly two readings.
+			clock: () => (ticks += 10),
+		});
+		expect(durations).toEqual({ i1: 10, i2: 10, i3: 10 });
+	});
+
+	it('frees the slot of a centre that throws, so the other centres of its reader still run', async () => {
+		const { reader } = stubReader();
+		let reads = 0;
+		// The first read of the itemkg entry throws outside the per-centre guards.
+		const readers = {
+			get itemkg(): Reader {
+				reads += 1;
+				if (reads === 1) throw new Error('boom');
+				return reader;
+			},
+		} as ReaderRegistry;
+		const net = trackingNetwork(1);
+		const calls: string[] = [];
+		const fetchImpl: FetchImpl = (url, init) => (calls.push(url), net.fetchImpl(url, init));
+		await expect(
+			collectRun([1, 2, 3, 4].map((n) => centre(`i${n}`, `itemkg-${n}.de`, { reader: 'itemkg' })), readers, {
+				log: [],
+				runAt: RUN_AT,
+				clientOptions: { fetchImpl, delayMs: 0, timeoutMs: 1000, sleep: async () => {} },
+			}),
+		).rejects.toMatchObject({ name: 'CollectError', message: 'boom' });
+		expect(calls.filter((u) => u.endsWith('/kurse')).length).toBe(3);
+	});
+});
+
+describe('collectRun robotsUnavailable (Story 3.12)', () => {
+	it('returns each origin whose robots.txt was unusable, with the reason', async () => {
+		const { reader } = stubReader();
+		const net = fakeNetwork({
+			'https://a.de/robots.txt': status(503),
+			'https://b.de/robots.txt': status(404),
+			'https://b.de/kurse': links(),
+		});
+		const result = await collectRun([centre('a', 'a.de'), centre('b', 'b.de')], { kuferweb: reader }, {
+			log: [],
+			runAt: RUN_AT,
+			clientOptions: { fetchImpl: net.fetchImpl, delayMs: 0, timeoutMs: 50, sleep: async () => {} },
+		});
+		expect(result.outcomes.a).toEqual({ kind: 'skipped', reason: 'robots' });
+		expect(result.robotsUnavailable).toEqual({ 'https://a.de': 'HTTP 503' });
 	});
 });
 
