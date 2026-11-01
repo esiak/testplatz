@@ -15,6 +15,18 @@ checked = the `verified_at` date you set) when you set its reader to `cmx`.
 
 | centre_id | test page | checked |
 |-----------|-----------|---------|
+| `vhs-buchloe-e-v` | https://vhs-buchloe.de/Programmbereich/cmx69c2693eca8cf.html | 2026-11-01 |
+| `vhs-dachau-gmbh` | https://vhs-dachau.de/Artikel/cmx655e01456395b.html | 2026-11-01 |
+| `vhs-dingolfing-e-v` | https://vhs-dingolfing.de/test | 2026-11-01 |
+| `vhs-germering-e-v` | https://vhs-germering.de/Programmbereich/cmx67e28778abee8.html | 2026-11-01 |
+| `vhs-geschaeftsstelle-neufarn-hallbergmoos` | https://vhs-neufahrn-hallbergmoos.de/Programmbereich/cmx69a6c68abf085.html | 2026-11-01 |
+| `vhs-kaufbeuren-e-v` | https://vhs-kaufbeuren.de/Programmbereich/cmx642597b681e77.html | 2026-11-01 |
+| `vhs-rieser-noerdlingen-e-v` | https://vhs.noerdlingen.de/Programmbereich/cmx6a16d51b12d9a.html | 2026-11-01 |
+| `vhs-stadt-fuerstenfeldbruck-e-v` | https://vhs-stadtlandbruck.de/Programmbereich/cmx6a157a8b20248.html | 2026-11-01 |
+| `vhs-staedtedreieck-e-v` | https://vhs-schwandorf-land.de/Programmbereich/cmx673b5b519a273.html | 2026-11-01 |
+| `vhs-verband-landau-e-v` | https://vhs-landau.de/Programmbereich/cmx68af342bd1d1b.html | 2026-11-01 |
+| `vhs-waldkraiburg-e-v` | https://vhs-waldkraiburg.de/einbuergerungstest-termin | 2026-11-01 |
+| `volkshochschule-guenzburg` | https://vhs-landkreis-guenzburg.de/Programmbereich/cmx6a35553379ad3.html | 2026-11-01 |
 
 ## Proposed
 

@@ -403,11 +403,11 @@
 		"lon": 10.717089,
 		"website": "https://www.vhs-buchloe.de/",
 		"test_page_url": "https://vhs-buchloe.de/Programmbereich/cmx69c2693eca8cf.html",
-		"reader": "none",
+		"reader": "cmx",
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": null
+		"verified_at": "2026-11-01T19:39:28.891Z"
 	},
 	{
 		"centre_id": "vhs-burghausen-burgkirchen-e-v",
@@ -459,11 +459,11 @@
 		"lon": 11.438107,
 		"website": "https://www.vhs-dachau.de/",
 		"test_page_url": "https://vhs-dachau.de/Artikel/cmx655e01456395b.html",
-		"reader": "none",
+		"reader": "cmx",
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": null
+		"verified_at": "2026-11-01T19:39:28.891Z"
 	},
 	{
 		"centre_id": "vhs-deggendorfer-land-e-v",
@@ -477,11 +477,13 @@
 		"lon": 12.962494,
 		"website": "https://www.vhs-deggendorf.de/",
 		"test_page_url": "https://www.vhs-deggendorf.de/fachbereich//deutsch-und-integration/einbuergerungstest?upcoming=1",
-		"reader": "none",
-		"reader_config": null,
+		"reader": "itemkg",
+		"reader_config": {
+			"list_url": "https://www.vhs-deggendorf.de/fachbereich//deutsch-und-integration/einbuergerungstest?upcoming=1"
+		},
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": null
+		"verified_at": "2026-11-01T19:39:28.891Z"
 	},
 	{
 		"centre_id": "vhs-der-gemeinden-im-landkreis-roth",
@@ -645,11 +647,11 @@
 		"lon": 12.509335,
 		"website": "https://www.vhs-dingolfing.de/",
 		"test_page_url": "https://vhs-dingolfing.de/test",
-		"reader": "none",
+		"reader": "cmx",
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": "2026-10-27T07:25:45.068Z"
+		"verified_at": "2026-11-01T19:39:28.891Z"
 	},
 	{
 		"centre_id": "vhs-donauwoerth",
@@ -819,11 +821,11 @@
 		"lon": 11.366708,
 		"website": "https://www.vhs-germering.de/",
 		"test_page_url": "https://vhs-germering.de/Programmbereich/cmx67e28778abee8.html",
-		"reader": "none",
+		"reader": "cmx",
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": null
+		"verified_at": "2026-11-01T19:39:28.891Z"
 	},
 	{
 		"centre_id": "vhs-geschaeftsstelle-neufarn-hallbergmoos",
@@ -837,11 +839,11 @@
 		"lon": 11.662832,
 		"website": "https://www.vhs-neufahrn.de/",
 		"test_page_url": "https://vhs-neufahrn-hallbergmoos.de/Programmbereich/cmx69a6c68abf085.html",
-		"reader": "none",
+		"reader": "cmx",
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": "2026-10-27T07:25:45.068Z"
+		"verified_at": "2026-11-01T19:39:28.891Z"
 	},
 	{
 		"centre_id": "vhs-groebenzell-e-v",
@@ -963,11 +965,11 @@
 		"lon": 10.623901,
 		"website": "https://www.vhs-kaufbeuren.de/",
 		"test_page_url": "https://vhs-kaufbeuren.de/Programmbereich/cmx642597b681e77.html",
-		"reader": "none",
+		"reader": "cmx",
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": null
+		"verified_at": "2026-11-01T19:39:28.891Z"
 	},
 	{
 		"centre_id": "vhs-kaufering",
@@ -1017,11 +1019,13 @@
 		"lon": 11.325182,
 		"website": "https://www.vhs-kronach.de/",
 		"test_page_url": "https://www.vhs-kronach.de/fachbereich//programmbereich/sprachen/einbuergerungstest?",
-		"reader": "none",
-		"reader_config": null,
+		"reader": "itemkg",
+		"reader_config": {
+			"list_url": "https://www.vhs-kronach.de/fachbereich//programmbereich/sprachen/einbuergerungstest?"
+		},
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": null
+		"verified_at": "2026-11-01T19:39:28.891Z"
 	},
 	{
 		"centre_id": "vhs-landkreis-amberg-sulzbach",
@@ -1035,11 +1039,11 @@
 		"lon": 11.747076,
 		"website": "https://www.vhs-as.de/",
 		"test_page_url": "https://www.vhs-as.de/kurssuche/kurs/Einbuergerungstest/W40432S",
-		"reader": "none",
+		"reader": "kuferweb",
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": null
+		"verified_at": "2026-11-01T19:39:28.891Z"
 	},
 	{
 		"centre_id": "vhs-landkreis-pfaffenhofen-a-d-ilm",
@@ -1287,11 +1291,11 @@
 		"lon": 10.488234,
 		"website": "https://vhs.noerdlingen.de",
 		"test_page_url": "https://vhs.noerdlingen.de/Programmbereich/cmx6a16d51b12d9a.html",
-		"reader": "none",
+		"reader": "cmx",
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": null
+		"verified_at": "2026-11-01T19:39:28.891Z"
 	},
 	{
 		"centre_id": "vhs-rosenheim",
@@ -1377,11 +1381,11 @@
 		"lon": 11.257754,
 		"website": "https://www.vhs-ffb.de/",
 		"test_page_url": "https://vhs-stadtlandbruck.de/Programmbereich/cmx6a157a8b20248.html",
-		"reader": "none",
+		"reader": "cmx",
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": null
+		"verified_at": "2026-11-01T19:39:28.891Z"
 	},
 	{
 		"centre_id": "vhs-staedtedreieck-e-v",
@@ -1395,11 +1399,11 @@
 		"lon": 12.101967,
 		"website": "https://www.vhs-staedtedreieck.de/",
 		"test_page_url": "https://vhs-schwandorf-land.de/Programmbereich/cmx673b5b519a273.html",
-		"reader": "none",
+		"reader": "cmx",
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": null
+		"verified_at": "2026-11-01T19:39:28.891Z"
 	},
 	{
 		"centre_id": "vhs-starnberger-see-e-v",
@@ -1561,11 +1565,11 @@
 		"lon": 12.69185,
 		"website": "https://www.vhs-landau.de/",
 		"test_page_url": "https://vhs-landau.de/Programmbereich/cmx68af342bd1d1b.html",
-		"reader": "none",
+		"reader": "cmx",
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": null
+		"verified_at": "2026-11-01T19:39:28.891Z"
 	},
 	{
 		"centre_id": "vhs-vilsbiburg",
@@ -1597,11 +1601,11 @@
 		"lon": 12.399252,
 		"website": "https://www.vhs-waldkraiburg.de/",
 		"test_page_url": "https://vhs-waldkraiburg.de/einbuergerungstest-termin",
-		"reader": "none",
+		"reader": "cmx",
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": null
+		"verified_at": "2026-11-01T19:39:28.891Z"
 	},
 	{
 		"centre_id": "vhs-wasserburg-inn-e-v",
@@ -1835,11 +1839,11 @@
 		"lon": 10.277895,
 		"website": "https://www.vhs-guenzburg.de/",
 		"test_page_url": "https://vhs-landkreis-guenzburg.de/Programmbereich/cmx6a35553379ad3.html",
-		"reader": "none",
+		"reader": "cmx",
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": null
+		"verified_at": "2026-11-01T19:39:28.891Z"
 	},
 	{
 		"centre_id": "volkshochschule-hofer-land-e-v",
@@ -1981,11 +1985,13 @@
 		"lon": 11.652869,
 		"website": "https://www.vhs-suedost.de/",
 		"test_page_url": "https://www.vhs-suedost.de/fachbereich/vhs/deutsch-integration/pruefungen?",
-		"reader": "none",
-		"reader_config": null,
+		"reader": "itemkg",
+		"reader_config": {
+			"list_url": "https://www.vhs-suedost.de/fachbereich/vhs/deutsch-integration/pruefungen?"
+		},
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": null
+		"verified_at": "2026-11-01T19:39:28.891Z"
 	},
 	{
 		"centre_id": "wbb-gmbh",

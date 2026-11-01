@@ -12,6 +12,7 @@ below answered 200 and is a KuferWeb course list.
 | `vhs-aschaffenburg` | https://www.vhs-aschaffenburg.de/kurse/deutsch-integration-grundbildung/einbuergerungstest | 2026-10-28 |
 | `vhs-groebenzell-e-v` | https://www.vhs-groebenzell.de/programm/sprachen/kategorie/Einbuergerungstest/68 | 2026-10-28 |
 | `vhs-im-norden-des-landkreises-muenchen` | https://www.vhs-nord.de/programm/sprachen/kategorie/Einbuergerungstest/348#inhalt | 2026-10-28 |
+| `vhs-landkreis-amberg-sulzbach` | https://www.vhs-as.de/kurssuche/kurs/Einbuergerungstest/W40432S | 2026-11-01 |
 | `vhs-landshut-e-v` | https://www.vhs-landshut.de/kurse/sprachen-integration/pruefungen-einbuergerungstest | 2026-10-28 |
 | `vhs-lindau` | https://www.vhs-lindau.de/programm/sprachen/kategorie/Deutsch/2 | 2026-11-01 |
 | `vhs-moosburg-e-v` | https://www.vhs-moosburg.de/programm/sprachen/kategorie/Einbuergerungstest/50#inhalt | 2026-10-28 |
