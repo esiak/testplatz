@@ -19,8 +19,10 @@ below answered 200 and is an ITEM KG course list (`#category-courses`). The read
 | `vhs-coburg-ggmbh` | https://www.vhs-coburg.net/p//programmbereich/sprachen/deutsch/pruefungen/einbuergerungstest/494-CAT-KAT7323077 | 2026-10-29 |
 | `vhs-der-gemeinden-im-landkreis-roth` | https://www.vhs-roth.de/suche?tx_itemkgconnect_search%5Bsword%5D=Einb%C3%BCrgerungstest | 2026-10-29 |
 | `vhs-des-landkreises-forchheim` | https://www.vhs-forchheim.de/p/sprachen/integration-498-CAT-KAT39?tx_itemkgconnect_categorys%5Bpage%5D=0&tx_itemkgconnect_categorys%5Bsword%5D=&cHash=4a1d6151f01f9cac543ca2281b840352 | 2026-10-29 |
+| `vhs-des-landkreises-wunsiedel` | https://www.vhs-fichtelgebirge.de/p/integration/einbuergerungstest-644-CAT-KAT223?tx_itemkgconnect_categorys%5Bpage%5D=0&tx_itemkgconnect_categorys%5Bsword%5D=&cHash=e885cf8b12db5f275383bc211595c590 | 2026-11-01 |
 | `vhs-donauwoerth` | https://www.vhs-don.de/suche?tx_itemkgconnect_search%5Bsword%5D=Einb%C3%BCrgerungstest | 2026-10-29 |
 | `vhs-ebersberger-land-grafing-bei-muenchen` | https://www.vhs-ebersberger-land.de/p/sprachen/deutsch/einbuergerungstests-649-CAT-KAT215 | 2026-10-29 |
+| `vhs-erlangen` | https://www.vhs-erlangen.de/p/sprachen/einbuergerungstest-480-CAT-KAT243?tx_itemkgconnect_categorys%5Bpage%5D=0&cHash=605553221af9fa4ea6ae8efd32d0874a | 2026-11-01 |
 | `vhs-f-d-landkreis-regensburg-e-v` | https://www.vhs-regensburger-land.de/p/deutsch-schule/einbuergerungstest-647-CAT-KAT256 | 2026-10-29 |
 | `vhs-fichtelgebirge` | https://www.vhs-fichtelgebirge.de/p/integration/einbuergerungstest-644-CAT-KAT223?tx_itemkgconnect_categorys%5Bpage%5D=0&tx_itemkgconnect_categorys%5Bsword%5D=&cHash=e885cf8b12db5f275383bc211595c590 | 2026-10-29 |
 | `vhs-fuerth-ggmbh` | https://www.vhs-fuerth.de/p/grundbildung/einbuergerungen/einbuergerungstest-33-fragen-477-CAT-KAT222 | 2026-10-29 |
@@ -30,6 +32,8 @@ below answered 200 and is an ITEM KG course list (`#category-courses`). The read
 | `vhs-wuerzburg` | https://www.vhs-wuerzburg.info/p/sprachen-489-CAT-KAT5892356?tx_itemkgconnect_categorys%5Bfilters%5D%5Breset%5D=1&tx_itemkgconnect_categorys%5Bfilters%5D%5Bsort%5D%5B0%5D=__EMPTY__&tx_itemkgconnect_categorys%5Bsword%5D=einbürgerung&cHash=7c429aef482378a0bbc422fcfe4806e7 | 2026-10-29 |
 | `volkshochschule-im-landkreis-cham-e-v` | https://www.vhs-cham.de/p/sprachen/einbuergerungstest-test-leben-in-deutschland-461-CAT-KAT70?tx_itemkgconnect_categorys%5Bpage%5D=0&cHash=d57e7b9c77d9ef12bdcb69d237598ae3 | 2026-10-29 |
 | `zweckverband-vhs-im-landkreis-erding` | https://www.vhs-erding.de/p/deutsch-integration/pruefungen/einbuergerungstest-664-CAT-KAT329 | 2026-10-29 |
+
+Added 2026-11-01 from the coverage script (Story 4.2): Wunsiedel and Erlangen were proposed by `npm run coverage` after `--fetch` (the reader parsed dates from their cached test page) and applied after operator review.
 
 ## URL changes
 

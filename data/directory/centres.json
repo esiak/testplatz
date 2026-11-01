@@ -589,11 +589,13 @@
 		"lon": 12.006131,
 		"website": "https://www.vhs-fichtelgebirge.de",
 		"test_page_url": "https://www.vhs-fichtelgebirge.de/p/integration/einbuergerungstest-644-CAT-KAT223?tx_itemkgconnect_categorys%5Bpage%5D=0&tx_itemkgconnect_categorys%5Bsword%5D=&cHash=e885cf8b12db5f275383bc211595c590",
-		"reader": "none",
-		"reader_config": null,
+		"reader": "itemkg",
+		"reader_config": {
+			"list_url": "https://www.vhs-fichtelgebirge.de/p/integration/einbuergerungstest-644-CAT-KAT223?tx_itemkgconnect_categorys%5Bpage%5D=0&tx_itemkgconnect_categorys%5Bsword%5D=&cHash=e885cf8b12db5f275383bc211595c590"
+		},
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": null
+		"verified_at": "2026-11-01T19:39:28.891Z"
 	},
 	{
 		"centre_id": "vhs-des-lk-freyung-grafenau",
@@ -701,11 +703,13 @@
 		"lon": 11.006944,
 		"website": "https://www.vhs-erlangen.de",
 		"test_page_url": "https://www.vhs-erlangen.de/p/sprachen/einbuergerungstest-480-CAT-KAT243?tx_itemkgconnect_categorys%5Bpage%5D=0&cHash=605553221af9fa4ea6ae8efd32d0874a",
-		"reader": "none",
-		"reader_config": null,
+		"reader": "itemkg",
+		"reader_config": {
+			"list_url": "https://www.vhs-erlangen.de/p/sprachen/einbuergerungstest-480-CAT-KAT243?tx_itemkgconnect_categorys%5Bpage%5D=0&cHash=605553221af9fa4ea6ae8efd32d0874a"
+		},
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": null
+		"verified_at": "2026-11-01T19:39:28.891Z"
 	},
 	{
 		"centre_id": "vhs-f-d-landkreis-regensburg-e-v",
@@ -1085,11 +1089,11 @@
 		"lon": 9.676555,
 		"website": "https://www.vhs-lindau.de",
 		"test_page_url": "https://www.vhs-lindau.de/programm/sprachen/kategorie/Deutsch/2",
-		"reader": "none",
+		"reader": "kuferweb",
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": null
+		"verified_at": "2026-11-01T19:39:28.891Z"
 	},
 	{
 		"centre_id": "vhs-lohr-gemuenden",
@@ -1229,11 +1233,11 @@
 		"lon": 11.552398,
 		"website": "https://www.vhsosh.de",
 		"test_page_url": "https://www.vhsosh.de/programm/sprachen/kategorie/Einbuergerungstest/53#inhalt",
-		"reader": "none",
+		"reader": "kuferweb",
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": null
+		"verified_at": "2026-11-01T19:39:28.891Z"
 	},
 	{
 		"centre_id": "vhs-puchheim-e-v",
@@ -1247,11 +1251,11 @@
 		"lon": 11.351963,
 		"website": "https://www.vhs-puchheim.de/",
 		"test_page_url": "https://www.vhs-pucheich.de/programm/sprachen/kategorie/Einbuergerungstest/233",
-		"reader": "none",
+		"reader": "kuferweb",
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": null
+		"verified_at": "2026-11-01T19:39:28.891Z"
 	},
 	{
 		"centre_id": "vhs-rhoen-grabfeld-gemeinnuetzige-gmbh",
@@ -1337,11 +1341,11 @@
 		"lon": 11.020175,
 		"website": "https://www.vhs.schwabach.de/",
 		"test_page_url": "https://www.vhs.schwabach.de/unser-programm/sprachen/deutsch-als-fremdsprache/kategorie/Pruefungen+und+Einbuergerung/188",
-		"reader": "none",
+		"reader": "kuferweb",
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": null
+		"verified_at": "2026-11-01T19:39:28.891Z"
 	},
 	{
 		"centre_id": "vhs-schwarzachtal",
@@ -1355,11 +1359,11 @@
 		"lon": 11.302971,
 		"website": "https://www.vhs-schwarzachtal.de/",
 		"test_page_url": "https://www.vhs-schwarzachtal.de/programm/deutsch-integration/kategorie/Einbuergerungstests/342",
-		"reader": "none",
+		"reader": "kuferweb",
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": null
+		"verified_at": "2026-11-01T19:39:28.891Z"
 	},
 	{
 		"centre_id": "vhs-stadt-fuerstenfeldbruck-e-v",
@@ -1539,11 +1543,11 @@
 		"lon": 11.613817,
 		"website": "https://www.vhs-unterhaching.de/",
 		"test_page_url": "https://www.vhs-unterhaching.de/programm/sprachen/kategorie/Pruefungen+und+Einbuergerungstests/373",
-		"reader": "none",
+		"reader": "kuferweb",
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": null
+		"verified_at": "2026-11-01T19:39:28.891Z"
 	},
 	{
 		"centre_id": "vhs-verband-landau-e-v",
@@ -1575,11 +1579,11 @@
 		"lon": 12.354982,
 		"website": "https://www.vhs-vilsbiburg.de/",
 		"test_page_url": "https://www.vhs-vilsbiburg.de/kurse/sprachen/einbuergerungstest/kategorie/Einbuergerungstest/88",
-		"reader": "none",
+		"reader": "kuferweb",
 		"reader_config": null,
 		"opted_out": false,
 		"source": "rtpartner",
-		"verified_at": null
+		"verified_at": "2026-11-01T19:39:28.891Z"
 	},
 	{
 		"centre_id": "vhs-waldkraiburg-e-v",

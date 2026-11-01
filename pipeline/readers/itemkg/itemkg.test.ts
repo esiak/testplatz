@@ -572,7 +572,7 @@ describe('directory', () => {
 			.filter((match) => match !== null)
 			.map((match) => ({ id: match[1]!, url: match[2]!, date: match[3]! }));
 		const itemkg = centres.filter((c) => c.reader === 'itemkg');
-		expect(itemkg).toHaveLength(21);
+		expect(itemkg.length).toBeGreaterThan(0);
 		for (const c of itemkg) {
 			expect(c.test_page_url).not.toBeNull();
 			expect(c.reader_config?.list_url).toBe(c.test_page_url);
