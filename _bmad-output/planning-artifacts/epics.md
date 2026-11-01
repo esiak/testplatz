@@ -1289,6 +1289,10 @@ So that none is left as "distance unknown" or "may be nearby".
 **When** this story is done
 **Then** each has coordinates, either from a corrected address geocoded by `tools/geocode` or set by hand by the operator from the map, and `geocode-note.md` lists which were set by hand
 
+Operator decisions, 2026-11-01 (from the addresses on each centre's own site):
+- Corrected addresses, then geocoded: `bayerisches-rotes-kreuz` → Goethestraße 53, 80336 München; `muenchner-vhs-gmbh` → Orleansstraße 34, 81667 München; `vhs-der-gemeinden-im-landkreis-roth` → Maria-Dorothea-Straße 8, 91161 Hilpoltstein; `vhs-fichtelgebirge` → Ludwigsmühle 10, 95100 Selb; `vhs-kaufering` → Albert-Schweitzer-Str. 4a, 86916 Kaufering; `volkshochschule-eching-e-v` → Roßbergerstr. 8, 85386 Eching; `volkshochschule-kitzingen` → Hindenburgring Süd 3, 97318 Kitzingen.
+- Set by hand: `vhs-kreis-kronach-e-v` keeps Kulmbacher Str. 1, 96317 Kronach (OSM has no such house in Kronach) and gets lat 50.2377498, lon 11.3251820 (the OSM "Volkshochschule", Rodacher Straße 1, Kronach), approved by the operator.
+
 **Given** `tests/directory.test.ts`
 **When** it runs
 **Then** a centre without a geocode-cache record passes only if it is on a named allowlist of hand-set centres, and the centre count is checked against the data (for example unique ids, every snapshot centre in the directory), not a fixed number
