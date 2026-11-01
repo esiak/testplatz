@@ -994,7 +994,7 @@ So that I can fix a broken reader before users notice.
 
 **Given** each successful run
 **When** it finishes
-**Then** it pings an external dead-man check (free provider chosen and recorded in this story) that alerts the operator if no ping arrives for 13 h; the ping URL is stored as a repository secret
+**Then** it pings an external dead-man check (free provider chosen and recorded in this story) that alerts the operator if no ping arrives for 36 h, the same as the freshness threshold (operator decision 2026-11-01, replacing 13 h now that collection runs once a day); every successful run pings, including push-triggered and manual runs; the ping URL is stored as a repository secret
 
 **Given** the operator's notes in the repo
 **When** read
@@ -1007,6 +1007,7 @@ So that I can fix a broken reader before users notice.
 **Given** a centre that had current listings and now returns `ok` with zero listings while its list page still has the expected structure (added 2026-10-31, Epic 2 retrospective F14)
 **When** the run finishes
 **Then** the issue for its reader system names the centre as "dates disappeared, check the page", so a redesigned page is not taken for "no dates"
+**And** that issue opens even when the system's other centres are fine, and closes automatically after the system's next successful run, like the `centres_ok = 0` issue (operator decision 2026-11-01)
 
 ### Story 3.5: Monthly directory check
 
