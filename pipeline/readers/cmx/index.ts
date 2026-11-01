@@ -3,7 +3,7 @@
  * `cmx<hex>`). The list page is the centre's test page, a `Programmbereich` (`.ProgrammheftInhalt`)
  * or an `Artikel` (`.ArtikelContainer`); each course on it is a `.Veranstaltung.Teaser` (an `li` in a
  * Programmbereich, a `div` in an Artikel) carrying the title (`.Name`), the first date (`.Datum`,
- * `dd.mm.yy`), the start time (`.UhrzeitBeginn`), the town (`.Ort`) and the seat light
+ * `dd.mm.yy`), the start time (`.UhrzeitBeginn`; blank or missing → `time: null`), the town (`.Ort`) and the seat light
  * (`.Ampelanzeige`). One listing is read per Einbürgerungstest teaser from the list page alone; no
  * detail page is fetched. Pure (AD-4): no I/O, no clock, failures returned as values.
  */
@@ -101,10 +101,12 @@ function teaserListings($: CheerioAPI, base: string): RawListing[] | string {
 		const link = teaser.find('a[href]').first().attr('href');
 		const sourceUrl = (link === undefined ? null : resolveUrl(link, base)) ?? base;
 		const date = findDate(teaser.find('.Datum').first().text());
-		// A start time is required (`RawListing.time`); a teaser without one cannot be listed.
-		const time = findTime(teaser.find('.UhrzeitBeginn').first().text());
-		if (date === null || time === null) return 'date-unparseable';
-		const key = `${sourceUrl} ${date} ${time}`;
+		// A blank or missing start time is not published yet (Story 3.10, `time: null`); a start time
+		// text that cannot be read fails the centre.
+		const timeText = collapse(teaser.find('.UhrzeitBeginn').first().text());
+		const time = timeText === '' ? null : findTime(timeText);
+		if (date === null || (timeText !== '' && time === null)) return 'date-unparseable';
+		const key = `${sourceUrl} ${date} ${time ?? ''}`;
 		if (seen.has(key)) continue; // the same teaser shown twice on the page
 		seen.add(key);
 		const place = collapse(teaser.find('.Ort').first().text());

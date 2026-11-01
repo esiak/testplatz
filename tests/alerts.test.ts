@@ -209,6 +209,7 @@ describe('the run report contract: pipeline/stages/report.ts → tools/alerts.ts
 								id: 'a@2026-11-20T10:00',
 								centre_id: 'a',
 								starts_at: '2026-11-20T10:00:00+01:00',
+								time_known: true,
 								place: null,
 								address: 'Hauptstraße 1, 80331 München',
 								status: 'free',
@@ -225,7 +226,7 @@ describe('the run report contract: pipeline/stages/report.ts → tools/alerts.ts
 					},
 				},
 			},
-			outcomes: { a: { kind: 'ok', listings: [] } },
+			outcomes: { a: { kind: 'ok', listings: [], carriedFrom: {} } },
 			coverage: buildCoverage([centre('a', 'kuferweb'), centre('b', 'itemkg')], { a: { kind: 'ok', listings: [] } }),
 		});
 		const report = parseReport(JSON.stringify(built));

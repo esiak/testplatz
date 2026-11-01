@@ -6,7 +6,9 @@
  * (`.start-date`, `.start-time`, `.course-location`). One listing is read per dated
  * Einbürgerungstest row: date, time and flags from the row, venue, start-time fallback, deadline,
  * registration text and eligibility from the row's detail page (`.course-show-wrap`). Newer-theme
- * cards are read from the card alone: their detail pages (never seen yet) are not fetched. Pure
+ * cards are read from the card alone: their detail pages (never seen yet) are not fetched. A row
+ * whose date is stated with no time in the row or the `Start` block (MVHS emails times 10 days
+ * before) is read with `time: null` (Story 3.10); a stated time that cannot be read fails. Pure
  * (AD-4): no I/O, no clock, failures returned as values.
  */
 import { load, type CheerioAPI } from 'cheerio';
@@ -82,6 +84,8 @@ type Selection = ReturnType<CheerioAPI>;
 const linesOf = (selection: Selection): string[] => selection.toArray().flatMap((element) => textLines(element as unknown as DomNode));
 
 const DATE = /(?<!\d)(\d{1,2})\.(\d{1,2})\.(\d{4})(?!\d)/;
+/** `DATE`, every occurrence: removed from a row's time text before looking for a time-shaped token. */
+const DATE_GLOBAL = new RegExp(DATE.source, 'g');
 const TIME = /(?<![\d:])(\d{1,2}):(\d{2})(?![\d:])/;
 
 /** `D.M.YY(YY)` as `YYYY-MM-DD` (2-digit years are 20YY), or null when not a real date. */
@@ -91,15 +95,34 @@ function toLocalDate(day: string, month: string, year: string): string | null {
 	return isLocalDate(date) ? date : null;
 }
 
+/** A time text that is stated but cannot be read (Story 3.10): the row fails `date-unparseable`. */
+const MALFORMED = Symbol('malformed time');
+type FoundTime = string | null | typeof MALFORMED;
+
 /**
- * The first `HH:MM` time in `text` as `HH:mm`, or null. `00:00` is ITEM KG's all-day placeholder
- * ("00:00 - 23:59 Uhr"), not a start time, so it reads as no time.
+ * The first `H:MM` time in `text` as `HH:mm`; null when none is stated. `00:00` is ITEM KG's
+ * all-day placeholder ("00:00 - 23:59 Uhr"), not a start time, so it reads as none. A time-shaped
+ * non-time (`25:00`) is `MALFORMED`, never untimed.
  */
-function findTime(text: string): string | null {
+function findTime(text: string): FoundTime {
 	const match = TIME.exec(text);
 	if (match === null) return null;
 	const time = `${match[1]!.padStart(2, '0')}:${match[2]!}`;
-	return isLocalTime(time) && time !== '00:00' ? time : null;
+	if (!isLocalTime(time)) return MALFORMED;
+	return time === '00:00' ? null : time;
+}
+
+/** Time-shaped text that is no readable `H:MM`: `9.30`, `9 Uhr`, `9h` (`25:00` is caught by `findTime`). */
+const TIME_SHAPED = /(?<![\d.])\d{1,2}(?:\.\d{2}(?![\d.])|\s*(?:Uhr|h)\b)/i;
+
+/**
+ * The row's time from its text after the date: a readable `H:MM` → that time; time-shaped text
+ * that cannot be read ("9.30 Uhr", `25:00`) → `MALFORMED`; anything else (blank, a date range,
+ * "2 Termine") → null, so the detail `Start` block decides.
+ */
+function rowTime(text: string): FoundTime {
+	if (TIME.test(text)) return findTime(text);
+	return TIME_SHAPED.test(text.replace(DATE_GLOBAL, ' ')) ? MALFORMED : null;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -126,7 +149,8 @@ interface TestRow {
 	url: string;
 	/** The row's date as `YYYY-MM-DD`; null when the date text holds no real `D.M.YYYY` date. */
 	date: string | null;
-	time: string | null;
+	/** The row's time; null when the row states none; `MALFORMED` when it states one that cannot be read. */
+	time: FoundTime;
 }
 
 function testRows($: CheerioAPI, base: string): TestRow[] {
@@ -150,7 +174,7 @@ function testRows($: CheerioAPI, base: string): TestRow[] {
 			rows.push({ $, row, newTheme, url, date: null, time: null }); // a date text that is no D.M.YYYY
 			return;
 		}
-		const time = findTime(dateText.slice(match.index + match[0].length));
+		const time = rowTime(dateText.slice(match.index + match[0].length));
 		rows.push({ $, row, newTheme, url, date: toLocalDate(match[1]!, match[2]!, match[3]!), time });
 	});
 	return rows;
@@ -248,15 +272,27 @@ const classesOf = (icon: Selection): string[] | null => (icon.length === 0 ? nul
 // Detail fields
 // ---------------------------------------------------------------------------------------------
 
-/** The first `HH:MM` after `date` in the detail page's `Start` block; else null. */
-function startTime($: CheerioAPI, wrap: Selection, date: string): string | null {
-	let time: string | null = null;
+/**
+ * The first `HH:MM` after `date` in the detail page's `Start` block; null when no block states a
+ * time (or only the `00:00` placeholder). `MALFORMED` when a `Start` block on `date` holds a
+ * time-shaped non-time (`25:00`), or when `Start` blocks name dates but none is `date` (the row
+ * and its detail page disagree: not "a date with no time").
+ */
+function startTime($: CheerioAPI, wrap: Selection, date: string): FoundTime {
+	let time: FoundTime = null;
+	let sameDate = false;
+	let otherDate = false;
 	wrap.find('*').each((_, element) => {
 		const label = $(element);
 		if (label.children().length > 0 || collapse(label.text()) !== 'Start') return;
 		const block = collapse(label.parent().text());
 		const match = DATE.exec(block);
-		if (match === null || toLocalDate(match[1]!, match[2]!, match[3]!) !== date) return;
+		if (match === null) return;
+		if (toLocalDate(match[1]!, match[2]!, match[3]!) !== date) {
+			otherDate = true;
+			return;
+		}
+		sameDate = true;
 		const found = findTime(block.slice(match.index + match[0].length));
 		if (found !== null) {
 			time = found;
@@ -264,7 +300,7 @@ function startTime($: CheerioAPI, wrap: Selection, date: string): string | null 
 		}
 		return;
 	});
-	return time;
+	return !sameDate && otherDate ? MALFORMED : time;
 }
 
 /** Whether `token` occurs in `text` as a whole token (not inside a longer word or number). */
@@ -373,8 +409,10 @@ function parse(pages: readonly FetchedPage[]): ParseResult {
 		// A newer-theme card: no detail page, so an empty detail selection (fields only from the card).
 		const { $, wrap } = page === null ? { $: row.$, wrap: row.$([]) } : details.get(page)!;
 		if (row.date === null) return failed('date-unparseable');
+		// No time stated in the row or the `Start` block → untimed (Story 3.10); a stated but
+		// unreadable time, or a `Start` block on another date, fails.
 		const time = row.time ?? startTime($, wrap, row.date);
-		if (time === null) return failed('date-unparseable');
+		if (time === MALFORMED) return failed('date-unparseable');
 
 		const detailLines = textLines(wrap.get(0) as unknown as DomNode);
 		const rowLines = textLines(row.row.get(0) as unknown as DomNode);

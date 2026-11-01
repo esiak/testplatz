@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { BAVARIA_BBOX, CENTRE_ID_PATTERN, isHttpUrl } from './directory.ts';
+import { berlinDayEnd } from './time.ts';
 
 /** Seat status of one test date (data-sources.md §Status mapping). */
 export const STATUS_CODES = ['free', 'booked_out', 'waitlist', 'unknown'] as const;
@@ -44,7 +45,8 @@ const notBlank = (schema: z.ZodString) =>
  */
 export const rawListingSchema = z.strictObject({
 	date: localDate,
-	time: localTime,
+	/** `null` only when the page states the date but no time (Story 3.10); a reader never invents one. */
+	time: localTime.nullable(),
 	place: notBlank(z.string()).nullable(),
 	/** Free text as published; normalise falls back to the centre address when `null`. */
 	address: notBlank(z.string()).nullable(),
@@ -59,8 +61,11 @@ export type RawListing = z.infer<typeof rawListingSchema>;
 
 /** `starts_at`: local date and time with seconds `:00` and the Europe/Berlin offset in force. */
 const STARTS_AT_PATTERN = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}):00\+0[12]:00$/;
-/** Listing id (AD-7): `<centre_id>@<YYYY-MM-DDTHH:mm>`, then `#2`, `#3`, … for further same-minute dates. */
-export const LISTING_ID_PATTERN = /^([a-z0-9]+(?:-[a-z0-9]+)*)@(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})(?:#([2-9]|[1-9]\d+))?$/;
+/**
+ * Listing id (AD-7): `<centre_id>@<YYYY-MM-DDTHH:mm>`, or `<centre_id>@<YYYY-MM-DD>` for a date
+ * whose time is not published yet (Story 3.10), then `#2`, `#3`, … for further dates with that key.
+ */
+export const LISTING_ID_PATTERN = /^([a-z0-9]+(?:-[a-z0-9]+)*)@(\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2})?)(?:#([2-9]|[1-9]\d+))?$/;
 
 const startsAt = z.string().refine(
 	(value) => {
@@ -72,9 +77,12 @@ const startsAt = z.string().refine(
 
 /** The normalised listing fields, without the cross-field checks (extend this, then add `checkListing`). */
 export const listingFieldsSchema = z.strictObject({
-	id: z.string().regex(LISTING_ID_PATTERN, { message: 'must be <centre_id>@<YYYY-MM-DDTHH:mm>[#n]' }),
+	id: z.string().regex(LISTING_ID_PATTERN, { message: 'must be <centre_id>@<YYYY-MM-DD[THH:mm]>[#n]' }),
 	centre_id: z.string().regex(CENTRE_ID_PATTERN, { message: 'must be a lowercase slug' }),
+	/** For an untimed date, 00:00 Europe/Berlin of its day. */
 	starts_at: startsAt,
+	/** False when the page states the date but no start time yet (Story 3.10). */
+	time_known: z.boolean(),
 	place: rawListingSchema.shape.place,
 	/** Never `null`: normalise falls back to the centre address. */
 	address: notBlank(z.string()),
@@ -89,16 +97,37 @@ export const listingFieldsSchema = z.strictObject({
 
 type ListingFields = z.infer<typeof listingFieldsSchema>;
 
-/** Cross-field listing checks: the id names the listing's `centre_id` and the local minute of `starts_at`. */
+/**
+ * Cross-field listing checks: the id names the listing's `centre_id` and the local minute of
+ * `starts_at`; for an untimed listing (`time_known: false`) it names only the local date, and
+ * `starts_at` is 00:00.
+ */
 export function checkListing(listing: ListingFields, ctx: z.RefinementCtx): void {
 	const id = LISTING_ID_PATTERN.exec(listing.id);
 	if (id === null) return;
 	if (id[1] !== listing.centre_id) {
 		ctx.addIssue({ code: 'custom', path: ['id'], message: `must start with the centre_id "${listing.centre_id}@"` });
 	}
-	if (id[2] !== listing.starts_at.slice(0, 16)) {
-		ctx.addIssue({ code: 'custom', path: ['id'], message: 'must name the local date and time of starts_at' });
+	if (listing.time_known) {
+		if (id[2] !== listing.starts_at.slice(0, 16)) {
+			ctx.addIssue({ code: 'custom', path: ['id'], message: 'must name the local date and time of starts_at' });
+		}
+		return;
 	}
+	if (id[2] !== listing.starts_at.slice(0, 10)) {
+		ctx.addIssue({ code: 'custom', path: ['id'], message: 'must name only the local date of starts_at when time_known is false' });
+	}
+	if (listing.starts_at.slice(11, 16) !== '00:00') {
+		ctx.addIssue({ code: 'custom', path: ['starts_at'], message: 'must be 00:00 local time when time_known is false' });
+	}
+}
+
+/**
+ * The instant (ms) a listing stops being current: a timed date at `starts_at`, an untimed one at
+ * the end of its Europe/Berlin day (Story 3.10). Pipeline (merge, publish, report) and browser alike.
+ */
+export function listingEndsAt(listing: Pick<ListingFields, 'starts_at' | 'time_known'>): number {
+	return listing.time_known ? Date.parse(listing.starts_at) : berlinDayEnd(listing.starts_at.slice(0, 10));
 }
 
 /**

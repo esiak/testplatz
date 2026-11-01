@@ -38,6 +38,7 @@ const stored = (centreId: string, startsAt: string, extra: Partial<StoredListing
 	id: `${centreId}@${startsAt.slice(0, 16)}`,
 	centre_id: centreId,
 	starts_at: startsAt,
+	time_known: true,
 	place: null,
 	address: 'Hauptstraße 1, 80331 München',
 	status: 'free',
@@ -138,7 +139,7 @@ describe('buildSnapshot', () => {
 	it('lists every centre once, sorted, with the run fields after the directory fields', () => {
 		const snapshot = build();
 		expect(snapshot.schemaVersion).toBe(SNAPSHOT_SCHEMA_VERSION);
-		expect(SNAPSHOT_SCHEMA_VERSION).toBe(3);
+		expect(SNAPSHOT_SCHEMA_VERSION).toBe(4);
 		expect(snapshot.generated_at).toBe('2026-10-27T07:00:00Z');
 		expect(snapshot.centres.map((c) => c.centre_id)).toEqual(['alpha', 'mid', 'zeta']);
 		for (const c of snapshot.centres) {
@@ -271,7 +272,7 @@ describe('buildSnapshot robots rule (Story 3.12)', () => {
 		['first robots skip', entry({ last_skip_reason: 'robots', last_skip_at: T1, last_robots_skip_at: T1 }), { kind: 'skipped', reason: 'robots' }, 'not_checked'],
 		['robots then budget', entry({ last_skip_reason: 'budget', last_skip_at: T2, last_robots_skip_at: T1 }), budget, 'not_checked'],
 		['robots then no outcome', entry({ last_skip_reason: 'robots', last_skip_at: T1, last_robots_skip_at: T1 }), undefined, 'not_checked'],
-		['robots then ok', entry({ last_result: 'ok', last_checked_at: T2, last_success_at: T2, last_skip_reason: 'robots', last_skip_at: T1, last_robots_skip_at: T1 }), { kind: 'ok', listings: [] }, 'covered'],
+		['robots then ok', entry({ last_result: 'ok', last_checked_at: T2, last_success_at: T2, last_skip_reason: 'robots', last_skip_at: T1, last_robots_skip_at: T1 }), { kind: 'ok', listings: [], carriedFrom: {} }, 'covered'],
 		['ok then robots then budget', entry({ last_result: 'ok', last_checked_at: T1, last_success_at: T1, last_skip_reason: 'budget', last_skip_at: T3, last_robots_skip_at: T2 }), budget, 'not_checked'],
 		['robots, later check, then budget', entry({ last_result: 'ok', last_checked_at: T2, last_success_at: T2, last_skip_reason: 'budget', last_skip_at: T3, last_robots_skip_at: T1 }), budget, 'covered'],
 		['budget skip with history', entry({ last_result: 'ok', last_checked_at: T1, last_success_at: T1, last_skip_reason: 'budget', last_skip_at: T2 }), budget, 'covered'],
@@ -320,7 +321,7 @@ describe('buildSnapshot robots rule (Story 3.12)', () => {
 		const outcomes: Record<string, LocatedOutcome> = {};
 		for (const id of okIds) {
 			state[id] = entry({ last_result: 'ok', last_checked_at: T3, last_success_at: T3 });
-			outcomes[id] = { kind: 'ok', listings: [] };
+			outcomes[id] = { kind: 'ok', listings: [], carriedFrom: {} };
 		}
 		for (const id of budgetIds) {
 			state[id] = entry({ last_skip_reason: 'budget', last_skip_at: T3 });
@@ -337,6 +338,44 @@ describe('buildSnapshot robots rule (Story 3.12)', () => {
 		expect(system.centres_covered).toBe(system.centres_ok + system.centres_failed + neverChecked);
 		expect(snapshot.centres.filter((c) => c.coverage === 'not_checked').map((c) => c.centre_id).sort()).toEqual([...robotsIds].sort());
 		expect(snapshotSchema.safeParse(snapshot).success).toBe(true);
+	});
+});
+
+describe('buildSnapshot: untimed dates (Story 3.10)', () => {
+	const untimed = (date: string, extra: Partial<StoredListing> = {}) =>
+		stored('k', `${date}T00:00:00+01:00`, { id: `k@${date}`, time_known: false, ...extra });
+	const at = (iso: string, listings: StoredListing[]) =>
+		build({ centres: [...DIRECTORY, kufer('k')], state: stateOf({ k: history('ok', listings) }), runAt: new Date(iso) });
+
+	it('publishes an untimed date with time_known false all through its Berlin day', () => {
+		for (const iso of ['2026-12-04T00:00:00+01:00', '2026-12-04T15:00:00+01:00', '2026-12-04T23:59:59+01:00']) {
+			const snapshot = at(iso, [untimed('2026-12-04')]);
+			expect(snapshot.listings.map((l) => [l.id, l.time_known])).toEqual([['k@2026-12-04', false]]);
+			expect(snapshotSchema.safeParse(snapshot).success).toBe(true);
+		}
+	});
+
+	it('drops it once the day is over; a timed date that day is dropped at its start', () => {
+		const timed = stored('k', '2026-12-04T10:00:00+01:00');
+		expect(at('2026-12-04T10:00:00+01:00', [untimed('2026-12-04'), timed]).listings.map((l) => l.id)).toEqual(['k@2026-12-04']);
+		expect(at('2026-12-05T00:00:00+01:00', [untimed('2026-12-04'), timed]).listings).toEqual([]);
+	});
+
+	it('keeps an untimed date of the DST end day until 2026-10-26T00:00+01:00', () => {
+		const dst = stored('k', '2026-10-25T00:00:00+02:00', { id: 'k@2026-10-25', time_known: false });
+		expect(at('2026-10-25T23:59:00+01:00', [dst]).listings).toHaveLength(1);
+		expect(at('2026-10-26T00:00:00+01:00', [dst]).listings).toHaveLength(0);
+	});
+
+	it.each<[string, Partial<StoredListing>]>([
+		['a timed id', { id: 'k@2026-12-04T00:00' }],
+		['a starts_at that is not 00:00', { starts_at: '2026-12-04T10:00:00+01:00' }],
+	])('refuses to publish an untimed listing with %s', (_name, extra) => {
+		const snapshot = at('2026-12-01T07:00:00Z', [untimed('2026-12-04', extra)]);
+		expect(snapshotSchema.safeParse(snapshot).success).toBe(false);
+		const dir = tmp();
+		expect(() => writeSnapshot(snapshot, join(dir, 'snapshot.json'))).toThrow(/fails the schema/);
+		expect(readdirSync(dir)).toEqual([]);
 	});
 });
 
@@ -379,8 +418,8 @@ describe('committed data/public/snapshot.json', () => {
 	// reconciles a changed directory with the committed snapshot.
 	const snapshot = snapshotSchema.parse(JSON.parse(readFileSync(SNAPSHOT_PATH, 'utf8')));
 
-	it('validates as schemaVersion 3 with centres', () => {
-		expect(snapshot.schemaVersion).toBe(3);
+	it('validates as schemaVersion 4 with centres', () => {
+		expect(snapshot.schemaVersion).toBe(4);
 		expect(snapshot.centres.length).toBeGreaterThan(0);
 	});
 

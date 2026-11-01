@@ -1,5 +1,5 @@
 import type { SnapshotCentre, SnapshotListing } from '../../../shared/snapshot.ts';
-import type { Sort } from './search.ts';
+import { untimedFirst, type Sort } from './search.ts';
 
 /** One result card: an upcoming date within the radius of the searched place. */
 export interface DatedResult {
@@ -40,7 +40,8 @@ export type SortedCard = { kind: 'dated'; result: DatedResult } | { kind: 'undat
 /**
  * The cards in display order. Soonest: the dated cards in `selectCards` order, then (in a second
  * group, under the "No dates to show" heading) the undated cards in the outcome's order. Nearest:
- * one group, by distance (unknown last), then dated before undated, then start, then id; undated
+ * one group, by distance (unknown last), then dated before undated, then start, then untimed
+ * before timed, then id; undated
  * ties keep the outcome's order.
  */
 export type SortedCards = { sort: 'soonest'; dated: SortedCard[]; undated: SortedCard[] } | { sort: 'nearest'; cards: SortedCard[] };
@@ -61,7 +62,7 @@ export function sortedCards(results: Results, sort: Sort): SortedCards {
 		if (a.card.kind !== b.card.kind) return a.card.kind === 'dated' ? -1 : 1;
 		if (a.card.kind === 'dated' && b.card.kind === 'dated') {
 			const byStart = Date.parse(a.card.result.listing.starts_at) - Date.parse(b.card.result.listing.starts_at);
-			return byStart || byId(a.card.result.listing.id, b.card.result.listing.id);
+			return byStart || untimedFirst(a.card.result.listing, b.card.result.listing) || byId(a.card.result.listing.id, b.card.result.listing.id);
 		}
 		return a.index - b.index;
 	});

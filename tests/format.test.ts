@@ -19,6 +19,11 @@ describe('cardDate', () => {
 		expect(cardDate('2026-12-09T10:00:00+01:00', 'de')).toBe('Mi., 9. Dez., 10:00');
 	});
 
+	it('puts the given text in place of the time (an untimed date, Story 3.10)', () => {
+		expect(cardDate('2026-12-04T00:00:00+01:00', 'en', 'Time not published yet')).toBe('Fri 4 Dec, Time not published yet');
+		expect(cardDate('2026-12-04T00:00:00+01:00', 'de', 'Uhrzeit noch nicht veröffentlicht')).toBe('Fr., 4. Dez., Uhrzeit noch nicht veröffentlicht');
+	});
+
 	it('reads summer-time dates from the string, not from a UTC conversion', () => {
 		expect(cardDate('2026-07-01T09:30:00+02:00', 'en')).toBe('Wed 1 Jul, 09:30');
 		expect(cardDate('2026-07-01T00:30:00+02:00', 'en')).toBe('Wed 1 Jul, 00:30');

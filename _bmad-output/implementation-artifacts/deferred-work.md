@@ -20,3 +20,9 @@
   summary: Replace the blanket "no cache record is fine" rule in `tests/directory.test.ts` with a named allowlist of centres whose coordinates were set by hand.
   evidence: Low. Story 1.12 allows hand-set coordinates so the operator can fix the 8 missing ones; as written, a geocode-cache record lost by accident would also pass. No hand-set centre exists yet — add the allowlist with the first one.
   status: resolved 2026-11-01 (Story 3.13) — `HAND_SET_CENTRES` in `tests/directory.test.ts` lists `vhs-kreis-kronach-e-v`; a centre with coordinates and no record fails unless listed, and a stale entry fails.
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-10-dates-whose-start-time-is-not-published-yet.md`
+  summary: Run report counts a listing as current at exactly its end instant (`listingEndsAt >= now`) while merge and publish drop it then (`> now`).
+  evidence: `pipeline/stages/report.ts` kept the baseline's `>=` for timed dates; only matters when a run lands on the exact end millisecond (runs are at 05:17 UTC, untimed days end at midnight).
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-10-dates-whose-start-time-is-not-published-yet.md`
+  summary: An ITEM KG detail `Start` block that gives a time but no date ("Start 09:00 Uhr") is skipped, so the row would publish as untimed (unverified, medium if real).
+  evidence: `startTime` in `pipeline/readers/itemkg/index.ts` ignores blocks without a `D.M.YYYY` date. Settle by finding any ITEM KG page whose `Start` block has no date; none of the fixtures or cached pages does.

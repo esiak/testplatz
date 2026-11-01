@@ -112,6 +112,7 @@
 	"card.distance_unknown": "distance unknown",
 	"card.deadline": "Deadline {date}",
 	"card.deadline_unknown": "Deadline unknown",
+	"card.time_unknown": "Time not published yet",
 	"card.meta_not_checked_automatically": "Not checked automatically",
 	"card.meta_not_checked_right_now": "Not checked right now"
 }

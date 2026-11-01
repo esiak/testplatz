@@ -607,6 +607,29 @@ describe('result cards', () => {
 		expect(iconLabels(second!)).toEqual(['Free seats', 'Register by post', 'Who may register: not stated']);
 	});
 
+	it('says "Time not published yet" for an untimed date, in the meta line and right after the date in the link name', async () => {
+		const untimed = listingOf(kufer, '2026-12-04T00:00:00+01:00', { id: 'kufer@2026-12-04', time_known: false, registration_method: 'online' });
+		let [card] = await showWith([kufer], [untimed]);
+		expect(tileText(card!)).toEqual(['Dec', '4', 'Fri']);
+		expect(metaParts(card!)).toEqual(['Time not published yet', '0 km', 'Deadline unknown']);
+		// The longer text may wrap, unlike a time.
+		expect(card!.querySelector('.card__meta-part')!.classList.contains('card__meta-part--nowrap')).toBe(false);
+		expect(card!.querySelector('h3 a')!.getAttribute('aria-label')).toBe(
+			'Fri 4 Dec, Time not published yet, Hauptstraße 1, 80331 München, vhs Nürnberg, Free seats, Register online, opens kufer.example.de in a new tab',
+		);
+		[card] = await showWith([kufer], [untimed], 'de');
+		expect(metaParts(card!)[0]).toBe('Uhrzeit noch nicht veröffentlicht');
+		expect(card!.querySelector('h3 a')!.getAttribute('aria-label')).toMatch(/^Fr\., 4\. Dez\., Uhrzeit noch nicht veröffentlicht, /);
+	});
+
+	it('keeps an untimed date of today on the cards after its 00:00 start, and lists it before a timed date that day', async () => {
+		// NOW is Thu 29 Oct 2026, 13:00 in Berlin.
+		const today = listingOf(kufer, '2026-10-29T00:00:00+01:00', { id: 'kufer@2026-10-29', time_known: false });
+		const later = listingOf(kufer, '2026-10-29T18:00:00+01:00');
+		await showWith([kufer], [later, today]);
+		expect(cardNames()).toEqual(['Thu 29 Oct, Time not published yet', 'Thu 29 Oct, 18:00']);
+	});
+
 	it('shows a date of a centre without coordinates in the searched place with distance unknown', async () => {
 		const unplaced = coveredCentre('unplaced', 'ok', {
 			name: 'Bildungswerk Nürnberg',

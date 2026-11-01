@@ -112,6 +112,7 @@
 	"card.distance_unknown": "Entfernung unbekannt",
 	"card.deadline": "Anmeldeschluss {date}",
 	"card.deadline_unknown": "Anmeldeschluss unbekannt",
+	"card.time_unknown": "Uhrzeit noch nicht veröffentlicht",
 	"card.meta_not_checked_automatically": "Nicht automatisch geprüft",
 	"card.meta_not_checked_right_now": "Derzeit nicht geprüft"
 }

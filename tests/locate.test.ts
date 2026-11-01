@@ -36,6 +36,7 @@ const listing = (address: string, centreId = 'coburg'): Listing => {
 		id: `${centreId}@2026-11-12T${hh}:${mm}`,
 		centre_id: centreId,
 		starts_at: `2026-11-12T${hh}:${mm}:00+01:00`,
+		time_known: true,
 		place: null,
 		address,
 		status: 'free',
@@ -47,7 +48,7 @@ const listing = (address: string, centreId = 'coburg'): Listing => {
 	};
 };
 
-const ok = (listings: Listing[], centreAddressIds: string[] = []): NormalisedOutcome => ({ kind: 'ok', listings, centreAddressIds });
+const ok = (listings: Listing[], centreAddressIds: string[] = []): NormalisedOutcome => ({ kind: 'ok', listings, centreAddressIds, carriedFrom: {} });
 
 const hitBody = (postcode: string | null, extra: Record<string, unknown> = {}) =>
 	JSON.stringify([

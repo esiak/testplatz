@@ -2,13 +2,17 @@ import { describe, expect, it } from 'vitest';
 import {
 	clampEligibility,
 	ELIGIBILITY_MAX_LENGTH,
+	listingEndsAt,
+	listingSchema,
 	mapStatus,
 	rawListingSchema,
 	REGISTRATION_METHODS,
 	STATUS_CODES,
+	type Listing,
 	type RawListing,
 	type StatusSignals,
 } from '../shared/listing.ts';
+import { berlinDayEnd, nextDate } from '../shared/time.ts';
 
 const listing = (extra: Partial<RawListing> = {}): RawListing => ({
 	date: '2026-11-12',
@@ -106,10 +110,83 @@ describe('rawListingSchema', () => {
 		}
 	});
 
+	it('accepts time null (a date whose time is not published yet, Story 3.10), but not a blank or malformed time', () => {
+		expect(accepts(listing({ time: null }))).toBe(true);
+		expect(accepts(listing({ time: '' }))).toBe(false);
+		expect(accepts(listing({ time: '25:00' }))).toBe(false);
+	});
+
 	it('checks years 0000–0099 as written (no 1900+ mapping)', () => {
 		// Year 0 is a leap year (divisible by 400), 1900 is not: a 1900+ mapping would reject this date.
 		expect(accepts(listing({ date: '0000-02-29' }))).toBe(true);
 		expect(accepts(listing({ date: '0001-02-29' }))).toBe(false);
+	});
+});
+
+describe('listingSchema: untimed dates (Story 3.10)', () => {
+	const untimed = (extra: Partial<Listing> = {}): Listing => ({
+		id: 'c@2026-12-04',
+		centre_id: 'c',
+		starts_at: '2026-12-04T00:00:00+01:00',
+		time_known: false,
+		place: null,
+		address: 'Hauptstraße 1, 80331 München',
+		status: 'free',
+		deadline: null,
+		registration_method: null,
+		source_url: 'https://example.de/kurs/1',
+		link_ok: true,
+		eligibility: null,
+		...extra,
+	});
+	const valid = (value: unknown): boolean => listingSchema.safeParse(value).success;
+
+	it('accepts a date-only id with starts_at 00:00 and time_known false, also numbered', () => {
+		expect(valid(untimed())).toBe(true);
+		expect(valid(untimed({ id: 'c@2026-12-04#2' }))).toBe(true);
+	});
+
+	it('refuses an untimed listing with a timed id or a starts_at that is not 00:00', () => {
+		expect(valid(untimed({ id: 'c@2026-12-04T00:00' }))).toBe(false);
+		expect(valid(untimed({ starts_at: '2026-12-04T10:00:00+01:00' }))).toBe(false);
+		expect(valid(untimed({ id: 'c@2026-12-05' }))).toBe(false);
+	});
+
+	it('refuses a timed listing with a date-only id, and a listing without time_known', () => {
+		expect(valid(untimed({ time_known: true }))).toBe(false);
+		const { time_known: _omit, ...without } = untimed({ id: 'c@2026-12-04T00:00', time_known: true });
+		expect(valid({ ...without, time_known: true })).toBe(true);
+		expect(valid(without)).toBe(false);
+	});
+});
+
+describe('listingEndsAt', () => {
+	it('is starts_at for a timed date', () => {
+		expect(listingEndsAt({ starts_at: '2026-12-04T10:00:00+01:00', time_known: true })).toBe(Date.parse('2026-12-04T10:00:00+01:00'));
+	});
+
+	it('is the next Berlin midnight for an untimed date', () => {
+		expect(listingEndsAt({ starts_at: '2026-12-04T00:00:00+01:00', time_known: false })).toBe(Date.parse('2026-12-05T00:00:00+01:00'));
+		expect(listingEndsAt({ starts_at: '2026-07-14T00:00:00+02:00', time_known: false })).toBe(Date.parse('2026-07-15T00:00:00+02:00'));
+	});
+
+	it('keeps the real length of DST days: 25 h on the October change, 23 h on the March change', () => {
+		const oct = listingEndsAt({ starts_at: '2026-10-25T00:00:00+02:00', time_known: false });
+		expect(oct).toBe(Date.parse('2026-10-26T00:00:00+01:00'));
+		expect(oct - Date.parse('2026-10-25T00:00:00+02:00')).toBe(25 * 60 * 60 * 1000);
+		const mar = berlinDayEnd('2026-03-29');
+		expect(mar).toBe(Date.parse('2026-03-30T00:00:00+02:00'));
+		expect(mar - Date.parse('2026-03-29T00:00:00+01:00')).toBe(23 * 60 * 60 * 1000);
+	});
+});
+
+describe('nextDate', () => {
+	it('crosses month and year ends, and leap days', () => {
+		expect(nextDate('2026-12-04')).toBe('2026-12-05');
+		expect(nextDate('2026-11-30')).toBe('2026-12-01');
+		expect(nextDate('2026-12-31')).toBe('2027-01-01');
+		expect(nextDate('2028-02-28')).toBe('2028-02-29');
+		expect(nextDate('2027-02-28')).toBe('2027-03-01');
 	});
 });
 

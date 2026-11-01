@@ -3,7 +3,7 @@ import { centreFieldsSchema, checkCentre, READERS } from './directory.ts';
 import { checkListing, checkLocation, listingFieldsSchema, locationFields } from './listing.ts';
 
 /** The `schemaVersion` this contract describes. The app embeds it to detect a mismatch. */
-export const SNAPSHOT_SCHEMA_VERSION = 3;
+export const SNAPSHOT_SCHEMA_VERSION = 4;
 
 /**
  * Freshness threshold (AD-11, amended 2026-10-29 for once-a-day collection): a centre's
@@ -56,7 +56,8 @@ export const systemSchema = z.strictObject({
 
 /**
  * A published test date: the normalised listing plus `lat`, `lon` and `location` from locate
- * (schema v3) and `first_seen_at` and `baseline` from merge.
+ * (schema v3) and `first_seen_at` and `baseline` from merge. Schema v4 (Story 3.10) adds
+ * `time_known`: `false` for a date whose start time is not published yet.
  */
 export const snapshotListingSchema = listingFieldsSchema
 	.extend({

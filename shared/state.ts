@@ -27,6 +27,8 @@ export const storedListingSchema = listingFieldsSchema
 		removed_at: utcDatetime.nullable(),
 		/** Seen on the centre's first `ok` run, so it is not "new". */
 		baseline: z.boolean(),
+		/** Listings stored before Story 3.10 lack it and were all timed (no `stateVersion` bump). */
+		time_known: z.boolean().default(true),
 		/** Located coordinates (Story 2.10). Optional: listings stored before locate lack them. */
 		lat: locationFields.lat.optional(),
 		lon: locationFields.lon.optional(),

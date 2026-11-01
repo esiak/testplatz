@@ -1,4 +1,5 @@
 import { SNAPSHOT_SCHEMA_VERSION, type Snapshot, type SnapshotCentre, type SnapshotListing } from '../../shared/snapshot.ts';
+import { startsAt as berlinStartsAt } from '../../shared/time.ts';
 
 /** A valid snapshot centre; `extra` overrides any field. */
 export function snapshotCentre(id: string, extra: Partial<SnapshotCentre> = {}): SnapshotCentre {
@@ -42,6 +43,7 @@ export function snapshotListing(centreId: string, startsAt: string, extra: Parti
 		id: `${centreId}@${startsAt.slice(0, 16)}`,
 		centre_id: centreId,
 		starts_at: startsAt,
+		time_known: true,
 		place: null,
 		address: 'Hauptstraße 1, 80331 München',
 		status: 'free',
@@ -57,6 +59,14 @@ export function snapshotListing(centreId: string, startsAt: string, extra: Parti
 		baseline: true,
 		...extra,
 	};
+}
+
+/**
+ * A valid untimed snapshot listing (Story 3.10) of `centreId` on `date` (`YYYY-MM-DD`): id
+ * `<centreId>@<date>`, `starts_at` 00:00 Europe/Berlin, `time_known: false`.
+ */
+export function untimedListing(centreId: string, date: string, extra: Partial<SnapshotListing> = {}): SnapshotListing {
+	return snapshotListing(centreId, berlinStartsAt(date, '00:00'), { id: `${centreId}@${date}`, time_known: false, ...extra });
 }
 
 /** Listings are sorted by id, as published. */

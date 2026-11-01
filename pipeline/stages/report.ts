@@ -16,6 +16,7 @@
 import { writeFileSync } from 'node:fs';
 import type { Coverage } from '../../shared/coverage.ts';
 import type { Centre } from '../../shared/directory.ts';
+import { listingEndsAt } from '../../shared/listing.ts';
 import type { SnapshotSystem } from '../../shared/snapshot.ts';
 import type { State } from '../../shared/state.ts';
 import { SYSTEM_DOWN_MS } from '../config.ts';
@@ -65,7 +66,7 @@ export function buildRunReport({ runAt, tally, systems, directory, priorState, o
 		const outcome = outcomes[centre.centre_id];
 		if (outcome?.kind !== 'ok' || outcome.listings.length > 0) continue;
 		const prior = priorState.centres[centre.centre_id]?.listings ?? [];
-		if (!prior.some((listing) => listing.removed_at === null && Date.parse(listing.starts_at) >= now)) continue;
+		if (!prior.some((listing) => listing.removed_at === null && listingEndsAt(listing) >= now)) continue;
 		const list = disappeared.get(centre.reader) ?? [];
 		list.push({ centre_id: centre.centre_id, name: centre.name });
 		disappeared.set(centre.reader, list);

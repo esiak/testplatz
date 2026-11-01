@@ -9,6 +9,7 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
 import { sortDirectory, type Centre, type Reader as ReaderSystem } from '../../shared/directory.ts';
+import { listingEndsAt } from '../../shared/listing.ts';
 import { SNAPSHOT_SCHEMA_VERSION, snapshotSchema, type Coverage, type Snapshot, type SnapshotListing, type SnapshotSystem } from '../../shared/snapshot.ts';
 import type { CentreState, State } from '../../shared/state.ts';
 import type { LocatedOutcome } from './locate.ts';
@@ -54,7 +55,7 @@ export function coverageOf(centre: Centre, readers: ReadonlySet<string>, outcome
  * fields from state when `covered` (null when it has no state yet) and null when `not_checked`.
  * `systems[]` has one entry per registered reader; its `centres_covered` is `centres_ok` +
  * `centres_failed` + the covered centres never checked (`last_result` null). `listings[]` holds the stored listings of
- * covered centres that are not removed and start after `runAt`, without `removed_at`, by id. A
+ * covered centres that are not removed and still current after `runAt` (`listingEndsAt`), without `removed_at`, by id. A
  * stored listing without location fields (kept from before Story 2.10) takes the centre's
  * coordinates with `location: centre`.
  */
@@ -93,7 +94,7 @@ export function buildSnapshot({ centres, state, outcomes, readers, runAt }: Snap
 			system.last_success_at = success;
 		}
 		for (const { removed_at, lat, lon, location, first_seen_at, baseline, ...listing } of history?.listings ?? []) {
-			if (removed_at !== null || Date.parse(listing.starts_at) <= now) continue;
+			if (removed_at !== null || listingEndsAt(listing) <= now) continue;
 			const placed =
 				lat === undefined || lon === undefined || location === undefined
 					? { lat: centre.lat, lon: centre.lon, location: 'centre' as const }

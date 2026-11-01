@@ -55,7 +55,7 @@ const ok = (id: string, listings: RawListing[], previous: State = emptyState()):
 	const pages = listings.map((l) => ({ url: l.source_url, role: 'detail' as const, status: 200, finalUrl: l.source_url }));
 	const outcome = normaliseOutcome(c, { kind: 'ok', listings }, pages, previous.centres[id]?.listings ?? []);
 	if (outcome.kind !== 'ok') return outcome;
-	return { kind: 'ok', listings: outcome.listings.map((listing) => ({ ...listing, lat: c.lat, lon: c.lon, location: 'centre' as const })) };
+	return { kind: 'ok', listings: outcome.listings.map((listing) => ({ ...listing, lat: c.lat, lon: c.lon, location: 'centre' as const })), carriedFrom: outcome.carriedFrom };
 };
 const failed: LocatedOutcome = { kind: 'failed', reason: 'list-page' };
 const skipped: LocatedOutcome = { kind: 'skipped', reason: 'budget' };
@@ -267,6 +267,67 @@ describe('mergeRun outcomes', () => {
 	});
 });
 
+describe('untimed dates (Story 3.10)', () => {
+	const URL_A = 'https://example.de/k/a';
+	const untimed = (extra: Partial<RawListing> = {}) => raw('2026-12-04', { time: null, place: 'R1', source_url: URL_A, ...extra });
+	const timed = (time: string, extra: Partial<RawListing> = {}) => raw('2026-12-04', { time, place: 'R1', source_url: URL_A, ...extra });
+	const rows = (state: State) => listingsOf(state, 'a').map((l) => [l.id, l.time_known, l.removed_at, l.first_seen_at, l.baseline]);
+	const run = (state: State, listings: RawListing[], runAt: Date) => merge(state, { a: ok('a', listings, state) }, runAt).state;
+
+	it('stores an untimed date with time_known false and a date-only id', () => {
+		const one = run(emptyState(), [untimed()], RUN_1);
+		expect(rows(one)).toEqual([['a@2026-12-04', false, null, RUN_1.toISOString(), true]]);
+		expect(stateSchema.safeParse(one).success).toBe(true);
+	});
+
+	it('time appears: the timed id takes the stored history (first_seen_at, baseline); the untimed id is gone, not tombstoned', () => {
+		const one = run(emptyState(), [untimed()], RUN_1);
+		const two = run(one, [timed('09:00')], RUN_2);
+		expect(rows(two)).toEqual([['a@2026-12-04T09:00', true, null, RUN_1.toISOString(), true]]);
+		// A later centre run (not the first) would otherwise make a new date non-baseline: here it stays baseline.
+		const fresh = run(run(emptyState(), [raw('2026-11-12')], RUN_1), [raw('2026-11-12'), untimed()], RUN_2);
+		const three = run(fresh, [raw('2026-11-12'), timed('09:00')], RUN_3);
+		expect(byListingId(three, 'a', 'a@2026-12-04T09:00')).toMatchObject({ first_seen_at: RUN_2.toISOString(), baseline: false, removed_at: null });
+		expect(byListingId(three, 'a', 'a@2026-12-04')).toBeUndefined();
+	});
+
+	it('time disappears: the untimed id takes the stored timed history; the timed id is gone', () => {
+		const one = run(emptyState(), [timed('09:00')], RUN_1);
+		const two = run(one, [untimed({ place: null })], RUN_2);
+		expect(rows(two)).toEqual([['a@2026-12-04', false, null, RUN_1.toISOString(), true]]);
+	});
+
+	it('takes the history of a tombstoned stored listing too, and drops its id', () => {
+		const one = run(emptyState(), [untimed(), raw('2026-11-12')], RUN_1);
+		const two = run(one, [raw('2026-11-12')], RUN_2);
+		expect(byListingId(two, 'a', 'a@2026-12-04')!.removed_at).toBe(RUN_2.toISOString());
+		const three = run(two, [raw('2026-11-12'), timed('09:00')], RUN_3);
+		expect(byListingId(three, 'a', 'a@2026-12-04T09:00')).toMatchObject({ first_seen_at: RUN_1.toISOString(), baseline: true, removed_at: null });
+		expect(byListingId(three, 'a', 'a@2026-12-04')).toBeUndefined();
+	});
+
+	it('no match: a new listing, and the untimed date is tombstoned (today\'s rules)', () => {
+		const one = run(run(emptyState(), [raw('2026-11-12')], RUN_1), [raw('2026-11-12'), untimed()], RUN_2);
+		const two = run(one, [raw('2026-11-12'), timed('09:00', { place: 'R2', source_url: 'https://example.de/k/b' })], RUN_3);
+		expect(byListingId(two, 'a', 'a@2026-12-04')).toMatchObject({ removed_at: RUN_3.toISOString(), first_seen_at: RUN_2.toISOString() });
+		expect(byListingId(two, 'a', 'a@2026-12-04T09:00')).toMatchObject({ removed_at: null, first_seen_at: RUN_3.toISOString(), baseline: false });
+	});
+
+	it('keeps an untimed date through its Berlin day and drops it once the day is over', () => {
+		const one = run(emptyState(), [untimed()], RUN_1);
+		const failedAt = (iso: string) => merge(one, { a: failed }, new Date(iso)).state;
+		expect(listingsOf(failedAt('2026-12-04T15:00:00+01:00'), 'a').map((l) => l.id)).toEqual(['a@2026-12-04']);
+		expect(listingsOf(failedAt('2026-12-04T23:59:59+01:00'), 'a').map((l) => l.id)).toEqual(['a@2026-12-04']);
+		expect(listingsOf(failedAt('2026-12-05T00:00:00+01:00'), 'a')).toEqual([]);
+	});
+
+	it('keeps an untimed date of the DST end day until 2026-10-26T00:00+01:00 (a 25 h day)', () => {
+		const one = run(emptyState(), [raw('2026-10-25', { time: null })], new Date('2026-10-20T05:17:00Z'));
+		expect(listingsOf(merge(one, { a: failed }, new Date('2026-10-25T23:30:00+01:00')).state, 'a')).toHaveLength(1);
+		expect(listingsOf(merge(one, { a: failed }, new Date('2026-10-26T00:00:00+01:00')).state, 'a')).toEqual([]);
+	});
+});
+
 describe('mergeRun visit log', () => {
 	it('appends this run, drops entries at or older than 24 h, sorted by at then host', () => {
 		const ago = (ms: number) => new Date(RUN_2.getTime() - ms).toISOString();
@@ -409,6 +470,19 @@ describe('readState and writeMergeResult', () => {
 		const again: string[] = [];
 		readState(paths.statePath, (line) => again.push(line));
 		expect(again).toEqual([]);
+	});
+
+	it('reads stored listings without time_known as timed (no stateVersion bump, Story 3.10)', () => {
+		const one = merge(emptyState(), { a: ok('a', [raw('2026-11-12')]) }, RUN_1);
+		const old = JSON.parse(serializeState(one.state)) as { centres: Record<string, { listings: Record<string, unknown>[] }> };
+		for (const listing of old.centres.a!.listings) delete listing.time_known;
+		writeFileSync(join(dir, 'old.json'), JSON.stringify(old));
+		const read = readState(join(dir, 'old.json'));
+		expect(read.stateVersion).toBe(2);
+		expect(read.centres.a!.listings[0]!.time_known).toBe(true);
+		expect(read).toEqual(one.state);
+		// Re-serialised, the field sits right after starts_at, as merge writes it.
+		expect(Object.keys(read.centres.a!.listings[0]!).slice(2, 4)).toEqual(['starts_at', 'time_known']);
 	});
 
 	it('writes identical bytes for an identical result', () => {

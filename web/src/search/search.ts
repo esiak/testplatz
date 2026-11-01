@@ -1,4 +1,5 @@
 import { haversineKm } from '../../../shared/geo.ts';
+import { listingEndsAt } from '../../../shared/listing.ts';
 import { normalizePlaceName, type OtherPlace, type PlaceRow } from '../../../shared/places.ts';
 import type { SnapshotCentre, SnapshotListing } from '../../../shared/snapshot.ts';
 import { isUnlocated } from '../data/snapshot.ts';
@@ -344,14 +345,19 @@ export function unlocatedInPlace(centres: readonly SnapshotCentre[], place: Plac
 
 const byText = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
 
+/** Tie-break for equal starts: an untimed date (`time_known: false`) before a timed one. */
+export const untimedFirst = (a: Pick<SnapshotListing, 'time_known'>, b: Pick<SnapshotListing, 'time_known'>): number =>
+	a.time_known === b.time_known ? 0 : a.time_known ? 1 : -1;
+
 /**
  * The cards a search shows (FR2, AD-8), by test address.
  *
- * Dated: every listing starting at or after `now`, placed at its own coordinates when both are
+ * Dated: every listing still current at `now` (a timed one starting at or after `now`, an untimed
+ * one until its Europe/Berlin day ends, `listingEndsAt`), placed at its own coordinates when both are
  * numbers, else at its centre's when the centre is located. A placed listing is a card when it lies
  * within `radiusKm`, with that distance; an unplaced one is a card with distance unknown when its
  * centre is in the place (`unlocatedInPlace`), otherwise it is not shown. Ordered by start, then
- * distance (unknown last), then listing id.
+ * untimed before timed (`untimedFirst`), then distance (unknown last), then listing id.
  *
  * Undated: centres with no current listing, selected by their own coordinates as in Epic 1: in
  * range nearest first, then unlocated centres in the place. A centre with a current listing never
@@ -373,7 +379,9 @@ export function selectCards(
 		const centre = byId.get(listing.centre_id);
 		if (!centre) continue;
 		const start = Date.parse(listing.starts_at);
-		if (!(start >= now)) continue;
+		// A timed date is current until it starts; an untimed one until its Berlin day ends (Story 3.10).
+		const end = listingEndsAt(listing);
+		if (!(listing.time_known ? end >= now : end > now)) continue;
 		withCurrent.add(centre.centre_id);
 		const position =
 			typeof listing.lat === 'number' && typeof listing.lon === 'number'
@@ -391,6 +399,7 @@ export function selectCards(
 	dated.sort(
 		(a, b) =>
 			a.start - b.start ||
+			untimedFirst(a.listing, b.listing) ||
 			(a.distanceKm ?? Number.POSITIVE_INFINITY) - (b.distanceKm ?? Number.POSITIVE_INFINITY) ||
 			byText(a.listing.id, b.listing.id),
 	);

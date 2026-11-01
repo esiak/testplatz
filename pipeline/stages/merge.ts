@@ -7,6 +7,7 @@
  */
 import { mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
+import { listingEndsAt } from '../../shared/listing.ts';
 import { emptyState, sortListings, STATE_VERSION, stateSchema, upgradeState, type CentreState, type State, type StoredListing } from '../../shared/state.ts';
 import { emptyVenues, VENUES_VERSION, venuesSchema, type VenueEntry, type Venues } from '../../shared/venues.ts';
 import { visitLogSchema, type Visit } from '../../shared/visits.ts';
@@ -44,14 +45,20 @@ const skipFields = (previous: CentreState | undefined): Pick<CentreState, 'last_
 	last_robots_skip_at: previous?.last_robots_skip_at ?? null,
 });
 
-/** `ok`: upsert this run's listings (keeping `first_seen_at`/`baseline`), tombstone the rest. */
-function applyOk(previous: CentreState | undefined, listings: Extract<LocatedOutcome, { kind: 'ok' }>['listings'], at: string): CentreState {
+/**
+ * `ok`: upsert this run's listings (keeping `first_seen_at`/`baseline`), tombstone the rest. A
+ * listing in `carriedFrom` (Story 3.10: its time appeared or disappeared) takes the history of
+ * that stored id, which is then dropped, not tombstoned.
+ */
+function applyOk(previous: CentreState | undefined, { listings, carriedFrom }: Extract<LocatedOutcome, { kind: 'ok' }>, at: string): CentreState {
 	const stored = new Map((previous?.listings ?? []).map((listing) => [listing.id, listing]));
 	const baseline = (previous?.last_success_at ?? null) === null;
 	const seen = new Set<string>();
 	const merged: StoredListing[] = listings.map((listing) => {
 		seen.add(listing.id);
-		const old = stored.get(listing.id);
+		const from = stored.has(listing.id) ? undefined : carriedFrom[listing.id];
+		if (from !== undefined) seen.add(from);
+		const old = stored.get(from ?? listing.id);
 		return { ...listing, first_seen_at: old?.first_seen_at ?? at, removed_at: null, baseline: old?.baseline ?? baseline };
 	});
 	for (const old of stored.values()) {
@@ -84,7 +91,8 @@ export function mergeVisitLog(log: readonly Visit[], visits: readonly Visit[], n
  * `last_checked_at` and keeps the listings; both keep the skip fields. `skipped` (Story 3.12) sets
  * `last_skip_reason` and `last_skip_at` (and `last_robots_skip_at` for robots), creating the entry
  * with null results and no listings when missing, and changes nothing else. Then every listing whose
- * `starts_at` is not after `runAt` is dropped. The log keeps entries newer than the 24 h window,
+ * end (`listingEndsAt`: `starts_at`, or the end of the Berlin day when untimed) is not after
+ * `runAt` is dropped. The log keeps entries newer than the 24 h window,
  * without exact `(host, at)` duplicates, so re-running merge for the same run charges no host twice.
  */
 export function mergeRun({ state, log, outcomes, visits, venues, lookups, runAt }: MergeInput): MergeResult {
@@ -116,13 +124,13 @@ export function mergeRun({ state, log, outcomes, visits, venues, lookups, runAt 
 			};
 			continue;
 		}
-		centres[centreId] = applyOk(previous, outcome.listings, at);
+		centres[centreId] = applyOk(previous, outcome, at);
 	}
 
 	const sorted: Record<string, CentreState> = {};
 	for (const centreId of Object.keys(centres).sort(compare)) {
 		const centre = centres[centreId]!;
-		const upcoming = centre.listings.filter((listing) => Date.parse(listing.starts_at) > now);
+		const upcoming = centre.listings.filter((listing) => listingEndsAt(listing) > now);
 		sorted[centreId] = upcoming.length === centre.listings.length ? centre : { ...centre, listings: upcoming };
 	}
 

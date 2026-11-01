@@ -58,9 +58,11 @@ request"); both read as `ok` with no dates.
 
 - The Einbürgerung category lists each test with a date only ("Fr. 04.12.2026"); the detail page
   shows "00:00 - 23:59 Uhr" and no `Start` block. MVHS publishes no start time ("10 Tage vor der
-  Prüfung bekommen Sie die genauen Prüfungszeiten …"), so the reader fails the centre with
-  `date-unparseable` rather than guess a time, until `RawListing` can carry an unknown time
-  (Story 2.5 decision).
+  Prüfung bekommen Sie die genauen Prüfungszeiten …"). Until Story 3.10 the reader failed the
+  centre with `date-unparseable` rather than guess a time (Story 2.5 decision). Since Story 3.10
+  it reads each such row with `time: null`: the card says "Time not published yet" and the date
+  stays current until the end of its day. A stated time the reader cannot read still fails
+  `date-unparseable`.
 - No residence rule ("Munich residents only") is published on the category or the detail pages
   today; the reader would copy it verbatim if it appeared.
 - The prep course "Deutsch Geschichte und Politik von A-Z" in the same category is not a test row.

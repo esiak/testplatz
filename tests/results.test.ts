@@ -4,7 +4,7 @@ import type { SnapshotCentre, SnapshotListing } from '../shared/snapshot.ts';
 import { allBookedOut, bookedOutCount, hideBookedOut, sortedCards, undatedKind, type Results, type SortedCard } from '../web/src/search/results.ts';
 import { selectCards } from '../web/src/search/search.ts';
 import { placeRow } from './fixtures/places.ts';
-import { coveredCentre, snapshotCentre, snapshotListing } from './fixtures/snapshot.ts';
+import { coveredCentre, snapshotCentre, snapshotListing, untimedListing } from './fixtures/snapshot.ts';
 
 // Herrsching and Starnberg, about 12.6 km apart.
 const HERRSCHING = placeRow('09188127', 'Herrsching a.Ammersee', { postcodes: ['82211'], lat: 47.9993, lon: 11.1716 });
@@ -170,6 +170,43 @@ describe('selectCards', () => {
 	});
 });
 
+describe('selectCards: untimed dates (Story 3.10)', () => {
+	const select10 = (listings: SnapshotListing[], now: number) => selectCards([near, far], listings, PLACE, 40, now);
+	const untimed = untimedListing('near', '2026-12-04', { lat: near.lat, lon: near.lon });
+
+	it('keeps an untimed date all through its Berlin day', () => {
+		expect(ids(select10([untimed], Date.parse('2026-12-04T00:00:00+01:00')))).toEqual(['near@2026-12-04']);
+		expect(ids(select10([untimed], Date.parse('2026-12-04T15:00:00+01:00')))).toEqual(['near@2026-12-04']);
+		expect(ids(select10([untimed], Date.parse('2026-12-04T23:59:59+01:00')))).toEqual(['near@2026-12-04']);
+	});
+
+	it('drops it when the day is over, and the centre reverts to a no-dates card', () => {
+		const results = select10([untimed], Date.parse('2026-12-05T00:00:00+01:00'));
+		expect(ids(results)).toEqual([]);
+		expect(undatedIds(results)).toContain('near');
+	});
+
+	it('keeps an untimed date on the DST end day for its 25 hours', () => {
+		const dst = untimedListing('near', '2026-10-25', { lat: near.lat, lon: near.lon });
+		expect(dst.starts_at).toBe('2026-10-25T00:00:00+02:00');
+		expect(ids(select10([dst], Date.parse('2026-10-25T23:59:00+01:00')))).toEqual(['near@2026-10-25']);
+		expect(ids(select10([dst], Date.parse('2026-10-26T00:00:00+01:00')))).toEqual([]);
+	});
+
+	it('an untimed and a timed date on the same day coexist; the untimed one comes first', () => {
+		const timed = placedAt(near, '2026-12-04T10:00:00+01:00');
+		expect(ids(select10([timed, untimed], Date.parse('2026-12-01T09:00:00Z')))).toEqual(['near@2026-12-04', 'near@2026-12-04T10:00']);
+	});
+
+	it('Soonest: at an equal start, the untimed date comes first even when its id sorts after the timed one', () => {
+		// "a@…T00:00" sorts before "near@…", same start (00:00) and the timed one is nearer.
+		const a = coveredCentre('a', 'ok', at(1));
+		const timed = placedAt(a, '2026-12-04T00:00:00+01:00');
+		const results = selectCards([a, near], [timed, untimed], PLACE, 40, Date.parse('2026-12-01T09:00:00Z'));
+		expect(ids(results)).toEqual(['near@2026-12-04', 'a@2026-12-04T00:00']);
+	});
+});
+
 describe('undatedKind', () => {
 	it('gives a covered centre whose last check succeeded the no-dates card', () => {
 		expect(undatedKind(coveredCentre('c', 'ok'))).toBe('no_dates');
@@ -235,6 +272,16 @@ describe('sortedCards', () => {
 			'loose',
 			'lost',
 		]);
+	});
+
+	it('nearest: at one distance and start, the untimed date comes before the timed one, though its id sorts after', () => {
+		// Two centres at the same distance; "a@2026-12-04T00:00" < "b@2026-12-04" by id.
+		const a = coveredCentre('a', 'ok', at(12));
+		const b = coveredCentre('b', 'ok', at(12));
+		const tied = select([a, b], [placedAt(a, '2026-12-04T00:00:00+01:00'), untimedListing('b', '2026-12-04', { lat: b.lat, lon: b.lon })]);
+		const sorted = sortedCards(tied, 'nearest');
+		if (sorted.sort !== 'nearest') throw new Error('expected nearest');
+		expect(cardIds(sorted.cards)).toEqual(['b@2026-12-04', 'a@2026-12-04T00:00']);
 	});
 
 	it('nearest: an unlocated dated card sorts with the unknown distances, before unlocated undated ones', () => {

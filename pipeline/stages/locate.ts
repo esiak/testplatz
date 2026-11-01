@@ -27,8 +27,13 @@ import type { NormalisedOutcome } from './normalise.ts';
 /** The shortest pause between two Nominatim requests, whatever the options say (OSMF policy). */
 const MIN_DELAY_MS = 1000;
 
-/** A centre's outcome after locate: `ok` carries located listings; `failed` and `skipped` pass through. */
-export type LocatedOutcome = Exclude<NormalisedOutcome, { kind: 'ok' }> | { kind: 'ok'; listings: LocatedListing[] };
+/**
+ * A centre's outcome after locate: `ok` carries located listings and normalise's `carriedFrom`
+ * (new id → stored id, Story 3.10); `failed` and `skipped` pass through.
+ */
+export type LocatedOutcome =
+	| Exclude<NormalisedOutcome, { kind: 'ok' }>
+	| { kind: 'ok'; listings: LocatedListing[]; carriedFrom: Record<string, string> };
 
 /** Where a listing's coordinates come from, and why it fell back to the centre (null for `venue`). */
 export interface Placement {
@@ -191,7 +196,7 @@ export async function locateRun(input: LocateInput): Promise<LocateResult> {
 			}
 			listings.push({ ...listing, lat: placement.lat, lon: placement.lon, location: placement.location });
 		}
-		located[centreId] = { kind: 'ok', listings };
+		located[centreId] = { kind: 'ok', listings, carriedFrom: outcome.carriedFrom };
 	}
 	stats.cacheHits = cacheKeys.size;
 	log(`locate: ${stats.venue} at venue, ${stats.centre} at centre; ${stats.requests} requests, ${stats.cacheHits} cache hits`);

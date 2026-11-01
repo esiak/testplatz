@@ -11,6 +11,7 @@ import type { Centre } from '../shared/directory.ts';
 import { snapshotSchema, type Snapshot } from '../shared/snapshot.ts';
 import { stateSchema, STATE_VERSION, type CentreState, type State, type StoredListing } from '../shared/state.ts';
 import type { Visit } from '../shared/visits.ts';
+import { startsAt as berlinStartsAt } from '../shared/time.ts';
 
 const REPO = fileURLToPath(new URL('..', import.meta.url));
 const KUFERWEB_FIXTURES = join(REPO, 'pipeline/readers/kuferweb/fixtures');
@@ -57,6 +58,7 @@ const stored = (centreId: string, startsAt: string, extra: Partial<StoredListing
 	id: `${centreId}@${startsAt.slice(0, 16)}`,
 	centre_id: centreId,
 	starts_at: startsAt,
+	time_known: true,
 	place: null,
 	address: 'Hauptstraße 1, 80331 München',
 	status: 'free',
@@ -201,7 +203,7 @@ const centreOf = (snapshot: Snapshot, id: string) => snapshot.centres.find((c) =
 const listingIds = (snapshot: Snapshot, id: string) => snapshot.listings.filter((l) => l.centre_id === id).map((l) => l.id);
 
 describe('runPipeline: one collection run end to end', () => {
-	it('collects, locates, merges and publishes snapshot v3 for every row of the matrix', async () => {
+	it('collects, locates, merges and publishes snapshot v4 for every row of the matrix', async () => {
 		const paths = setup();
 		const { code, errors, calls, lookups } = await pipeline(paths);
 		expect(errors).toEqual([]);
@@ -210,7 +212,7 @@ describe('runPipeline: one collection run end to end', () => {
 		const state = readStateFile(paths);
 		const at = RUN_AT.toISOString();
 
-		expect(snapshot.schemaVersion).toBe(3);
+		expect(snapshot.schemaVersion).toBe(4);
 		expect(snapshot.generated_at).toBe('2026-10-29T05:17:00Z');
 		expect(snapshot.centres.map((c) => c.centre_id)).toEqual(DIRECTORY.map((c) => c.centre_id).sort());
 
@@ -465,6 +467,22 @@ describe('runPipeline: save and replay', () => {
 		const after = readStateFile(replayed).centres.moosburg!.listings;
 		expect(after.find((l) => l.id === `${first!.id}#2`)).toMatchObject({ removed_at: null, first_seen_at: earlier, baseline: true });
 		expect(after.some((l) => l.id === first!.id)).toBe(false);
+	});
+
+	it('a stored untimed date whose time is now published keeps its history under the timed id (Story 3.10)', async () => {
+		const original = setup();
+		const replayFile = join(original.dir, 'collect.json');
+		await pipeline(original, { saveCollect: replayFile });
+		const stored = readStateFile(original);
+		const [first, ...rest] = stored.centres.moosburg!.listings;
+		const date = first!.starts_at.slice(0, 10);
+		const earlier = '2026-10-01T05:17:00.000Z';
+		const untimed = { ...first!, id: `moosburg@${date}`, starts_at: berlinStartsAt(date, '00:00'), time_known: false, first_seen_at: earlier, baseline: true };
+		const replayed = setup({ state: { ...stored, centres: { ...stored.centres, moosburg: { ...stored.centres.moosburg!, listings: [untimed, ...rest] } } } });
+		expect((await pipeline(replayed, { fromCollect: replayFile }, fakeNetwork({}))).code).toBe(0);
+		const after = readStateFile(replayed).centres.moosburg!.listings;
+		expect(after.find((l) => l.id === first!.id)).toMatchObject({ time_known: true, removed_at: null, first_seen_at: earlier, baseline: true });
+		expect(after.some((l) => l.id === untimed.id)).toBe(false);
 	});
 
 	it('replays on top of a newer state and directory, dropping outcomes of centres no longer listed', async () => {

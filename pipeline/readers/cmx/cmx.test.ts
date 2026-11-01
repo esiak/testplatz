@@ -173,8 +173,18 @@ describe('matrix', () => {
 		expect(listings.filter((l) => l.source_url.endsWith('cmx69c2693fd3a78.html'))).toHaveLength(1);
 	});
 
-	it('a test teaser without a start time → failed(date-unparseable) (a listing needs a time)', () => {
+	it('a test teaser without a start time element → a listing with time null (Story 3.10)', () => {
 		const result = runEdited(BUCHLOE, [['<span class="Datum">21.11.26</span><span class="AnzahlTermine"> (1-mal) </span> <span class="Uhrzeit"> <span class="UhrzeitBeginn"> 09:30</span>', '<span class="Datum">21.11.26</span><span class="AnzahlTermine"> (1-mal) </span> <span class="Uhrzeit"> ']]);
+		expect(listingsOf(result).find((l) => l.date === '2026-11-21')).toMatchObject({ date: '2026-11-21', time: null });
+	});
+
+	it('a test teaser with a blank start time → a listing with time null (Story 3.10)', () => {
+		const result = runEdited(BUCHLOE, [['<span class="UhrzeitBeginn"> 09:30</span>', '<span class="UhrzeitBeginn">  </span>']]);
+		expect(listingsOf(result).find((l) => l.date === '2026-11-21')).toMatchObject({ date: '2026-11-21', time: null });
+	});
+
+	it('a test teaser whose start time text cannot be read → failed(date-unparseable)', () => {
+		const result = runEdited(BUCHLOE, [['<span class="UhrzeitBeginn"> 09:30</span>', '<span class="UhrzeitBeginn"> vormittags</span>']]);
 		expect(result).toEqual({ kind: 'failed', reason: 'date-unparseable' });
 	});
 

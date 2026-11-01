@@ -69,10 +69,13 @@ export function berlinToday(now: number): string {
 
 const WEEKDAY_DAY_MONTH: Intl.DateTimeFormatOptions = { weekday: 'short', day: 'numeric', month: 'short' };
 
-/** Card date: en `Wed 9 Dec, 10:00`, de `Mi., 9. Dez., 10:00` — the local date and time of `starts_at`. */
-export function cardDate(startsAt: string, lang: Lang): string {
+/**
+ * Card date: en `Wed 9 Dec, 10:00`, de `Mi., 9. Dez., 10:00` — the local date and time of
+ * `starts_at`. `timeText` replaces the time, e.g. "Time not published yet" for an untimed date.
+ */
+export function cardDate(startsAt: string, lang: Lang, timeText?: string): string {
 	const parts = localParts(startsAt);
-	return `${calendar(parts, lang, WEEKDAY_DAY_MONTH)}, ${parts.time}`;
+	return `${calendar(parts, lang, WEEKDAY_DAY_MONTH)}, ${timeText ?? parts.time}`;
 }
 
 /** Date tile parts: en `{ month: 'Dec', day: '9', weekday: 'Wed' }`, de `{ month: 'Dez', day: '9', weekday: 'Mi' }`. */

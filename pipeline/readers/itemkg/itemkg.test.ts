@@ -255,8 +255,15 @@ describe('itemkgReader on real fixtures', () => {
 });
 
 describe('matrix', () => {
-	it('MVHS: rows without a time and no Start block → failed(date-unparseable)', () => {
-		expect(run(MVHS)).toEqual({ kind: 'failed', reason: 'date-unparseable' });
+	it('MVHS: rows without a time and no Start block → ok, untimed listings (Story 3.10)', () => {
+		const common = { time: null, place: 'Innenstadt', address: null, status: 'unknown', registration_method: 'in_person', eligibility: null } as const;
+		expect(run(MVHS)).toEqual({
+			kind: 'ok',
+			listings: [
+				{ date: '2026-12-04', ...common, deadline: '2026-10-31', source_url: detailUrl(MVHS, 'X674118') },
+				{ date: '2027-01-22', ...common, deadline: null, source_url: detailUrl(MVHS, 'X674130') },
+			],
+		});
 	});
 
 	it('MVHS: the "Geschichte und Politik" prep course is not a test row', () => {
@@ -383,14 +390,53 @@ describe('field rules on edited real fixtures', () => {
 		expect(listingsOf(result)[0]).toMatchObject({ date: '2026-12-11', time: '15:30' });
 	});
 
-	it('00:00 (the all-day placeholder) is no time: a row 00:00 falls back to the Start block, a Start 00:00 fails', () => {
+	it('00:00 (the all-day placeholder) is no time: a row 00:00 falls back to the Start block, both 00:00 → untimed', () => {
 		const row = runEdited(STARNBERG, { 'starnberg/list.html': [['Fr. 11.12.2026 15:30', 'Fr. 11.12.2026 00:00']] });
 		expect(listingsOf(row)[0]).toMatchObject({ date: '2026-12-11', time: '15:30' });
 		const both = runEdited(STARNBERG, {
-			'starnberg/list.html': [['Fr. 11.12.2026 15:30', 'Fr. 11.12.2026 00:00']],
+			'starnberg/list.html': [['Fr. 11.12.2026 15:30', 'Fr. 11.12.2026 00:00 - 23:59']],
 			'starnberg/262-3479-S.html': [['15:30 Uhr', '00:00 - 23:59 Uhr']],
 		});
-		expect(both).toEqual({ kind: 'failed', reason: 'date-unparseable' });
+		expect(listingsOf(both)[0]).toMatchObject({ date: '2026-12-11', time: null });
+	});
+
+	it('a row and Start block without a time → untimed on the row date (Story 3.10)', () => {
+		const result = runEdited(STARNBERG, {
+			'starnberg/list.html': [['Fr. 11.12.2026 15:30', 'Fr. 11.12.2026']],
+			'starnberg/262-3479-S.html': [['15:30 Uhr', '']],
+		});
+		expect(listingsOf(result)[0]).toMatchObject({ date: '2026-12-11', time: null });
+	});
+
+	it('a time-shaped row time that is not H:MM ("9.30 Uhr", "9 Uhr") → failed(date-unparseable), never untimed', () => {
+		for (const text of ['Fr. 11.12.2026 9.30 Uhr', 'Fr. 11.12.2026 9 Uhr']) {
+			expect(runEdited(STARNBERG, { 'starnberg/list.html': [['Fr. 11.12.2026 15:30', text]] })).toEqual({ kind: 'failed', reason: 'date-unparseable' });
+		}
+	});
+
+	it('a row with a date range after the date takes its time from the Start block', () => {
+		const result = runEdited(STARNBERG, { 'starnberg/list.html': [['Fr. 11.12.2026 15:30', 'Fr. 11.12.2026 - Sa. 12.12.2026']] });
+		expect(listingsOf(result)[0]).toMatchObject({ date: '2026-12-11', time: '15:30' });
+	});
+
+	it('other row text after the date ("vormittags", "2 Termine") lets the Start block decide: untimed when it has no time', () => {
+		for (const text of ['Fr. 11.12.2026 vormittags', 'Fr. 11.12.2026 2 Termine']) {
+			expect(listingsOf(runEdited(STARNBERG, { 'starnberg/list.html': [['Fr. 11.12.2026 15:30', text]] }))[0]).toMatchObject({ time: '15:30' });
+			const untimed = runEdited(STARNBERG, { 'starnberg/list.html': [['Fr. 11.12.2026 15:30', text]], 'starnberg/262-3479-S.html': [['15:30 Uhr', '']] });
+			expect(listingsOf(untimed)[0]).toMatchObject({ date: '2026-12-11', time: null });
+		}
+	});
+
+	it('a time-shaped non-time (25:00) in the row → failed(date-unparseable)', () => {
+		expect(runEdited(STARNBERG, { 'starnberg/list.html': [['Fr. 11.12.2026 15:30', 'Fr. 11.12.2026 25:00']] })).toEqual({ kind: 'failed', reason: 'date-unparseable' });
+	});
+
+	it('a time-shaped non-time (25:00) in the Start block → failed(date-unparseable)', () => {
+		const result = runEdited(STARNBERG, {
+			'starnberg/list.html': [['Fr. 11.12.2026 15:30', 'Fr. 11.12.2026']],
+			'starnberg/262-3479-S.html': [['15:30 Uhr', '25:00 Uhr']],
+		});
+		expect(result).toEqual({ kind: 'failed', reason: 'date-unparseable' });
 	});
 
 	it('a non-empty row date that is no D.M.YYYY ("Fr. 11.12.26") is a test row → failed(date-unparseable)', () => {
@@ -608,6 +654,21 @@ describe('newer theme (`.course-list[data-arguments]`), from the coverage cache 
 		const list: FetchedPage = { url: 'https://a.de/l', role: 'list', status: 200, html: card, finalUrl: null };
 		const result = itemkgReader.parse([list], deggendorf, CTX);
 		expect(result.kind === 'ok' && result.listings.map((l) => l.source_url)).toEqual(['https://a.de/kurs/einbuergerungstest/1']);
+	});
+
+	it('a newer-theme card with a blank start time → untimed (Story 3.10); an unreadable one fails', () => {
+		const card = (time: string): FetchedPage => ({
+			url: 'https://a.de/l',
+			role: 'list',
+			status: 200,
+			html:
+				'<div class="course-list" data-arguments="[]"><article><h2 class="title"><a href="/kurs/einbuergerungstest/1">Einbürgerungstest</a></h2>' +
+				`<span class="start-date">13.11.2026</span><span class="start-time">${time}</span></article></div>`,
+			finalUrl: null,
+		});
+		const blank = itemkgReader.parse([card(' ')], deggendorf, CTX);
+		expect(blank.kind === 'ok' && blank.listings.map((l) => [l.date, l.time])).toEqual([['2026-11-13', null]]);
+		expect(itemkgReader.parse([card('9.30 Uhr')], deggendorf, CTX)).toEqual({ kind: 'failed', reason: 'date-unparseable' });
 	});
 });
 

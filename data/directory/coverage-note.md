@@ -47,6 +47,12 @@ after the 9 reader assignments of commit 1db82c9. Coverage = (`parsed` + `parsed
 
 No `reader_config` or `test_page_url` of an assigned centre was changed.
 
+Since Story 3.10 (2026-11-01): `muenchner-vhs-gmbh` parses. The reader reads a date with no
+published time as `time: null`, so the cached MVHS pages give `parsed` with 1 listing (22.01.2027,
+time not published yet). The fixture has two test rows, but the cached live page lists one test
+date (22.01.2027); its other two dates (05.12.2026, 16.01.2027) are the "Deutsch Geschichte und
+Politik von A-Z" prep course. The table above keeps the result as recorded.
+
 ## CMX
 
 New reader `cmx` (`pipeline/readers/cmx/`, fixtures Germering, Dachau, Buchloe, Kempten and a CMX
@@ -94,3 +100,6 @@ Freyung-Grafenau or inlingua München).
 | `vhs-des-lk-freyung-grafenau` | none | no-reader | no course list; only past dates in free text |
 | `muenchner-vhs-gmbh` | itemkg | failed `date-unparseable` | MVHS publishes no start time |
 | `vhs-muehldorf-e-v` | kuferweb | failed `detail-page` | a detail page answered HTTP 500 |
+
+Since Story 3.10 (2026-11-01): `muenchner-vhs-gmbh` is no longer in this list; it parses its dates
+with the time "not published yet". The table above is kept as recorded.

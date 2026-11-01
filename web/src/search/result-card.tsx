@@ -85,8 +85,10 @@ export function ResultCard({ result, now }: { result: DatedResult; now: number }
 	const testPage = !listing.link_ok && centre.test_page_url !== null;
 
 	const deadline = deadlineState(listing.deadline, now, lang);
+	// An untimed date (Story 3.10) says so in place of the time; the longer text may wrap.
+	const timeUnknown = listing.time_known ? null : t('card.time_unknown');
 	const meta: MetaPart[] = [
-		{ text: cardTime(listing.starts_at), nowrap: true },
+		timeUnknown === null ? { text: cardTime(listing.starts_at), nowrap: true } : { text: timeUnknown },
 		{ text: distanceText(distanceKm, t), nowrap: true },
 		deadline.kind === 'unknown'
 			? { text: t('card.deadline_unknown') }
@@ -97,7 +99,7 @@ export function ResultCard({ result, now }: { result: DatedResult; now: number }
 
 	const fresh = isNew(listing, now);
 	const label = t(fresh ? 'card.result_link_label_new' : 'card.result_link_label', {
-		date: cardDate(listing.starts_at, lang),
+		date: cardDate(listing.starts_at, lang, timeUnknown ?? undefined),
 		address: listing.address,
 		name: centre.name,
 		status: statusSpoken,

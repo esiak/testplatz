@@ -33,6 +33,7 @@ const stored = (centreId: string, startsAt: string, extra: Partial<StoredListing
 	id: `${centreId}@${startsAt.slice(0, 16)}`,
 	centre_id: centreId,
 	starts_at: startsAt,
+	time_known: true,
 	place: null,
 	address: 'Hauptstraße 1, 80331 München',
 	status: 'free',
@@ -74,7 +75,7 @@ const input = (extra: Partial<RunReportInput> = {}): RunReportInput => ({
 	...extra,
 });
 
-const ok = (count = 0): LocatedOutcome => ({ kind: 'ok', listings: Array.from({ length: count }, () => ({}) as never) });
+const ok = (count = 0): LocatedOutcome => ({ kind: 'ok', listings: Array.from({ length: count }, () => ({}) as never), carriedFrom: {} });
 
 describe('buildRunReport: every fetched centre failed', () => {
 	it('is set with ≥ 1 failed and 0 ok, skipped not counting as fetched', () => {
@@ -149,6 +150,12 @@ describe('buildRunReport: dates disappeared', () => {
 		expect(disappeared(prior, ok(1))).toEqual([]);
 		expect(disappeared(prior, { kind: 'failed', reason: 'list-page' } as LocatedOutcome)).toEqual([]);
 		expect(disappeared([])).toEqual([]);
+	});
+
+	it('counts an untimed prior listing of the run\'s Berlin date, not one of the previous day (Story 3.10)', () => {
+		const untimed = (date: string) => stored('a', `${date}T00:00:00+01:00`, { id: `a@${date}`, time_known: false });
+		expect(disappeared([untimed('2026-10-29')])).toEqual([{ centre_id: 'a', name: 'Centre a' }]);
+		expect(disappeared([untimed('2026-10-28')])).toEqual([]);
 	});
 
 	it('files the centre under its own reader system only', () => {

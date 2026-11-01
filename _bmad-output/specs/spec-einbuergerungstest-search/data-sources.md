@@ -15,7 +15,8 @@ Counts come from homepage fingerprints (2026-10-25), not from each site's test p
 | Field | Required | Notes |
 |---|---|---|
 | centre_id | yes | links to directory entry |
-| starts_at | yes | date and time, Europe/Berlin |
+| starts_at | yes | date and time, Europe/Berlin; 00:00 Europe/Berlin when `time_known` is false |
+| time_known | yes | `false` when the page states the date but no start time yet (the reader's raw `time` is then `null`; shown as "Time not published yet"); such a date stays current until the end of its Berlin day (Story 3.10) |
 | place | no | room, if given; `null` otherwise |
 | address | yes | full street address of the test location; falls back to the centre address |
 | lat, lon | no | coordinates of the test address (geocoded by the pipeline); the centre's coordinates when the date has no address or it cannot be located; `null` only if neither is known |

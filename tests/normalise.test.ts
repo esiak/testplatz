@@ -63,6 +63,7 @@ describe('normaliseCentre', () => {
 				id: 'c@2026-11-12T10:00',
 				centre_id: 'c',
 				starts_at: '2026-11-12T10:00:00+01:00',
+				time_known: true,
 				place: 'Raum 1',
 				address: 'Pfarrstraße 6, 86316 Friedberg',
 				status: 'free',
@@ -208,6 +209,102 @@ describe('normaliseCentre', () => {
 	});
 });
 
+describe('untimed dates (Story 3.10)', () => {
+	const untimed = (extra: Partial<RawListing> = {}) => raw({ date: '2026-12-04', time: null, ...extra });
+
+	it('gives starts_at 00:00 Europe/Berlin, time_known false and a date-only id', () => {
+		const [listing] = normaliseCentre(C, [untimed()], [detail('https://a.de/k/1')]);
+		expect(listing).toMatchObject({ id: 'c@2026-12-04', starts_at: '2026-12-04T00:00:00+01:00', time_known: false });
+		expect(listingSchema.safeParse(listing).success).toBe(true);
+	});
+
+	it('uses the summer offset in summer and keeps time_known true for timed dates', () => {
+		expect(normaliseCentre(C, [untimed({ date: '2026-07-14' })], [])[0]).toMatchObject({ id: 'c@2026-07-14', starts_at: '2026-07-14T00:00:00+02:00' });
+		expect(normaliseCentre(C, [raw()], [])[0]!.time_known).toBe(true);
+	});
+
+	it('numbers two untimed dates on one day #2 like same-minute dates', () => {
+		const listings = normaliseCentre(C, [untimed({ place: 'B' }), untimed({ place: 'A' })], []);
+		expect(listings.map((l) => [l.id, l.place])).toEqual([
+			['c@2026-12-04', 'A'],
+			['c@2026-12-04#2', 'B'],
+		]);
+		expect(listings.every((l) => listingSchema.safeParse(l).success)).toBe(true);
+	});
+
+	it('an untimed and a timed date on one day coexist with their own ids', () => {
+		const listings = normaliseCentre(C, [raw({ date: '2026-12-04', time: '10:00' }), untimed()], []);
+		expect(listings.map((l) => [l.id, l.time_known])).toEqual([
+			['c@2026-12-04', false],
+			['c@2026-12-04T10:00', true],
+		]);
+	});
+
+	it('keeps an untimed id stable from stored listings (Story 3.8 matching)', () => {
+		const previous: PriorListing[] = [
+			{ id: 'c@2026-12-04', place: 'B', source_url: 'https://a.de/k/b' },
+			{ id: 'c@2026-12-04#2', place: 'A', source_url: 'https://a.de/k/a' },
+		];
+		const listings = normaliseCentre(C, [untimed({ place: 'A', source_url: 'https://a.de/k/a' }), untimed({ place: 'B', source_url: 'https://a.de/k/b' })], [], previous);
+		expect(listings.map((l) => [l.id, l.place])).toEqual([
+			['c@2026-12-04', 'B'],
+			['c@2026-12-04#2', 'A'],
+		]);
+	});
+
+	describe('history carry-over (carriedFrom)', () => {
+		const carried = (rawListings: RawListing[], previous: PriorListing[]) => {
+			const outcome = normaliseOutcome(C, { kind: 'ok', listings: rawListings }, [], previous);
+			if (outcome.kind !== 'ok') throw new Error('expected ok');
+			return { ids: outcome.listings.map((l) => l.id), carriedFrom: outcome.carriedFrom };
+		};
+		const url = 'https://a.de/k/1';
+
+		it('time appears: the timed listing carries the stored untimed id (same URL and place)', () => {
+			expect(carried([raw({ date: '2026-12-04', time: '09:00', place: 'R1' })], [{ id: 'c@2026-12-04', place: 'R1', source_url: url }])).toEqual({
+				ids: ['c@2026-12-04T09:00'],
+				carriedFrom: { 'c@2026-12-04T09:00': 'c@2026-12-04' },
+			});
+		});
+
+		it('time disappears: the untimed listing carries the stored timed id (same URL)', () => {
+			expect(carried([untimed()], [{ id: 'c@2026-12-04T09:00', place: null, source_url: url }])).toEqual({
+				ids: ['c@2026-12-04'],
+				carriedFrom: { 'c@2026-12-04': 'c@2026-12-04T09:00' },
+			});
+		});
+
+		it('no match (other URL, other place): nothing is carried', () => {
+			const result = carried([raw({ date: '2026-12-04', time: '09:00', place: 'R2', source_url: 'https://a.de/k/b' })], [{ id: 'c@2026-12-04', place: 'R1', source_url: url }]);
+			expect(result.carriedFrom).toEqual({});
+		});
+
+		it('only another date, or the same timedness, never carries', () => {
+			expect(carried([raw({ date: '2026-12-05', time: '09:00' })], [{ id: 'c@2026-12-04', place: null, source_url: url }]).carriedFrom).toEqual({});
+			expect(carried([raw({ date: '2026-12-04', time: '09:00' })], [{ id: 'c@2026-12-04T10:00', place: null, source_url: url }]).carriedFrom).toEqual({});
+		});
+
+		it('a stored id this run still produces is not carried from; a listing that kept its id carries nothing', () => {
+			const previous: PriorListing[] = [{ id: 'c@2026-12-04', place: null, source_url: url }];
+			expect(carried([untimed(), raw({ date: '2026-12-04', time: '09:00' })], previous)).toEqual({
+				ids: ['c@2026-12-04', 'c@2026-12-04T09:00'],
+				carriedFrom: {},
+			});
+		});
+
+		it('live before tombstoned, each stored listing at most once', () => {
+			const previous: PriorListing[] = [
+				{ id: 'c@2026-12-04', place: null, source_url: url, removed_at: '2026-10-28T05:17:00.000Z' },
+				{ id: 'c@2026-12-04#2', place: null, source_url: url, removed_at: null },
+			];
+			expect(carried([raw({ date: '2026-12-04', time: '09:00' })], previous).carriedFrom).toEqual({ 'c@2026-12-04T09:00': 'c@2026-12-04#2' });
+			const both = carried([raw({ date: '2026-12-04', time: '09:00' }), raw({ date: '2026-12-04', time: '11:00' })], previous).carriedFrom;
+			expect(Object.keys(both)).toHaveLength(2);
+			expect(new Set(Object.values(both))).toEqual(new Set(['c@2026-12-04', 'c@2026-12-04#2']));
+		});
+	});
+});
+
 describe('normaliseOutcome', () => {
 	it('passes failed and skipped through unchanged', () => {
 		expect(normaliseOutcome(C, { kind: 'failed', reason: 'list-page' }, [], [])).toEqual({ kind: 'failed', reason: 'list-page' });
@@ -219,6 +316,7 @@ describe('normaliseOutcome', () => {
 			kind: 'ok',
 			listings: normaliseCentre(C, [raw()], [detail('https://a.de/k/1')]),
 			centreAddressIds: [],
+			carriedFrom: {},
 		});
 	});
 
