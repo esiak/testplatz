@@ -11,3 +11,9 @@ export { VISIT_LOG_PATH } from '../fetch/visits.ts';
 export const STATE_PATH = fileURLToPath(new URL('../../data/state/state.json', import.meta.url));
 /** The venue cache (FR36); only `pipeline/stages/merge.ts` writes it. */
 export const VENUES_PATH = fileURLToPath(new URL('../../data/state/venues.json', import.meta.url));
+/** The local coverage script's working directory (Story 4.2); gitignored, never committed. */
+export const COVERAGE_DIR = fileURLToPath(new URL('../../data/coverage', import.meta.url));
+/** One JSON file per fetched URL, written only by `coverage-script.ts --fetch`. */
+export const COVERAGE_CACHE_DIR = join(COVERAGE_DIR, 'cache');
+/** Reader assignments proposed for reader-`none` centres, for operator review. */
+export const READER_PROPOSALS_PATH = join(COVERAGE_DIR, 'reader-proposals.json');

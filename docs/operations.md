@@ -111,6 +111,44 @@ run. A centre whose test page publishes its dates only as PDFs can be marked wit
 in `data/directory/centres.json` (reader `none` only): it counts as `pdf-only`, outside the
 denominator, and stays "not checked automatically" on the site.
 
+#### Coverage script (local only)
+
+`npm run coverage` measures and raises coverage on the operator's machine (Story 4.2). It **never
+runs in CI or on a schedule**; no workflow references it.
+
+```
+npm run coverage                          # parse the cache offline: no network request at all
+npm run coverage -- --fetch               # fetch pages not yet cached, then parse
+npm run coverage -- --fetch --refresh     # refetch every page, then parse
+npm run coverage -- --json data/coverage/report.json   # … and also write the report as JSON (no page bodies)
+```
+
+- **Cache.** `--fetch` stores one JSON file per URL in `data/coverage/cache/` (gitignored with the
+  rest of `data/coverage/`): `url`, `fetched_at`, `result` (`ok`, `unreachable`, `robots`,
+  `budget`), `status`, `final_url` and `html` (only for `ok`). A cached URL is not requested again
+  unless `--refresh`; a `budget` entry is retried by every `--fetch`. Delete the folder to start
+  over. Without `--fetch` the script reads only this cache, so it can be re-run as often as needed.
+- **What is fetched.** For each centre that is not opted out or `pdf_only`: the list pages its
+  reader plans and their detail pages; for a reader-`none` centre its `test_page_url`, plus the
+  detail pages of every existing reader whose structure check finds its list on that page. All
+  requests go through `pipeline/fetch` (bot user agent, robots.txt, per-host delay, timeout).
+- **Visit budget.** The budget is read from the local `data/state/visits.json`, which every daily
+  run updates on `main`: **`git pull` before `--fetch`** so it is current. A host with 4 visits in
+  the last 24 h is not contacted; its centres report `budget`. Every host contacted is added to
+  `data/state/visits.json`. **Commit `data/state/visits.json` after every `--fetch`**, also one
+  that failed, so the next daily run respects those visits.
+- **Report.** One row per centre (category, failure reason, listings, reader), then a "Reader
+  `none` centres" section with every existing reader tried on every reader-`none` centre whose
+  test page is cached (outcome, reason, listings), then the coverage line (same format as above) and the number of proposals.
+  A reader centre missing from the cache counts as `failed` with reason `not-fetched`, so an
+  incomplete cache never makes coverage look better.
+- **Proposals.** Readers that parse a reader-`none` centre (`parsed` or `parsed-empty`) are written
+  to `data/coverage/reader-proposals.json` as `{centre_id, reader, outcome, listings}`. The script
+  never edits `data/directory/centres.json`. To apply one: check the centre's page, set its
+  `reader` in `centres.json` (add `reader_config.list_url` only when the list is not the
+  `test_page_url`), run `npm run check:directory` and `npm test`, re-run `npm run coverage` to see
+  it parse under the new reader, and commit the directory change.
+
 ## Alerts
 
 The `monitor` job runs after every `pipeline.yml` run on `main`, whatever the result. It holds only

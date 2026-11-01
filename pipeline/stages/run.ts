@@ -79,7 +79,7 @@ export interface RunOptions {
 }
 
 /** The directory at `path`, validated. Throws, naming the path. */
-function readDirectory(path: string): Centre[] {
+export function readDirectory(path: string): Centre[] {
 	let data: unknown;
 	try {
 		data = JSON.parse(readFileSync(path, 'utf8'));
