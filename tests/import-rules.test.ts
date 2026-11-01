@@ -130,6 +130,9 @@ function ruleFor(from: Layer | null, to: Layer | null, toPath: string): string {
 const isAllowed = (from: Layer | null, to: Layer | null): boolean =>
 	from !== null && from !== 'package.json' && to !== null && (to === from || ALLOWED[from].includes(to));
 
+/** Shared modules the site must not import: `shared/test-page.ts` pulls in cheerio. */
+const WEB_EXCLUDED_SHARED = /^shared\/test-page(\.[mc]?[jt]sx?)?$/;
+
 export function checkImports(files: SourceFile[]): Violation[] {
 	const violations: Violation[] = [];
 	for (const file of files) {
@@ -144,6 +147,7 @@ export function checkImports(files: SourceFile[]): Violation[] {
 			}
 			const to = layerOf(target.path);
 			if (!isAllowed(from, to)) flag(ruleFor(from, to, target.path));
+			else if (from === 'web' && WEB_EXCLUDED_SHARED.test(target.path)) flag('web must not import shared/test-page.ts (cheerio stays out of the site)');
 		}
 	}
 	return violations;
@@ -220,6 +224,11 @@ describe('import rules checker', () => {
 		]);
 		expect(violations.map((v) => v.file)).toEqual(['web/src/app.tsx', 'web/src/deep/x.ts', 'web/src/y.ts', 'web/scripts/z.mjs']);
 		expect(violations.every((v) => v.rule === 'web must not import pipeline or tools')).toBe(true);
+	});
+
+	it('flags web importing shared/test-page.ts', () => {
+		const violations = checkImports([{ path: 'web/src/x.ts', source: "import { findTestLink } from '../../shared/test-page.ts';" }]);
+		expect(violations.map((v) => v.rule)).toEqual(['web must not import shared/test-page.ts (cheerio stays out of the site)']);
 	});
 
 	it('flags shared importing pipeline', () => {

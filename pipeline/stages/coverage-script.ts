@@ -5,7 +5,13 @@
  *   node pipeline/stages/coverage-script.ts                     # parse the cache offline, no network
  *   node pipeline/stages/coverage-script.ts --fetch             # fetch uncached pages, then parse
  *   node pipeline/stages/coverage-script.ts --fetch --refresh   # refetch every page, then parse
+ *   node pipeline/stages/coverage-script.ts --discover          # look for missing test pages, then parse
  *   node pipeline/stages/coverage-script.ts --json <file>       # … and write the report as JSON
+ *
+ * `--discover` (Story 4.3) looks for the Einbürgerungstest page of every centre without a
+ * `test_page_url` (not opted out, not PDF-only): its origin's `/sitemap.xml`, its `website` page,
+ * then one follow-up page, at most 3 page requests per host, through the same cache, client and
+ * visit budget as `--fetch`. Proposals go to `data/coverage/test-page-proposals.json` for review.
  *
  * `--fetch` fetches each centre's pages once through the polite client (`pipeline/fetch`) into
  * `data/coverage/cache/`: the list pages its reader plans and their detail pages; for a reader-
@@ -22,16 +28,17 @@
  */
 import { parseArgs } from 'node:util';
 import { buildCoverage, classifyCentre, formatCoverageLine, type Coverage, type CoverageCategory, type CoverageOutcome } from '../../shared/coverage.ts';
-import type { Centre } from '../../shared/directory.ts';
+import { isHttpUrl, type Centre } from '../../shared/directory.ts';
 import { dedupeUrls, isFetchableUrl, selectDetailUrls, type FetchedPage, type ParseContext, type ParseResult, type Reader, type ReaderPlan } from '../../shared/reader.ts';
+import { DISCOVERY_PATTERNS, findSitemapLoc, findTestLink, FOLLOW_UP_PATTERN, pageTitle, siteHost } from '../../shared/test-page.ts';
 import type { Visit } from '../../shared/visits.ts';
-import { createFetchClient, type FetchClient, type FetchClientOptions } from '../fetch/index.ts';
+import { createFetchClient, type FetchClient, type FetchClientOptions, type FetchResult } from '../fetch/index.ts';
 import { overBudget, readVisitLog } from '../fetch/visits.ts';
 import type { ReaderRegistry } from './collect.ts';
 import { readCacheEntry, writeCacheEntry, writeJsonAtomic, type CacheEntry } from './coverage-cache.ts';
 import { mergeVisitLog, writeVisitLog } from './merge.ts';
 import { parseCentre } from './parse.ts';
-import { COVERAGE_CACHE_DIR, DIRECTORY_PATH, READER_PROPOSALS_PATH, VISIT_LOG_PATH } from './paths.ts';
+import { COVERAGE_CACHE_DIR, DIRECTORY_PATH, READER_PROPOSALS_PATH, TEST_PAGE_PROPOSALS_PATH, VISIT_LOG_PATH } from './paths.ts';
 import { READER_REGISTRY, readDirectory } from './run.ts';
 
 export interface CoverageOptions {
@@ -39,12 +46,14 @@ export interface CoverageOptions {
 	cacheDir?: string;
 	visitLogPath?: string;
 	proposalsPath?: string;
+	/** The `--discover` review file. */
+	testPageProposalsPath?: string;
 	/** The run's clock: `runAt` for visits, cache timestamps and the readers' `ctx`. */
 	now?: () => Date;
 	readers?: ReaderRegistry;
 	/** Transport options for the fetch client (tests pass a fake `fetchImpl`); `isHostBlocked` is always the visit budget. */
 	clientOptions?: Omit<FetchClientOptions, 'isHostBlocked'>;
-	/** Refetch cached URLs (`--fetch` only). */
+	/** Refetch cached URLs (`--fetch` and `--discover` only). */
 	refresh?: boolean;
 }
 
@@ -123,6 +132,14 @@ const matches = (reader: Reader, centre: Centre, listPages: readonly FetchedPage
 /** The centres the script looks at: not opted out, not PDF-only. */
 const inReach = (centre: Centre): boolean => !centre.opted_out && centre.pdf_only !== true;
 
+/** The cache entry one fetch result comes to. */
+function cacheEntryOf(url: string, at: string, result: FetchResult): CacheEntry {
+	if (result.ok) return { url, fetched_at: at, result: 'ok', status: result.status, final_url: result.url, html: result.text };
+	if (result.reason === 'host-blocked') return { url, fetched_at: at, result: 'budget', status: null, final_url: null, html: null };
+	if (result.reason === 'robots-disallowed') return { url, fetched_at: at, result: 'robots', status: null, final_url: null, html: null };
+	return { url, fetched_at: at, result: 'unreachable', status: result.status, final_url: result.status === null ? null : result.url, html: null };
+}
+
 const listPageOf = (entry: CacheEntry): FetchedPage => ({ url: entry.url, role: 'list', status: entry.status, html: entry.html, finalUrl: entry.final_url });
 
 // ---------------------------------------------------------------------------------------------
@@ -156,11 +173,7 @@ export async function fetchCoverage(options: CoverageOptions = {}): Promise<Fetc
 		} else {
 			fetched++;
 		}
-		let entry: CacheEntry;
-		if (result.ok) entry = { url, fetched_at: at, result: 'ok', status: result.status, final_url: result.url, html: result.text };
-		else if (result.reason === 'host-blocked') entry = { url, fetched_at: at, result: 'budget', status: null, final_url: null, html: null };
-		else if (result.reason === 'robots-disallowed') entry = { url, fetched_at: at, result: 'robots', status: null, final_url: null, html: null };
-		else entry = { url, fetched_at: at, result: 'unreachable', status: result.status, final_url: result.status === null ? null : result.url, html: null };
+		const entry = cacheEntryOf(url, at, result);
 		writeCacheEntry(cacheDir, entry);
 		return entry;
 	}
@@ -351,6 +364,179 @@ export function parseCoverage(options: CoverageOptions = {}): CoverageReport {
 }
 
 // ---------------------------------------------------------------------------------------------
+// Discover test pages (Story 4.3)
+// ---------------------------------------------------------------------------------------------
+
+/** At most this many page requests per host in one `--discover` run; robots.txt and redirect hops do not count. */
+export const DISCOVERY_REQUESTS_PER_HOST = 3;
+
+export type DiscoverySource = 'sitemap' | 'website' | 'follow-up';
+
+/** One scoped centre in `test-page-proposals.json`. */
+export interface TestPageProposal {
+	centre_id: string;
+	website: string | null;
+	proposed_url: string | null;
+	source: DiscoverySource | null;
+	/** The matched link text, the sitemap URL, or why nothing was proposed (`no website`, `budget`, `robots`, `unreachable`, `not found`). */
+	evidence: string;
+}
+
+export interface DiscoverySummary extends FetchSummary {
+	/** One per scoped centre, sorted by `centre_id`. */
+	proposals: TestPageProposal[];
+}
+
+/** The centres discovery looks at: in reach and without a test page. */
+const needsTestPage = (centre: Centre): boolean => inReach(centre) && centre.test_page_url === null;
+
+const unique = (values: readonly (string | null)[]): string[] => [...new Set(values.filter((v): v is string => v !== null))];
+
+/**
+ * Looks for the test page of every in-reach centre without a `test_page_url`: its origin's
+ * `/sitemap.xml`, then its `website` page, then one follow-up page linked from it, stopping at the
+ * first match. Pages come through the cache and one polite client with the visit budget; at most
+ * `DISCOVERY_REQUESTS_PER_HOST` page requests per host, cached pages cost none. Records the visits
+ * like `fetchCoverage`, writes the review file and never writes the directory.
+ */
+export async function discoverTestPages(options: CoverageOptions = {}): Promise<DiscoverySummary> {
+	const {
+		directoryPath = DIRECTORY_PATH,
+		cacheDir = COVERAGE_CACHE_DIR,
+		visitLogPath = VISIT_LOG_PATH,
+		testPageProposalsPath = TEST_PAGE_PROPOSALS_PATH,
+		now = () => new Date(),
+		refresh = false,
+	} = options;
+	const directory = readDirectory(directoryPath);
+	const log: Visit[] = readVisitLog(visitLogPath);
+	const runAt = now();
+	const at = runAt.toISOString();
+	const client: FetchClient = createFetchClient({ ...options.clientOptions, isHostBlocked: (host) => overBudget(log, host, runAt) });
+
+	let fetched = 0;
+	let cached = 0;
+	/** Page requests sent per host this run. */
+	const sent = new Map<string, number>();
+	const inRun = new Map<string, Promise<CacheEntry>>();
+
+	async function request(url: string, host: string): Promise<CacheEntry> {
+		const result = await client.get(url);
+		if (!result.ok && (result.reason === 'host-blocked' || result.reason === 'robots-disallowed')) {
+			// Stopped at the requested URL itself: nothing was sent to its host for this page, so no page request.
+			if (result.url === new URL(url).href) sent.set(host, (sent.get(host) ?? 1) - 1);
+			const kept = refresh && result.reason === 'host-blocked' ? readCacheEntry(cacheDir, url) : null;
+			if (kept !== null && kept.result === 'ok') return kept;
+		} else {
+			fetched++;
+		}
+		const entry = cacheEntryOf(url, at, result);
+		writeCacheEntry(cacheDir, entry);
+		return entry;
+	}
+
+	/** The page at `url` from this run, the cache or the network; `'capped'` when its host has used its page requests. */
+	function page(url: string): Promise<CacheEntry | 'capped'> {
+		const known = inRun.get(url);
+		if (known !== undefined) return known;
+		const hit = refresh ? null : readCacheEntry(cacheDir, url);
+		let entry: Promise<CacheEntry>;
+		if (hit !== null && hit.result !== 'budget') {
+			cached++;
+			entry = Promise.resolve(hit);
+		} else {
+			const host = new URL(url).host;
+			const used = sent.get(host) ?? 0;
+			if (used >= DISCOVERY_REQUESTS_PER_HOST) return Promise.resolve('capped');
+			sent.set(host, used + 1);
+			entry = request(url, host);
+		}
+		inRun.set(url, entry);
+		return entry;
+	}
+
+	const usable = (entry: CacheEntry | 'capped'): entry is CacheEntry & { html: string } => entry !== 'capped' && entry.result === 'ok';
+	const limited = (entry: CacheEntry | 'capped'): boolean => entry === 'capped' || entry.result === 'budget';
+
+	async function discover(centre: Centre): Promise<TestPageProposal> {
+		const base = { centre_id: centre.centre_id, website: centre.website };
+		const none = (evidence: string): TestPageProposal => ({ ...base, proposed_url: null, source: null, evidence });
+		const found = (url: string, source: DiscoverySource, evidence: string): TestPageProposal => ({ ...base, proposed_url: url, source, evidence });
+		const website = centre.website;
+		if (website === null || !isFetchableUrl(website)) return none('no website');
+		const hosts = unique([siteHost(website)]);
+		/** A page was skipped for the visit budget or the per-host request cap. */
+		let budget = false;
+
+		// 1. The origin's sitemap.
+		const sitemapUrl = new URL('/sitemap.xml', website).href;
+		const sitemap = await page(sitemapUrl);
+		budget ||= limited(sitemap);
+		if (usable(sitemap)) {
+			const loc = findSitemapLoc(sitemap.html, hosts, DISCOVERY_PATTERNS);
+			if (loc !== null && isHttpUrl(loc)) return found(loc, 'sitemap', sitemapUrl);
+		}
+
+		// 2. The website page.
+		const home = await page(website);
+		if (!usable(home)) {
+			if (home === 'capped' || home.result === 'budget') return none('budget');
+			return none(home.result === 'robots' ? 'robots' : 'unreachable');
+		}
+		const homeUrl = home.final_url ?? website;
+		const homeHosts = unique([...hosts, siteHost(homeUrl)]);
+		const exclude = unique([website, homeUrl]);
+		const link = findTestLink(home.html, homeUrl, homeHosts, DISCOVERY_PATTERNS, { matchTitle: true, exclude, skipFiles: true });
+		if (link !== null && isHttpUrl(link.url)) return found(link.url, 'website', link.text);
+
+		// 3. One follow-up page.
+		const follow = findTestLink(home.html, homeUrl, homeHosts, FOLLOW_UP_PATTERN, { exclude, skipFiles: true, skipLanguageLinks: true });
+		if (follow !== null) {
+			const next = await page(follow.url);
+			budget ||= limited(next);
+			if (usable(next)) {
+				const nextUrl = next.final_url ?? follow.url;
+				const hit = findTestLink(next.html, nextUrl, homeHosts, DISCOVERY_PATTERNS, { matchTitle: true, exclude: unique([follow.url, nextUrl]), skipFiles: true });
+				if (hit !== null && isHttpUrl(hit.url)) return found(hit.url, 'follow-up', `${hit.text} (on ${pageTitle(next.html) ?? nextUrl})`);
+			}
+		}
+		return none(budget ? 'budget' : 'not found');
+	}
+
+	// Centres sharing a website host (`www.` ignored) run one after another, a fixed order for the request cap; hosts in parallel.
+	const scoped = directory.filter(needsTestPage);
+	const groups = new Map<string, Centre[]>();
+	for (const centre of scoped) {
+		const key = centre.website !== null && isFetchableUrl(centre.website) ? siteHost(centre.website)! : `(none) ${centre.centre_id}`;
+		groups.set(key, [...(groups.get(key) ?? []), centre]);
+	}
+	const proposals: TestPageProposal[] = [];
+	const settled = await Promise.allSettled(
+		[...groups.values()].map(async (group) => {
+			for (const centre of group) proposals.push(await discover(centre));
+		}),
+	);
+	const hosts = Object.keys(client.stats().rawRequests).sort();
+	if (hosts.length > 0) writeVisitLog(mergeVisitLog(log, hosts.map((host) => ({ host, at })), runAt), visitLogPath);
+	const rejected = settled.find((result): result is PromiseRejectedResult => result.status === 'rejected');
+	if (rejected !== undefined) throw rejected.reason;
+	proposals.sort((a, b) => compare(a.centre_id, b.centre_id));
+	writeJsonAtomic(testPageProposalsPath, proposals);
+	return { fetched, cached, hosts, proposals };
+}
+
+/** The discovery review as printed: one row per scoped centre, then the count line. */
+export function formatDiscovery(proposals: readonly TestPageProposal[], path: string = TEST_PAGE_PROPOSALS_PATH): string[] {
+	const lines = table(
+		['centre', 'source', 'proposed', 'evidence'],
+		proposals.map((p) => [p.centre_id, p.source ?? '-', p.proposed_url ?? '-', p.evidence]),
+	);
+	const count = proposals.filter((p) => p.proposed_url !== null).length;
+	lines.push('', `test pages proposed ${count} of ${proposals.length} centres without one (written to ${path})`);
+	return lines;
+}
+
+// ---------------------------------------------------------------------------------------------
 // Output
 // ---------------------------------------------------------------------------------------------
 
@@ -376,15 +562,30 @@ export function formatReport(report: CoverageReport, proposalsPath: string = REA
 
 export interface CliOptions extends CoverageOptions {
 	fetch?: boolean;
+	discover?: boolean;
 	jsonPath?: string;
 	log?: (line: string) => void;
 	error?: (line: string) => void;
 }
 
-/** Runs the script: `fetch` first when asked, then the offline parse. Returns the exit code. */
+/** Runs the script: `discover` or `fetch` first when asked, then the offline parse. Returns the exit code. */
 export async function runCoverage(options: CliOptions = {}): Promise<number> {
 	const { log = console.log, error = console.error } = options;
 	try {
+		if (options.discover === true) {
+			let summary: DiscoverySummary;
+			try {
+				summary = await discoverTestPages(options);
+			} catch (caught) {
+				error((caught as Error).message);
+				error(`discover failed: ${options.visitLogPath ?? VISIT_LOG_PATH} may have been updated with this run's visits; commit it`);
+				return 1;
+			}
+			log(`discover: ${summary.fetched} requested, ${summary.cached} from cache, ${summary.hosts.length} hosts contacted`);
+			for (const line of formatDiscovery(summary.proposals, options.testPageProposalsPath)) log(line);
+			if (summary.hosts.length > 0) log(`visits recorded in ${options.visitLogPath ?? VISIT_LOG_PATH}: commit it`);
+			log('');
+		}
 		if (options.fetch === true) {
 			let summary: FetchSummary;
 			try {
@@ -407,18 +608,29 @@ export async function runCoverage(options: CliOptions = {}): Promise<number> {
 	}
 }
 
-const USAGE = 'usage: node pipeline/stages/coverage-script.ts [--fetch [--refresh]] [--json <file>]';
+const USAGE = 'usage: node pipeline/stages/coverage-script.ts [--fetch [--refresh] | --discover [--refresh]] [--json <file>]';
 
 /** The CLI flags, or an error message. */
-export function parseCliArgs(args: readonly string[]): { fetch: boolean; refresh: boolean; jsonPath?: string } | { error: string } {
-	let values: { fetch?: boolean; refresh?: boolean; json?: string };
+export function parseCliArgs(args: readonly string[]): { fetch: boolean; discover?: true; refresh: boolean; jsonPath?: string } | { error: string } {
+	let values: { fetch?: boolean; discover?: boolean; refresh?: boolean; json?: string };
 	try {
-		({ values } = parseArgs({ args: [...args], options: { fetch: { type: 'boolean' }, refresh: { type: 'boolean' }, json: { type: 'string' } }, strict: true, allowPositionals: false }));
+		({ values } = parseArgs({
+			args: [...args],
+			options: { fetch: { type: 'boolean' }, discover: { type: 'boolean' }, refresh: { type: 'boolean' }, json: { type: 'string' } },
+			strict: true,
+			allowPositionals: false,
+		}));
 	} catch (caught) {
 		return { error: `${(caught as Error).message}\n${USAGE}` };
 	}
-	if (values.refresh === true && values.fetch !== true) return { error: `--refresh needs --fetch\n${USAGE}` };
-	return { fetch: values.fetch === true, refresh: values.refresh === true, ...(values.json === undefined ? {} : { jsonPath: values.json }) };
+	if (values.fetch === true && values.discover === true) return { error: `--fetch and --discover run separately\n${USAGE}` };
+	if (values.refresh === true && values.fetch !== true && values.discover !== true) return { error: `--refresh needs --fetch or --discover\n${USAGE}` };
+	return {
+		fetch: values.fetch === true,
+		...(values.discover === true ? { discover: true as const } : {}),
+		refresh: values.refresh === true,
+		...(values.json === undefined ? {} : { jsonPath: values.json }),
+	};
 }
 
 if (import.meta.main) {

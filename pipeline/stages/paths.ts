@@ -17,3 +17,5 @@ export const COVERAGE_DIR = fileURLToPath(new URL('../../data/coverage', import.
 export const COVERAGE_CACHE_DIR = join(COVERAGE_DIR, 'cache');
 /** Reader assignments proposed for reader-`none` centres, for operator review. */
 export const READER_PROPOSALS_PATH = join(COVERAGE_DIR, 'reader-proposals.json');
+/** Test pages proposed by `--discover` (Story 4.3) for centres without one, for operator review. */
+export const TEST_PAGE_PROPOSALS_PATH = join(COVERAGE_DIR, 'test-page-proposals.json');

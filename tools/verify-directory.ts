@@ -14,9 +14,10 @@ import { load } from 'cheerio';
 import { createFetchClient, nativeFetch, type FetchImpl, type FetchResult, type FetchStats } from '../pipeline/fetch/index.ts';
 import { USER_AGENT } from '../pipeline/config.ts';
 import { directorySchema, serializeDirectory, type Centre, type Reader } from '../shared/directory.ts';
+import { findTestLink as findLink, siteHost, TEST_PATTERN } from '../shared/test-page.ts';
 import { CENTRES_FILE, DIRECTORY_DIR, REVIEW_NOTE_FILE } from './paths.ts';
 
-export const TEST_PATTERN = /einb(ü|ue|u)rgerungstest/i;
+export { siteHost, TEST_PATTERN };
 const KUFERWEB_FINGERPRINT = /\/fileadmin\/kuferweb\/webbasys\//i;
 const ITEMKG_FINGERPRINT = /typo3conf\/ext\/itemkg_|\/p\/[a-z0-9-]+-\d+-CAT-KAT\d+/i;
 const HOST_CONCURRENCY = 4;
@@ -65,12 +66,6 @@ export interface Assessment {
 	notes: string[];
 }
 
-const stripWww = (host: string): string => host.toLowerCase().replace(/^www\./, '');
-
-/** The website's host without `www.`, or null. */
-export const siteHost = (website: string | null): string | null =>
-	website !== null && URL.canParse(website) ? stripWww(new URL(website).hostname) : null;
-
 /** A successful response that is an HTML page (Content-Type missing or containing `html`). */
 export const isHtmlPage = (result: FetchResult | null): boolean =>
 	result !== null && result.ok && (result.contentType === null || /html/i.test(result.contentType));
@@ -107,27 +102,8 @@ export const postcodeInText = (postcode: string, text: string): boolean =>
  * First `<a>` on one of `hosts` (or a subdomain of one) whose text or href names the
  * Einbürgerungstest. `hosts` are given without `www.`.
  */
-export function findTestLink(html: string, baseUrl: string, hosts: readonly string[]): string | null {
-	const $ = load(html);
-	for (const anchor of $('a[href]').toArray()) {
-		const href = $(anchor).attr('href')!.trim();
-		if (!URL.canParse(href, baseUrl)) continue;
-		let decoded = href;
-		try {
-			decoded = decodeURIComponent(href);
-		} catch {
-			// keep the raw href
-		}
-		if (!TEST_PATTERN.test($(anchor).text()) && !TEST_PATTERN.test(decoded)) continue;
-		const url = new URL(href, baseUrl);
-		if (url.protocol !== 'http:' && url.protocol !== 'https:') continue;
-		const linkHost = stripWww(url.hostname);
-		if (!hosts.some((host) => linkHost === host || linkHost.endsWith(`.${host}`))) continue;
-		url.hash = '';
-		return url.href;
-	}
-	return null;
-}
+export const findTestLink = (html: string, baseUrl: string, hosts: readonly string[]): string | null =>
+	findLink(html, baseUrl, hosts, TEST_PATTERN)?.url ?? null;
 
 export function detectReader(htmls: readonly string[]): Reader {
 	const kuferweb = htmls.some((html) => KUFERWEB_FINGERPRINT.test(html));

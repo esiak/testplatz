@@ -120,6 +120,7 @@ runs in CI or on a schedule**; no workflow references it.
 npm run coverage                          # parse the cache offline: no network request at all
 npm run coverage -- --fetch               # fetch pages not yet cached, then parse
 npm run coverage -- --fetch --refresh     # refetch every page, then parse
+npm run coverage -- --discover            # look for missing test pages, then parse
 npm run coverage -- --json data/coverage/report.json   # … and also write the report as JSON (no page bodies)
 ```
 
@@ -148,6 +149,30 @@ npm run coverage -- --json data/coverage/report.json   # … and also write the 
   `reader` in `centres.json` (add `reader_config.list_url` only when the list is not the
   `test_page_url`), run `npm run check:directory` and `npm test`, re-run `npm run coverage` to see
   it parse under the new reader, and commit the directory change.
+- **Discovering test pages.** `--discover` (Story 4.3) looks for the Einbürgerungstest page of every
+  centre without a `test_page_url` (not opted out, not `pdf_only`). Per centre it tries, stopping at
+  the first match: the origin's `/sitemap.xml` (first `<loc>` naming the test), the `website` page
+  (first link on the centre's own host or a subdomain whose text, title or href names it), then
+  one follow-up page linked from the website (Programm, Kurse, Deutsch, Sprache, Integration,
+  Prüfung) and the first matching link there. A link naming "Einbürgerungstest" wins over one
+  that only names "Einbürgerung" or "Leben in Deutschland". It sends **at most 3 page requests per
+  host** per run (robots.txt and redirects not counted), never follows links to other hosts and
+  uses no search engine. Pages go through the same cache, polite client and visit budget as
+  `--fetch` (cached pages cost no request; `--refresh` refetches them), so **commit
+  `data/state/visits.json` afterwards**. `unreachable` and `robots` results are cached too and
+  are retried only with `--refresh` or after deleting that page's cache file; `budget` results
+  are retried by every run. Links to files (PDFs, office documents, images) and language
+  switchers are skipped. It cannot be combined with `--fetch`.
+- **Test page proposals.** `--discover` prints a table and a count line and writes
+  `data/coverage/test-page-proposals.json` (gitignored, rewritten on every `--discover` run): one entry per scoped centre, `{centre_id, website,
+  proposed_url, source, evidence}`, where `source` is `sitemap`, `website`, `follow-up` or `null`
+  and `evidence` is the matched link text or sitemap URL, or why nothing was proposed (`no
+  website`, `budget`, `robots`, `unreachable`, `not found`). `budget` means the host is over its
+  visit budget or used its 3 requests this run: re-run later. The script never edits
+  `centres.json`. To apply a proposal: open the page and check it really lists test dates (a
+  general "Einbürgerung" page is not enough), set the centre's `test_page_url` in
+  `data/directory/centres.json`, run `npm run check:directory`, then `npm run coverage -- --fetch`
+  to fetch the new page and try the readers on it, and commit the directory change.
 
 ## Alerts
 

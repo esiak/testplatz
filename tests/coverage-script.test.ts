@@ -500,9 +500,9 @@ describe('parseCliArgs', () => {
 		expect(parseCliArgs(['--fetch', '--refresh', '--json', 'r.json'])).toEqual({ fetch: true, refresh: true, jsonPath: 'r.json' });
 	});
 
-	it('rejects --refresh without --fetch and unknown flags', () => {
+	it('rejects --refresh without --fetch, and unknown flags', () => {
 		expect(parseCliArgs(['--refresh'])).toHaveProperty('error');
-		expect(parseCliArgs(['--discover'])).toHaveProperty('error');
+		expect(parseCliArgs(['--unknown'])).toHaveProperty('error');
 		expect(parseCliArgs(['extra'])).toHaveProperty('error');
 	});
 });
