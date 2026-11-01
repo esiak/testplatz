@@ -1,41 +1,5 @@
 [
 	{
-		"centre_id": "akademia-zentrum-fuer-kommunikation-und-bildung-gmbh",
-		"name": "Akademia Zentrum für Kommunikation und Bildung GmbH - Nürnberg",
-		"address": {
-			"street": "Bahnhofsplatz 6",
-			"postcode": "90443",
-			"city": "Nürnberg"
-		},
-		"lat": 49.445926,
-		"lon": 11.080259,
-		"website": "https://www.linguademia.de/",
-		"test_page_url": null,
-		"reader": "none",
-		"reader_config": null,
-		"opted_out": false,
-		"source": "rtpartner",
-		"verified_at": null
-	},
-	{
-		"centre_id": "anderwerk-deutschkurse",
-		"name": "Anderwerk Deutschkurse",
-		"address": {
-			"street": "Hamburger Straße 32",
-			"postcode": "80809",
-			"city": "München"
-		},
-		"lat": 48.188558,
-		"lon": 11.565015,
-		"website": "https://www.anderwerk.de/",
-		"test_page_url": null,
-		"reader": "none",
-		"reader_config": null,
-		"opted_out": false,
-		"source": "rtpartner",
-		"verified_at": null
-	},
-	{
 		"centre_id": "bayerisches-rotes-kreuz",
 		"name": "Bayerisches Rotes Kreuz",
 		"address": {
@@ -54,24 +18,6 @@
 		"verified_at": null
 	},
 	{
-		"centre_id": "berufliche-fortbildungszentren-der-bayerischen-wirtschaft",
-		"name": "Berufliche Fortbildungszentren der Bayerischen Wirtschaft gGmbH, bfz-Donauwörth-Ulm-Aalen",
-		"address": {
-			"street": "Dr. Friedrich-Drechsler-Str. 14",
-			"postcode": "86609",
-			"city": "Donauwörth"
-		},
-		"lat": 48.707751,
-		"lon": 10.760546,
-		"website": "https://www.bfz.de/",
-		"test_page_url": null,
-		"reader": "none",
-		"reader_config": null,
-		"opted_out": false,
-		"source": "rtpartner",
-		"verified_at": null
-	},
-	{
 		"centre_id": "bildungszentrum-stadt-nuernberg",
 		"name": "Bildungszentrum Stadt Nürnberg",
 		"address": {
@@ -81,98 +27,8 @@
 		},
 		"lat": 49.451914,
 		"lon": 11.083874,
-		"website": "https://www.stadt.nuernberg.de/",
-		"test_page_url": null,
-		"reader": "none",
-		"reader_config": null,
-		"opted_out": false,
-		"source": "rtpartner",
-		"verified_at": null
-	},
-	{
-		"centre_id": "deutsche-angestellten-akademie-gmbh",
-		"name": "Deutsche Angestellten-Akademie GmbH",
-		"address": {
-			"street": "Marsstraße 42",
-			"postcode": "80335",
-			"city": "München"
-		},
-		"lat": 48.144797,
-		"lon": 11.554777,
-		"website": "https://www.daa.de/",
-		"test_page_url": null,
-		"reader": "none",
-		"reader_config": null,
-		"opted_out": false,
-		"source": "rtpartner",
-		"verified_at": null
-	},
-	{
-		"centre_id": "euro-bildungswerk-nuernberg-euro-schulen-nordbayern",
-		"name": "Euro-Bildungswerk Nürnberg/Euro-Schulen Nordbayern",
-		"address": {
-			"street": "Solgerstr. 16a/18",
-			"postcode": "90429",
-			"city": "Nürnberg"
-		},
-		"lat": 49.45302,
-		"lon": 11.062547,
-		"website": "https://www.eso.de/",
-		"test_page_url": null,
-		"reader": "none",
-		"reader_config": null,
-		"opted_out": false,
-		"source": "rtpartner",
-		"verified_at": null
-	},
-	{
-		"centre_id": "euro-schulen-aschaffenburg",
-		"name": "Euro-Schulen Aschaffenburg",
-		"address": {
-			"street": "Goldbacher Str. 6",
-			"postcode": "63739",
-			"city": "Aschaffenburg"
-		},
-		"lat": 49.978663,
-		"lon": 9.151619,
-		"website": "https://www.eso.de/",
-		"test_page_url": null,
-		"reader": "none",
-		"reader_config": null,
-		"opted_out": false,
-		"source": "rtpartner",
-		"verified_at": null
-	},
-	{
-		"centre_id": "euro-schulen-nordbayern",
-		"name": "Euro-Schulen Nordbayern",
-		"address": {
-			"street": "Herzogenstr. 8",
-			"postcode": "97070",
-			"city": "Würzburg"
-		},
-		"lat": 49.795482,
-		"lon": 9.932643,
-		"website": "https://www.eso.de/",
-		"test_page_url": null,
-		"reader": "none",
-		"reader_config": null,
-		"opted_out": false,
-		"source": "rtpartner",
-		"verified_at": null
-	},
-	{
-		"centre_id": "hilfe-von-mensch-zu-mensch",
-		"name": "Hilfe von Mensch zu Mensch",
-		"address": {
-			"street": "Marsstr. 25",
-			"postcode": "80335",
-			"city": "München"
-		},
-		"lat": 48.143579,
-		"lon": 11.55644,
-		"website": "https://www.hvmzm.de/",
-		"test_page_url": null,
+		"website": "https://bz.nuernberg.de/",
+		"test_page_url": "https://bz.nuernberg.de/programm/ding/pruefungen#!filters=%7B%7D",
 		"reader": "none",
 		"reader_config": null,
 		"opted_out": false,
@@ -244,7 +100,7 @@
 		"lat": 48.76588,
 		"lon": 11.4215,
 		"website": "https://www.kolping-ingolstadt.de/",
-		"test_page_url": null,
+		"test_page_url": "https://kolping-akademie-ingolstadt.de/sprachkurse/einbuergerungstest/",
 		"reader": "none",
 		"reader_config": null,
 		"opted_out": false,
@@ -280,7 +136,7 @@
 		"lat": 48.12803,
 		"lon": 11.55555,
 		"website": "https://www.mas-sprachschule.de/",
-		"test_page_url": null,
+		"test_page_url": "https://www.massprachschule.de/pruefungen/?campaignId=209176&g_campaignid=1714468998&g_adgroupid=64492822462&g_creative=601102615853&g_targetid=kwd-667053873834&g_keyword=mas+sprachschule+münchen&g_device=c&g_adposition=&gad_source=1&gad_campaignid=1714468998&gbraid=0AAAAAC1oEJUY9yLSEKK6CvMdzSQTLB_gJ",
 		"reader": "none",
 		"reader_config": null,
 		"opted_out": false,
@@ -2009,8 +1865,8 @@
 		},
 		"lat": 50.322797,
 		"lon": 11.91916,
-		"website": "https://www.vhs-landkreis-hof.de/",
-		"test_page_url": null,
+		"website": "https://www.vhshoferland.de",
+		"test_page_url": "https://www.vhshoferland.de/p//sprachen/sprachpruefungen/646-CAT-KAT399",
 		"reader": "none",
 		"reader_config": null,
 		"opted_out": false,
