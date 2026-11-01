@@ -2,6 +2,7 @@
 id: SPEC-einbuergerungstest-search
 companions:
   - data-sources.md
+  - parse-coverage.md
   - ../../planning-artifacts/ux-designs/ux-bgtsearch-2026-10-25/DESIGN.md
   - ../../planning-artifacts/ux-designs/ux-bgtsearch-2026-10-25/EXPERIENCE.md
   - ../../planning-artifacts/architecture/architecture-bgtsearch-2026-10-25/ARCHITECTURE-SPINE.md
@@ -53,6 +54,15 @@ Pain to solve. People in Bavaria applying for citizenship must pass the Einbürg
 - **CAP-11**
   - **intent:** Each test date from a covered centre shows the centre's published prerequisites for who may register (e.g. VHS München: residents of Munich only).
   - **success:** For a sample of covered centres, the shown rule matches the provider page at the last check, verbatim; where no rule was found the card says "not stated, check the provider page", never "open to all". The rule is display text only: no centre is hidden or flagged based on the searched place.
+- **CAP-12**
+  - **intent:** The operator can run a one-off local coverage script that politely fetches every centre's test page (looking for missing test page URLs first), keeps the pages in a local cache, and reports each centre's parse outcome; parsing re-runs against the cache without new requests.
+  - **success:** One fetch pass stays within every host's visit budget and records its visits; a re-run with the cache sends zero requests; the report lists every directory centre, including those without a reader, with its outcome category and reason, and the coverage percentage (see `parse-coverage.md`); every centre without a reader is tried against every existing reader, and each one that parses is listed as a proposed reader assignment.
+- **CAP-13**
+  - **intent:** At least 90% of centres in the coverage denominator are parsed successfully by readers in the daily pipeline.
+  - **success:** The coverage script reports ≥ 90% against the cache; every new or changed reader has committed fixtures, including a structure-missing one; the first daily run after the readers land shows `ok` for at least 90% of the denominator, budget skips excepted.
+- **CAP-14**
+  - **intent:** Every daily run reports parse statistics to the operator: counts per outcome and reason, per reader, and the coverage percentage.
+  - **success:** The run log and run report carry the statistics defined in `parse-coverage.md`; the counts add up to the directory size; the public site and `snapshot.json` are unchanged.
 
 ## Constraints
 
@@ -65,6 +75,10 @@ Pain to solve. People in Bavaria applying for citizenship must pass the Einbürg
 - The user's location never leaves the browser: search matches against a built-in postcode/town table and distance is computed client-side (see `data-sources.md`). Shareable search state lives in the URL fragment (`#q=…`), never the query string, so the place never reaches the server.
 - Public launch requires an Impressum (named operator, deliverable postal address) and a privacy policy; a private beta may run without. Operator choice is deferred.
 - OpenStreetMap-derived data requires visible ODbL attribution.
+- The coverage script fetches only through `pipeline/fetch`; its requests count against the same per-host budget, are recorded in `data/state/visits.json` and committed, and never push a host over budget.
+- Fetched page bodies stay in a local, gitignored cache; only trimmed pages chosen as reader fixtures are committed.
+- Readers stay pure and cheerio-only, with no headless browser; a site that needs JavaScript to show its dates counts as not parsed.
+- Discovered test page URLs and new reader assignments reach `centres.json` only after operator review (the directory is human-owned).
 
 ## Non-goals
 
@@ -79,6 +93,11 @@ Pain to solve. People in Bavaria applying for citizenship must pass the Einbürg
 - Documents, fees, and payment rules as prerequisites (only who may register is in scope).
 - Prerequisites for centres without an automatic reader (their card links the website).
 - 100% automatic coverage in v1.
+- Running the coverage script in CI or on a schedule.
+- Public coverage statistics (on the site or in `snapshot.json`).
+- New listing fields to fit what new sites publish.
+- Committing the raw page cache.
+- Parsing PDFs: a centre whose dates are published only as PDF is `pdf-only` and leaves the coverage denominator.
 
 ## Success signal
 
@@ -91,6 +110,8 @@ Pain to solve. People in Bavaria applying for citizenship must pass the Einbürg
 
 - Covered centres state their eligibility rules in findable text on their test or date pages; only the MVHS residence rule is known so far.
 - Test addresses published on provider pages can be located by Nominatim's structured search ("street, postcode city"); those that cannot fall back to the centre's position.
+- Most reader-none centres share a few page shapes (other booking systems, plain CMS date lists), so a handful of new readers can reach 90%.
+- A test page that publishes no dates and has no structure that proves it is not counted as parsed.
 
 ## Open Questions
 

@@ -66,4 +66,4 @@ Make the daily-refreshed date list quicker to act on and safer to trust. Users s
 - 3.10 comes after 3.6 (its card wording). MVHS distance stays "unknown" until 3.13 adds coordinates.
 - 3.12 comes after 3.11, so visit budgets are no longer used up by push-triggered runs.
 - 3.4's alert criteria rely on the merge and run outcomes from Epic 2. 3.3 reads the `systems[]` that Epic 2's publish already emits.
-- 3.5 switches its source to the BAMF list once Epic 4 (Story 4.2) lands.
+- 3.5 switches its source to the BAMF list once Epic 5 (Story 5.2) lands.

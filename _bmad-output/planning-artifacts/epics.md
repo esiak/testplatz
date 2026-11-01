@@ -4,6 +4,7 @@ stepsCompleted: [1, 2, 3, 4]
 inputDocuments:
   - _bmad-output/specs/spec-einbuergerungstest-search/SPEC.md
   - _bmad-output/specs/spec-einbuergerungstest-search/data-sources.md
+  - _bmad-output/specs/spec-einbuergerungstest-search/parse-coverage.md
   - _bmad-output/planning-artifacts/architecture/architecture-bgtsearch-2026-10-25/ARCHITECTURE-SPINE.md
   - _bmad-output/planning-artifacts/ux-designs/ux-bgtsearch-2026-10-25/DESIGN.md
   - _bmad-output/planning-artifacts/ux-designs/ux-bgtsearch-2026-10-25/EXPERIENCE.md
@@ -55,6 +56,9 @@ FR33: The About the data page has six sections: how it works; booking systems st
 FR34: Impressum and Privacy pages exist before public launch, linked from the footer; in private beta the links are hidden.
 FR35: Each test date from a covered centre shows who may register (e.g. MVHS: Munich residents only), extracted by the reader verbatim in German from the date page, else the centre's test page; when none is found the card reads "Who may register: not stated, check the provider page", never "open to all". Display text only: never matched against the searched place, never hides or flags a centre. Documents, fees and payment rules are out of scope. (CAP-11)
 FR36: Each test date's address is geocoded by the pipeline with Nominatim (structured search, ≤ 1 req/s, only addresses not yet cached, capped per run); hits and misses are cached in bot-owned state; a date whose address is missing or cannot be located takes its centre's coordinates and is marked `location: centre`. A lookup failure never fails the run. (CAP-1, CAP-2)
+FR37: The operator can run a one-off local coverage script that looks for missing test page URLs, fetches every reachable test page and its detail pages politely into a local gitignored cache, and parses the cache offline with every reader, reporting each centre's outcome category and reason plus the coverage percentage; re-running the parse sends no requests. (CAP-12)
+FR38: At least 90% of centres with a known, reachable test page (not robots-blocked, not opted out, not publishing its dates only as PDF) are parsed successfully by readers in the daily pipeline; success is `ok` with valid listings, or `ok` with zero listings proven by the reader's structure check. (CAP-13)
+FR39: Every daily run reports parse statistics to the operator, in the run log and the run report: counts per outcome category, failed reasons, per reader, and the coverage percentage; the public site and `snapshot.json` are unchanged. (CAP-14)
 
 ### NonFunctional Requirements
 
@@ -154,7 +158,7 @@ FR17: Epic 1 - Complete centre directory
 FR18: Epic 1 - Seed from rtpartner.de, verify each entry
 FR19: Epic 1 - Geocode centres once via Nominatim
 FR20: Epic 3 - Monthly directory check
-FR21: Epic 4 - Official BAMF list request and source switch
+FR21: Epic 5 - Official BAMF list request and source switch
 FR22: Epic 1 (opt-out flag shows not checked) + Epic 2 (no requests to opted-out sites)
 FR23: Epic 1 - German / English switch
 FR24: Epic 2 - No-dates card
@@ -167,9 +171,12 @@ FR30: Epic 1 (unchecked count) + Epic 2 (date count)
 FR31: Epic 1 (search, loading, no-centres, load-fail states) + Epic 2 (date-related notices) + Epic 3 (everything-hidden notice)
 FR32: Epic 1 - No live refresh while open
 FR33: Epic 1 (About page sections) + Epic 3 (system status section)
-FR34: Epic 4 - Impressum and Privacy
+FR34: Epic 5 - Impressum and Privacy
 FR35: Epic 2 - Eligibility (who may register) on result cards
 FR36: Epic 2 - Test-address coordinates
+FR37: Epic 4 - Local coverage script
+FR38: Epic 4 - 90% of reachable test pages parsed
+FR39: Epic 4 - Parse statistics per run
 
 ## Epic List
 
@@ -188,7 +195,12 @@ Users see what's new since yesterday and can hide booked-out dates. The operator
 **FRs covered:** FR15, FR16, FR20, FR29, FR31 (everything-hidden notice), FR33 (system status section)
 **Notes:** "New" badge with baseline rule, hide-booked-out toggle, booking-system status on About, failed-run issues, dead-man ping, monthly directory diff, compact date-tile cards (Stories 3.6–3.7, build before 3.1). Covers UX-DR8, 14, 30, 31. Stories 3.8–3.13 (added 2026-10-31) carry the Epic 2 retrospective's open items (`implementation-artifacts/epic-2-retro-2026-10-31.md`): stable same-minute ids (3.8, build before 3.1), status unless in person only (3.9), dates without a published time for MVHS (3.10, after 3.6), collect only once a day (3.11), every covered centre checked (3.12, after 3.11), and coordinates for the last 8 centres (3.13). Story 3.4 also gained two alert criteria from that retrospective.
 
-### Epic 4: Launch publicly
+### Epic 4: Parse more centres
+Most centres still show "Not checked automatically". A local script fetches every centre's test page once, politely, and the readers are improved against that cache until at least 90% of centres with a reachable test page parse; the new readers ship into the daily run, which reports parse statistics to the operator.
+**FRs covered:** FR37, FR38, FR39
+**Notes:** Coverage categories, denominator and statistics fields are in `specs/spec-einbuergerungstest-search/parse-coverage.md`. Build in order: 4.1 (shared classification + run statistics) → 4.2 (script: fetch, cache, offline parse) → 4.3 (find missing test pages) → 4.4 (existing readers first, then new readers to 90%) → 4.5 (daily run confirms). Baseline 2026-11-01: 27 of 119 centres `ok`; 85 have no reader, 43 no test page URL.
+
+### Epic 5: Launch publicly
 The site can be announced: legal pages are live, it's indexable, it's tested in the in-app browsers people use to open shared links, and the directory moves to the official BAMF source.
 **FRs covered:** FR21, FR34
 **Notes:** Impressum and Privacy (needs the operator decision), remove `noindex`, show the footer legal links, test Flow 1 in WhatsApp and Instagram browsers (UX-DR28), BAMF email and freedom-of-information request.
@@ -1305,11 +1317,155 @@ Operator decisions, 2026-11-01 (from the addresses on each centre's own site):
 **When** this story is done
 **Then** they state: "`npm test` gates publishing. Committed-data tests derive their expectations from the files and never fail on a legitimate data change."
 
-## Epic 4: Launch publicly
+## Epic 4: Parse more centres
+
+Most centres still show "Not checked automatically". A local script fetches every centre's test page once, politely, and the readers are improved against that cache until at least 90% of centres with a reachable test page parse; the new readers ship into the daily run, which reports parse statistics to the operator.
+
+### Story 4.1: Parse statistics in every run
+
+As the operator,
+I want each daily run to tell me how many centres parsed and why the others did not,
+So that I can see coverage and spot the centres worth a new reader.
+
+**Acceptance Criteria:**
+
+**Given** a run's outcomes and the directory
+**When** they are classified
+**Then** every directory centre lands in exactly one category of `parse-coverage.md` (`parsed`, `parsed-empty`, `failed`, `no-reader`, `unreachable`, `no-test-page`, `pdf-only`, `robots`, `opted-out`, `budget`), by one shared function that the coverage script will reuse (FR39)
+
+**Given** a run that publishes
+**When** it ends
+**Then** the run log has one summary line (counts per category, coverage percentage with numerator and denominator), and the run report gains a `coverage` object with `by_category`, `by_reason`, `by_reader` and `coverage`; `by_category` sums to the directory size (FR39)
+
+**Given** the published site
+**When** this story is done
+**Then** `snapshot.json`, its schema and the About page are unchanged (FR39)
+
+**Given** unit tests
+**When** they run
+**Then** they cover each category, the coverage formula (denominator excludes `unreachable`, `no-test-page`, `pdf-only`, `robots`, `opted-out`, `budget`), and the report shape
+
+### Story 4.2: Local coverage script: fetch, cache and parse offline
+
+**Build after Story 4.1.**
+
+As the operator,
+I want to fetch every centre's test page once and then re-parse the saved pages as often as I like,
+So that I can improve readers without sending more requests to the centres.
+
+**Acceptance Criteria:**
+
+**Given** `npm run coverage -- --fetch`
+**When** it runs locally
+**Then** for each centre with a `test_page_url` that is not opted out, it fetches the test page and the detail pages the centre's reader plans through `pipeline/fetch`; for a centre with reader `none` it fetches the test page plus the detail pages of every existing reader whose structure check matches that page, with the bot user agent, robots.txt, delay and timeout, and stores each body in a gitignored cache keyed by URL with status and final URL (FR37, NFR3, AD-5)
+
+**Given** the per-host visit log
+**When** the script fetches
+**Then** it skips any host that would exceed 4 visits in 24 h (reported as `budget`), and writes its visits to `data/state/visits.json` for the operator to commit, so the next daily run respects them (NFR3)
+
+**Given** a URL already in the cache
+**When** `--fetch` runs again
+**Then** it is not requested unless `--refresh` is passed
+
+**Given** `npm run coverage` without `--fetch`
+**When** it runs
+**Then** it sends no network request, runs every reader against the cached pages with the classification from Story 4.1, and prints a per-centre table (centre, category, reason, listing count, reader) and the totals with the coverage percentage; `--json <file>` writes the same report
+
+**Given** every centre with reader `none` and a cached test page
+**When** the offline parse runs
+**Then** each is tried against every existing reader (KuferWeb, ITEM KG); the report lists them in their own section with, per reader, the outcome and reason, and every reader that returns `parsed` or `parsed-empty` is written to a review file as a proposed assignment; `centres.json` is not changed (AD-8)
+
+**Given** the operator applies proposed assignments
+**When** `npm run coverage` runs again
+**Then** those centres are parsed by their new reader and the coverage percentage rises accordingly
+
+**Given** `docs/operations.md`
+**When** this story is done
+**Then** it explains how to run the script, where the cache lives, that visits must be committed after a fetch, and that the script never runs in CI
+
+### Story 4.3: Find missing test pages
+
+**Build after Story 4.2.**
+
+As the operator,
+I want the script to find the Einbürgerungstest page for the 43 centres that have none,
+So that those centres can be checked and counted.
+
+**Acceptance Criteria:**
+
+**Given** a centre with a `website` and no `test_page_url`
+**When** `npm run coverage -- --discover` runs
+**Then** it looks for the test page on that site with at most 3 page requests per host (e.g. sitemap.xml, homepage, one programme or search page), through `pipeline/fetch` and within the visit budget, matching links and titles on keywords such as "Einbürgerungstest", "Einbürgerung", "Leben in Deutschland" (FR37)
+
+**Given** discovery results
+**When** it ends
+**Then** it writes a review file listing per centre the proposed URL and the evidence (link text or title), or "not found"; nothing is written to `centres.json` (AD-8)
+
+**Given** the operator approves proposals
+**When** they are applied to `centres.json`
+**Then** `npm run check:directory` passes and the next `--fetch` includes those pages; centres still without a test page stay `no-test-page`
+
+### Story 4.4: Readers for the uncovered centres, to 90%
+
+**Build after Stories 4.2 and 4.3.** Existing readers come first: every centre without a reader is tried against them (Story 4.2) and matches are assigned before any new reader is written. May be split into one story per new reader once the cache shows the page shapes.
+
+As a person near a centre that is not checked today,
+I want its dates read automatically,
+So that I see them in my results without opening its site.
+
+**Acceptance Criteria:**
+
+**Given** the existing-reader proposals from Story 4.2
+**When** this story starts
+**Then** the operator has reviewed and applied them, and centres that an existing reader nearly parses (e.g. KuferWeb or ITEM KG with a different layout) are fixed by changing that reader, with a new fixture, before any new reader is added
+
+**Given** the cached pages of the centres still `failed` or `no-reader` after that
+**When** they are grouped by page shape (booking system or CMS fingerprint)
+**Then** the groups, their sizes and the chosen order are recorded in `data/directory/coverage-note.md`, largest group first
+
+**Given** a new or changed reader
+**When** it is added
+**Then** it follows the reader contract (pure `plan` and `parse`, cheerio only, `null` for absent fields, shared `mapStatus`, eligibility extraction), has trimmed committed fixtures from at least two centres where the group has two, plus a structure-missing fixture that returns `failed`, and the existing reader tests still pass (AD-3, AD-4, FR38)
+
+**Given** each centre a reader now parses
+**When** the operator reviews the proposal
+**Then** its `reader` (and any `reader_config`) is set in `centres.json`; `centre_id`s never change (AD-8)
+
+**Given** a centre whose test page publishes its dates only as PDF
+**When** the operator confirms it
+**Then** it is marked PDF-only in its directory entry, counts as `pdf-only` (outside the denominator), and stays "Not checked automatically" on the site; no PDF is parsed
+
+**Given** `npm run coverage` against the cache
+**When** this story is done
+**Then** coverage is ≥ 90% of the denominator (FR38); each centre still not parsed is listed in `coverage-note.md` with its reason (e.g. needs JavaScript, no dates published)
+
+### Story 4.5: Coverage holds in the daily run
+
+**Build after Story 4.4.**
+
+As the operator,
+I want the daily run to confirm the coverage the script measured,
+So that the new readers work on live pages, not just the cache.
+
+**Acceptance Criteria:**
+
+**Given** the first daily run after Story 4.4 merges
+**When** its run report is read
+**Then** its coverage, counting `budget` skips as neither success nor failure, is ≥ 90%; any centre that parsed against the cache but fails live is fixed or recorded in `coverage-note.md` (FR38, FR39)
+
+**Given** the About page "Booking systems" section
+**When** new readers exist
+**Then** each new reader appears as its own system row with centres covered and status, in DE and EN (FR15)
+
+**Given** the newly parsed centres
+**When** a search covers them
+**Then** they show result or no-dates cards instead of "Not checked automatically" (FR2, FR24)
+
+## Epic 5: Launch publicly
 
 The site can be announced: legal pages are live, it's indexable, it's tested in the in-app browsers people use to open shared links, and the directory moves to the official BAMF source.
 
-### Story 4.1: Request the official test-centre list from BAMF
+### Story 5.1: Request the official test-centre list from BAMF
 
 As the operator,
 I want the official list of Bavarian test centres from BAMF,
@@ -1329,7 +1485,7 @@ So that the directory rests on the authoritative source rather than a republicat
 **When** it happens
 **Then** the date, channel and outcome are logged in the repo's operator notes, so the request can be followed up
 
-### Story 4.2: Switch the directory to the BAMF list
+### Story 5.2: Switch the directory to the BAMF list
 
 As a user,
 I want the directory to match BAMF's own list,
@@ -1350,7 +1506,7 @@ So that every official centre is included and none that closed linger.
 **Then** it compares against the BAMF source from then on (FR20)
 **And** the About page's Sources section names the BAMF list
 
-### Story 4.3: Impressum and privacy policy
+### Story 5.3: Impressum and privacy policy
 
 As a visitor in Germany,
 I want to know who runs the site and what happens to my data,
@@ -1370,7 +1526,7 @@ So that I can trust it, and the site meets German legal requirements.
 **When** they exist
 **Then** the footer shows Impressum and Privacy links on every page (UX-DR22)
 
-### Story 4.4: Go live
+### Story 5.4: Go live
 
 As a person who gets the link from a friend on WhatsApp,
 I want the site to work in my app's built-in browser and be findable on search engines,
@@ -1378,7 +1534,7 @@ So that I can use it however I arrive.
 
 **Acceptance Criteria:**
 
-**Given** Story 4.3 is done
+**Given** Story 5.3 is done
 **When** the site is launched
 **Then** the `noindex` meta is removed, and the site is reachable at its final URL (custom domain optional) with the bot user agent's About URL still valid (NFR12, AD-5)
 
