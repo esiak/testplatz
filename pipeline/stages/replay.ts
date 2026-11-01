@@ -59,6 +59,16 @@ export function saveReplay(replay: Replay, path: string): void {
 	writeFileSync(path, text);
 }
 
+/**
+ * Writes this run's visits to `path` as a JSON array (Story 3.11, `--save-visits`), creating its
+ * directory, so a failed run can still record them in the visit log. Throws on failure.
+ */
+export function saveVisits(visits: readonly Visit[], path: string): void {
+	const text = `${JSON.stringify(visitLogSchema.parse(visits))}\n`;
+	mkdirSync(dirname(path), { recursive: true });
+	writeFileSync(path, text);
+}
+
 /** The replay file at `path`. Throws, naming the file, when it is unreadable, not JSON or the wrong shape. */
 export function loadReplay(path: string): Replay {
 	let data: unknown;

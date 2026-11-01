@@ -4,14 +4,19 @@
 
 `.github/workflows/pipeline.yml` runs once a day at 05:17 UTC (`17 5 * * *`), on every push to
 `main` and on manual dispatch, in one concurrency group that never cancels a run in progress.
+**Only the schedule and a manual dispatch collect** (contact the provider sites and Nominatim). A
+push to `main` only tests, builds and deploys the pushed commit with the data already committed,
+so code changes use none of the sites' 4 visits per rolling 24 h (see [Push to main](#push-to-main-deploy-only)).
 
-The `publish` job:
+The `publish` job (schedule and dispatch only) checks out the current tip of `main` (not the commit
+that started the run, so a run queued behind another sees that run's data and visits), then:
 
-1. type-checks and tests the checked-out commit;
+1. type-checks and tests that commit;
 2. runs `npm run pipeline -- --save-collect "$RUNNER_TEMP/collect.json" --report
-   "$RUNNER_TEMP/report.json"`: fetch → parse → normalise → locate → merge → publish, saving this
-   run's reader results (outcomes, visits, page summaries; no page bodies) for a retry, and a run
-   report for the alerts (see [Alerts](#alerts));
+   "$RUNNER_TEMP/report.json" --save-visits "$RUNNER_TEMP/visits.json"`: fetch → parse → normalise
+   → locate → merge → publish, saving this run's reader results (outcomes, visits, page summaries;
+   no page bodies) for a retry, a run report for the alerts (see [Alerts](#alerts)), and this run's
+   visits as soon as collect returns or throws (see [Visits from a failed run](#visits-from-a-failed-run));
 3. runs `.github/scripts/commit-public.sh`, which commits `data/state/` and `data/public/` in one
    bot commit and pushes it. On a rejected push it rebases when the new upstream commits touch
    only `data/state/` or `data/public/`; otherwise (or when that rebase conflicts) it resets to the
@@ -26,6 +31,38 @@ The `publish` job:
 
 `build` and `deploy` then deploy exactly the pushed SHA. No push, no deploy. A final `monitor`
 job files the alerts.
+
+### Push to main: deploy only
+
+On a push to `main` the `publish` job is skipped. `build` checks out the pushed SHA, type-checks
+and tests it (nothing else has tested it: `ci.yml` skips data-only pushes), builds it, and
+`deploy` deploys it. No provider site and no Nominatim request is contacted. The site shows the
+committed data, so a directory edit appears on the site only after the next scheduled run (or a
+manual dispatch: Actions tab → **pipeline** → **Run workflow**, which uses one of each site's 4
+daily visits).
+
+GitHub keeps only one pending run per concurrency group: a push queued while a run is in progress
+cancels a pending scheduled run, and push runs no longer collect to make up for it. If a push lands
+while the 05:17 UTC run is waiting, check in the Actions tab that the scheduled run was not
+cancelled, and start one by `workflow_dispatch` if it was.
+
+### Visits from a failed run
+
+The visit log `data/state/visits.json` must count every visit, or the budget under-counts. A
+collecting run that fails or is cancelled (or times out) after contacting sites (collect throws,
+publish validation fails, the push is rejected for good, every fetched centre failed, the run is
+cancelled, …) would otherwise lose its visits. When the `publish` job fails or is cancelled, a step after the all-failed check reads `$RUNNER_TEMP/visits.json`:
+
+- missing or `[]` (e.g. the tests failed before collect): it logs "nothing to record" and passes;
+- otherwise `.github/scripts/commit-visits.sh` fetches `main`, resets to it, runs `node
+  pipeline/stages/record-visits.ts "$RUNNER_TEMP/visits.json"` (adds the visits with merge's rule:
+  dedupe by host + time, drop visits older than 24 h, sorted), commits only `data/state/visits.json`
+  as `data: record visits from a failed run` if it changed, and pushes it; on a rejected push it
+  fetches, resets and records again, 3 attempts in all. Visits already on `main` (e.g. the commit
+  succeeded and only the all-failed check failed) change nothing and make no commit. Nothing else
+  from the failed run is committed. The credential is handled as in `commit-public.sh`.
+
+The `monitor` job still files the original failure; a failure of this step only shows in the run log.
 
 The run log has one line per centre: `<centre_id> <reader> <outcome> <listing count> <duration>`,
 where the outcome is `ok`, `failed:<reason>` or `skipped:<reason>`, then a summary line.
@@ -91,9 +128,10 @@ A failed issue call turns the `monitor` job red; nothing else in it does.
 
 ### Dead-man check (healthchecks.io)
 
-After a run whose `publish`, `build` and `deploy` jobs all succeeded (scheduled, push-triggered or
-manual), the `monitor` job pings a [healthchecks.io](https://healthchecks.io) check. When no ping
-arrives for 36 h, healthchecks.io emails the operator itself. This catches runs that never start
+After a run whose `build` and `deploy` jobs succeeded and whose `publish` job succeeded or was
+skipped (a push to `main`), the `monitor` job pings a [healthchecks.io](https://healthchecks.io)
+check. Reader issues are evaluated only on collecting runs (a push run writes no report). When no
+ping arrives for 36 h, healthchecks.io emails the operator itself. This catches runs that never start
 (scheduler outage, disabled workflow) and runs that keep failing. Because every successful run
 pings, including push-triggered ones, a dead schedule is only caught while nobody pushes to `main`:
 during active development, check the Actions tab for the daily scheduled run. Setup, once:
@@ -149,13 +187,18 @@ interactive shell, because of the final `exit`.
 - The script passes the header only to `git fetch` / `git push` for `https://github.com/`, so the
   clone's `origin` must be the HTTPS URL.
 - The push is made with a personal token, so GitHub's push-triggered `pipeline.yml` run starts
-  and deploys the new data. That run fetches again; the per-site budget (at most 4 visits per
-  rolling 24 h, the visit log in `data/state/visits.json`) keeps both runs together within limits.
+  and deploys the new data. That run only tests, builds and deploys; it no longer collects, so it
+  uses none of the sites' visits.
 - Set `DEADMAN_PING_URL` (the check's ping URL, kept out of files like `TOKEN`) to ping
   healthchecks.io after a successful fallback run; without it, pause the check on healthchecks.io
   while the fallback runs, or it alerts after 36 h.
 - A fallback run files no issues and does not update or close `Reader <reader>: needs attention`
-  issues; only `pipeline.yml`'s `monitor` job does that, for its own runs (such as the
-  push-triggered run the fallback's push starts). Check the fallback's own log.
+  issues; only `pipeline.yml`'s `monitor` job does that, for its own collecting runs (the
+  push-triggered run the fallback's push starts writes no report, so it touches no reader issue).
+  Check the fallback's own log.
+- The script above does not record the visits of a failed run (CI's visits-on-failure step does
+  not run here): a fallback run that fails after contacting sites leaves them out of the visit
+  log, so the next run may exceed a site's 4 visits per 24 h. Do not rerun the same day after
+  such a failure.
 - The visit log counts every run, manual and local ones included. A fallback run on a day the
   scheduled run already ran uses one more of each site's 4 daily visits.

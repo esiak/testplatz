@@ -10,11 +10,16 @@
  *   node pipeline/stages/run.ts --save-collect <file>    # … and save the replay input after collect
  *   node pipeline/stages/run.ts --from-collect <file>    # no provider fetch: normalise → locate → merge → publish from the file
  *   node pipeline/stages/run.ts --report <file>          # … and write the run report (Story 3.4) on every exit
+ *   node pipeline/stages/run.ts --save-visits <file>     # … and write this run's visits as soon as collect returns or throws
  *
  * The run report (see `report.ts`) names the failing stage (`input`, `fetch`, `state write`,
  * `publish validation`), whether every fetched centre failed (the run still writes its data and
  * exits 0; the workflow fails the job after committing), and per-system health for the alerts.
  * It can be combined with either of the other flags.
+ *
+ * `--save-visits` (Story 3.11) writes the hosts this run contacted as a visit array right after
+ * collect, also when collect throws and before any later step can fail, so the workflow can record
+ * them in `data/state/visits.json` when the run fails. It is ignored with `--from-collect`.
  *
  * `--from-collect` re-reads the directory, state, visit log and venue cache from disk and reuses
  * the saved `runAt`, so after a rejected push it applies the same run on top of the newest
@@ -31,13 +36,13 @@ import type { Visit } from '../../shared/visits.ts';
 import { readVisitLog } from '../fetch/visits.ts';
 import { itemkgReader } from '../readers/itemkg/index.ts';
 import { kuferwebReader } from '../readers/kuferweb/index.ts';
-import { collectRun, type CollectOptions, type ReaderRegistry } from './collect.ts';
+import { CollectError, collectRun, type CollectOptions, type ReaderRegistry } from './collect.ts';
 import { locateRun, type LocateOptions } from './locate.ts';
 import { mergeRun, readState, readVenues, serializeState, serializeVenues, serializeVisitLog, writeMergeResult } from './merge.ts';
 import { normaliseOutcome, type NormalisedOutcome } from './normalise.ts';
 import { DIRECTORY_PATH, SNAPSHOT_PATH, STATE_PATH, VENUES_PATH, VISIT_LOG_PATH } from './paths.ts';
 import { buildSnapshot, writeSnapshot } from './publish.ts';
-import { loadReplay, saveReplay, type Replay } from './replay.ts';
+import { loadReplay, saveReplay, saveVisits, type Replay } from './replay.ts';
 import { buildRunReport, failedReport, writeReport, type RunReport } from './report.ts';
 
 /** The readers a scheduled run uses. */
@@ -63,6 +68,8 @@ export interface RunOptions {
 	fromCollect?: string;
 	/** Write the run report here on every exit (Story 3.4). */
 	reportPath?: string;
+	/** Write this run's visits here right after collect, also when it throws (Story 3.11). Not on replays. */
+	saveVisits?: string;
 	log?: (line: string) => void;
 	error?: (line: string) => void;
 }
@@ -119,6 +126,7 @@ async function run(options: RunOptions): Promise<RunResult> {
 		locate,
 		saveCollect,
 		fromCollect,
+		saveVisits: saveVisitsPath,
 		log = console.log,
 		error = console.error,
 	} = options;
@@ -151,14 +159,25 @@ async function run(options: RunOptions): Promise<RunResult> {
 		collected = replay;
 	} else {
 		const runAt = now();
+		/** Saves this run's visits for the workflow; a failure is logged and the run goes on. */
+		const saveRunVisits = (visits: Visit[]): void => {
+			if (saveVisitsPath === undefined) return;
+			try {
+				saveVisits(visits, saveVisitsPath);
+			} catch (caught) {
+				error(`cannot save the visits file ${saveVisitsPath}: ${(caught as Error).message}`);
+			}
+		};
 		try {
 			const result = await collectRun(directory, readers, { log: visitLog, runAt, clientOptions, clock });
 			collected = { runAt, outcomes: result.outcomes, visits: result.visits, pages: result.pages };
 			durations = result.durations;
 		} catch (caught) {
+			saveRunVisits(caught instanceof CollectError ? caught.visits : []);
 			error(`collect failed, nothing written: ${(caught as Error).message}`);
 			return { code: 1, report: failedReport('fetch', runAt) };
 		}
+		saveRunVisits(collected.visits);
 		if (saveCollect !== undefined) {
 			try {
 				saveReplay(collected, saveCollect);
@@ -232,23 +251,25 @@ async function run(options: RunOptions): Promise<RunResult> {
 	return { code: 0, report };
 }
 
+export type CliOptions = Pick<RunOptions, 'saveCollect' | 'fromCollect' | 'reportPath' | 'saveVisits'>;
+
 /** Parses the CLI arguments into run options. Throws on unknown or incomplete arguments. */
-export function parseCliArgs(args: readonly string[]): Pick<RunOptions, 'saveCollect' | 'fromCollect' | 'reportPath'> {
+export function parseCliArgs(args: readonly string[]): CliOptions {
 	const { values } = parseArgs({
 		args: [...args],
-		options: { 'save-collect': { type: 'string' }, 'from-collect': { type: 'string' }, report: { type: 'string' } },
+		options: { 'save-collect': { type: 'string' }, 'from-collect': { type: 'string' }, report: { type: 'string' }, 'save-visits': { type: 'string' } },
 		strict: true,
 		allowPositionals: false,
 	});
-	return { saveCollect: values['save-collect'], fromCollect: values['from-collect'], reportPath: values.report };
+	return { saveCollect: values['save-collect'], fromCollect: values['from-collect'], reportPath: values.report, saveVisits: values['save-visits'] };
 }
 
 if (import.meta.main) {
-	let cli: Pick<RunOptions, 'saveCollect' | 'fromCollect' | 'reportPath'>;
+	let cli: CliOptions;
 	try {
 		cli = parseCliArgs(process.argv.slice(2));
 	} catch (caught) {
-		console.error(`${(caught as Error).message}\nusage: node pipeline/stages/run.ts [--save-collect <file> | --from-collect <file>] [--report <file>]`);
+		console.error(`${(caught as Error).message}\nusage: node pipeline/stages/run.ts [--save-collect <file> | --from-collect <file>] [--report <file>] [--save-visits <file>]`);
 		process.exit(1);
 	}
 	process.exitCode = await runPipeline(cli);

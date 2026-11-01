@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { VISIT_WINDOW_MS } from '../pipeline/config.ts';
 import { readVisitLog } from '../pipeline/fetch/visits.ts';
 import type { LocatedOutcome } from '../pipeline/stages/locate.ts';
-import { mergeRun, readState, readVenues, serializeState, serializeVenues, writeMergeResult, type MergeResult } from '../pipeline/stages/merge.ts';
+import { mergeRun, mergeVisitLog, readState, readVenues, serializeState, serializeVenues, writeMergeResult, type MergeResult } from '../pipeline/stages/merge.ts';
 import { normaliseOutcome } from '../pipeline/stages/normalise.ts';
 import type { Centre } from '../shared/directory.ts';
 import { locatedListingSchema, type RawListing } from '../shared/listing.ts';
@@ -242,6 +242,34 @@ describe('mergeRun visit log', () => {
 		const once = merge(emptyState(), {}, RUN_2, [], visits).log;
 		expect(merge(emptyState(), {}, RUN_2, once, visits).log).toEqual(once);
 		expect(merge(emptyState(), {}, RUN_2, [...visits, ...visits], []).log).toEqual(visits);
+	});
+});
+
+describe('mergeVisitLog (Story 3.11)', () => {
+	const ago = (ms: number) => new Date(RUN_2.getTime() - ms).toISOString();
+
+	it('dedupes by host + at, prunes at or older than the window, sorts by at then host', () => {
+		const log: Visit[] = [
+			{ host: 'b.de', at: ago(HOUR) },
+			{ host: 'a.de', at: ago(VISIT_WINDOW_MS) },
+		];
+		const visits: Visit[] = [
+			{ host: 'b.de', at: ago(HOUR) },
+			{ host: 'z.de', at: ago(2 * HOUR) },
+			{ host: 'c.de', at: ago(2 * HOUR) },
+			{ host: 'old.de', at: ago(VISIT_WINDOW_MS + 1) },
+		];
+		expect(mergeVisitLog(log, visits, RUN_2)).toEqual([
+			{ host: 'c.de', at: ago(2 * HOUR) },
+			{ host: 'z.de', at: ago(2 * HOUR) },
+			{ host: 'b.de', at: ago(HOUR) },
+		]);
+	});
+
+	it('is what mergeRun uses for the visit log', () => {
+		const log: Visit[] = [{ host: 'a.de', at: ago(HOUR) }];
+		const visits: Visit[] = [{ host: 'b.de', at: RUN_2.toISOString() }];
+		expect(merge(emptyState(), {}, RUN_2, log, visits).log).toEqual(mergeVisitLog(log, visits, RUN_2));
 	});
 });
 

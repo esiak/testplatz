@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import type { FetchImpl } from '../pipeline/fetch/index.ts';
-import { collectRun, type ReaderRegistry } from '../pipeline/stages/collect.ts';
+import { CollectError, collectRun, type ReaderRegistry } from '../pipeline/stages/collect.ts';
 import type { Centre } from '../shared/directory.ts';
 import type { RawListing } from '../shared/listing.ts';
 import { selectDetailUrls, type FetchedPage, type ParseContext, type Reader, type ReaderPlan } from '../shared/reader.ts';
@@ -459,6 +459,44 @@ describe('collectRun', () => {
 			{ host: 'b.de', at: AT },
 		]);
 		expect(snapshot()).toEqual(before);
+	});
+});
+
+describe('collectRun throws (Story 3.11)', () => {
+	it('a throw after contacting hosts carries their visits, after the other centres settle', async () => {
+		const { reader } = stubReader();
+		const routes = {
+			'https://a.de/robots.txt': status(404),
+			'https://a.de/kurse': links(),
+			'https://b.de/robots.txt': status(404),
+			'https://b.de/kurse': links(),
+		};
+		// Reading the itemkg entry throws outside the per-centre guards, after the others started.
+		const readers = {
+			kuferweb: reader,
+			get itemkg(): Reader {
+				throw new Error('boom');
+			},
+		} as ReaderRegistry;
+		const centres = [centre('a', 'a.de'), centre('b', 'b.de'), centre('c', 'c.de', { reader: 'itemkg' })];
+		const { result } = run(centres, routes, readers);
+		const caught = await result.then(
+			() => null,
+			(error: unknown) => error,
+		);
+		expect(caught).toBeInstanceOf(CollectError);
+		expect((caught as CollectError).message).toBe('boom');
+		expect((caught as CollectError).visits).toEqual([
+			{ host: 'a.de', at: AT },
+			{ host: 'b.de', at: AT },
+		]);
+	});
+
+	it('a throw before any request carries no visits', async () => {
+		const throwing = new Proxy({}, { get: () => { throw new Error('boom'); } }) as ReaderRegistry;
+		const { net, result } = run([centre('a', 'a.de')], {}, throwing);
+		await expect(result).rejects.toMatchObject({ name: 'CollectError', visits: [] });
+		expect(net.calls).toEqual([]);
 	});
 });
 

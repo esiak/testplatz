@@ -2,7 +2,7 @@
  * The `monitor` job's alerts (Story 3.4): opens or comments on a "Pipeline failed: <stage>" issue
  * for a failed `pipeline.yml` run, opens, comments on or closes one "Reader <reader>: needs
  * attention" issue per reader system from the run report, and decides whether the dead-man check
- * is pinged (only when publish, build and deploy all succeeded).
+ * is pinged (only when build and deploy succeeded and publish succeeded or was skipped).
  *
  *   node tools/alerts.ts
  *
@@ -63,8 +63,12 @@ export function resolveStage(stage: string, jobs: AlertInput['jobs']): string | 
 	return null;
 }
 
-/** The dead-man check is pinged only when publish, build and deploy all succeeded. */
-export const shouldPing = (jobs: AlertInput['jobs']): boolean => jobs.publish === 'success' && jobs.build === 'success' && jobs.deploy === 'success';
+/**
+ * The dead-man check is pinged only when build and deploy succeeded and publish succeeded or was
+ * skipped (a push to main collects nothing since Story 3.11: publish is skipped, build and deploy run).
+ */
+export const shouldPing = (jobs: AlertInput['jobs']): boolean =>
+	(jobs.publish === 'success' || jobs.publish === 'skipped') && jobs.build === 'success' && jobs.deploy === 'success';
 
 /** `2026-10-28 05:17 UTC`. */
 const formatUtc = (iso: string): string => `${new Date(iso).toISOString().slice(0, 16).replace('T', ' ')} UTC`;

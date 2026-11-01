@@ -95,6 +95,25 @@ describe('planAlerts: failure issues', () => {
 	it('does not ping after a cancelled or skipped run', () => {
 		expect(plan({ jobs: { publish: 'cancelled', build: 'skipped', deploy: 'skipped' } }).ping).toBe(false);
 		expect(plan({ jobs: { publish: 'success', build: 'success', deploy: 'skipped' } }).ping).toBe(false);
+		expect(plan({ jobs: { publish: 'skipped', build: 'skipped', deploy: 'skipped' } }).ping).toBe(false);
+	});
+
+	it('push run (Story 3.11): publish skipped, build and deploy green → ping, no failure issue, no reader issue touched', () => {
+		const result = plan({
+			stage: '',
+			report: parseReport(''),
+			event: 'push',
+			jobs: { publish: 'skipped', build: 'success', deploy: 'success' },
+			openIssues: [{ number: 4, title: 'Reader itemkg: needs attention' }],
+		});
+		expect(result.ping).toBe(true);
+		expect(result.actions).toEqual([]);
+	});
+
+	it('push run whose build fails: "Pipeline failed: build", no ping', () => {
+		const result = plan({ stage: '', report: null, event: 'push', jobs: { publish: 'skipped', build: 'failure', deploy: 'skipped' } });
+		expect(result.ping).toBe(false);
+		expect(result.actions).toEqual([{ kind: 'create', title: 'Pipeline failed: build', body: expect.stringContaining('Event: push') }]);
 	});
 });
 

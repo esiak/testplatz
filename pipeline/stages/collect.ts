@@ -62,7 +62,8 @@ export async function collectRun(centres: readonly Centre[], readers: ReaderRegi
 	}
 
 	const durations: Record<string, number> = {};
-	const results = await Promise.all(
+	// allSettled, not all: a throw waits for the other centres, so every host contacted is counted.
+	const settled = await Promise.allSettled(
 		centres.map(async (centre) => {
 			const start = clock();
 			const outcome = await collectCentre(centre);
@@ -74,5 +75,21 @@ export async function collectRun(centres: readonly Centre[], readers: ReaderRegi
 	const visits = Object.keys(client.stats().rawRequests)
 		.sort()
 		.map((host) => ({ host, at }));
+	const rejected = settled.find((result) => result.status === 'rejected');
+	if (rejected !== undefined) throw new CollectError(rejected.reason, visits);
+	const results = settled.map((result) => (result as PromiseFulfilledResult<readonly [string, CentreOutcome]>).value);
 	return { outcomes: Object.fromEntries(results), visits, pages, durations };
+}
+
+/**
+ * A throw during collect (Story 3.11), carrying the visits made before it so the run can still
+ * record them (`run.ts --save-visits`). `message` is the cause's message.
+ */
+export class CollectError extends Error {
+	readonly visits: Visit[];
+	constructor(cause: unknown, visits: Visit[]) {
+		super(cause instanceof Error ? cause.message : String(cause), { cause });
+		this.name = 'CollectError';
+		this.visits = visits;
+	}
 }

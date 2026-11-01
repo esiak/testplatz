@@ -54,6 +54,24 @@ function applyOk(previous: CentreState | undefined, listings: Extract<LocatedOut
 }
 
 /**
+ * `log` with `visits` added: entries older than the 24 h window before `now` dropped, exact
+ * `(host, at)` duplicates kept once, sorted by `at` then host. Shared by merge and
+ * `record-visits.ts` (Story 3.11), so adding the same visits twice changes nothing.
+ */
+export function mergeVisitLog(log: readonly Visit[], visits: readonly Visit[], now: Date): Visit[] {
+	const since = now.getTime() - VISIT_WINDOW_MS;
+	const seen = new Set<string>();
+	return [...log, ...visits]
+		.filter((visit) => {
+			const key = `${visit.host}\n${visit.at}`;
+			if (seen.has(key) || Date.parse(visit.at) <= since) return false;
+			seen.add(key);
+			return true;
+		})
+		.sort((a, b) => Date.parse(a.at) - Date.parse(b.at) || compare(a.host, b.host));
+}
+
+/**
  * The state and visit log after this run. Per outcome: `ok` sets `last_checked_at` and
  * `last_success_at`, replaces the listings and tombstones missing ones; `failed` sets
  * `last_checked_at` and keeps the listings; `skipped` changes nothing. Then every listing whose
@@ -87,16 +105,7 @@ export function mergeRun({ state, log, outcomes, visits, venues, lookups, runAt 
 		sorted[centreId] = upcoming.length === centre.listings.length ? centre : { ...centre, listings: upcoming };
 	}
 
-	const since = now - VISIT_WINDOW_MS;
-	const seen = new Set<string>();
-	const mergedLog = [...log, ...visits]
-		.filter((visit) => {
-			const key = `${visit.host}\n${visit.at}`;
-			if (seen.has(key) || Date.parse(visit.at) <= since) return false;
-			seen.add(key);
-			return true;
-		})
-		.sort((a, b) => Date.parse(a.at) - Date.parse(b.at) || compare(a.host, b.host));
+	const mergedLog = mergeVisitLog(log, visits, runAt);
 
 	const merged = { ...venues.entries, ...lookups };
 	const entries: Venues['entries'] = {};
@@ -242,4 +251,14 @@ export function writeMergeResult(result: MergeResult, { statePath, visitLogPath,
 	writeAtomic(visitLogPath, serializeVisitLog(log.data));
 	writeVenuesIfChanged(venuesPath, venues.data);
 	writeAtomic(statePath, serializeState(state.data));
+}
+
+/**
+ * Validates the visit log and writes it atomically to `path`, touching no other file (Story 3.11:
+ * `record-visits.ts` records a failed run's visits). Throws, writing nothing, on a schema failure.
+ */
+export function writeVisitLog(log: readonly Visit[], path: string = VISIT_LOG_PATH): void {
+	const parsed = visitLogSchema.safeParse(log);
+	if (!parsed.success) throw new Error(`visit log fails the schema, nothing written:\n${parsed.error.message}`);
+	writeAtomic(path, serializeVisitLog(parsed.data));
 }

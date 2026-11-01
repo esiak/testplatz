@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { chmodSync, existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -30,16 +30,22 @@ interface Result {
 	dir: string;
 }
 
-/** Runs `run` in a fresh temp dir; `report` (if given) is written to $RUNNER_TEMP/report.json. */
-function runStep(run: string, env: Record<string, string> = {}, options: { report?: unknown; path?: string } = {}): Result {
+/**
+ * Runs `run` in a fresh temp dir; `report` (if given) is written to $RUNNER_TEMP/report.json and
+ * `visits` (raw text) to $RUNNER_TEMP/visits.json. `cwd` defaults to a fresh empty directory, so a
+ * step calling a repository script never runs the real one.
+ */
+function runStep(run: string, env: Record<string, string> = {}, options: { report?: unknown; visits?: string; path?: string; cwd?: string } = {}): Result {
 	const dir = mkdtempSync(join(tmpdir(), 'bgt-step-'));
 	const output = join(dir, 'github_output');
 	writeFileSync(output, '');
 	if (options.report !== undefined) writeFileSync(join(dir, 'report.json'), `${JSON.stringify(options.report)}\n`);
+	if (options.visits !== undefined) writeFileSync(join(dir, 'visits.json'), options.visits);
 	const scriptPath = join(dir, 'step.sh');
 	writeFileSync(scriptPath, run);
 	const result = spawnSync('bash', ['--noprofile', '--norc', '-e', '-o', 'pipefail', scriptPath], {
 		encoding: 'utf8',
+		cwd: options.cwd ?? mkdtempSync(join(tmpdir(), 'bgt-step-cwd-')),
 		env: {
 			PATH: options.path === undefined ? process.env.PATH! : `${options.path}${delimiter}${process.env.PATH!}`,
 			RUNNER_TEMP: dir,
@@ -157,5 +163,57 @@ describe.skipIf(missing)('pipeline.yml monitor job: dead-man ping step', () => {
 		expect(result.code).toBe(0);
 		expect(result.stdout).toMatch(/^::warning::/m);
 		expect(curl.calls()).toHaveLength(1);
+	});
+});
+
+describe.skipIf(missing)('pipeline.yml publish job: record-visits step (Story 3.11)', () => {
+	const run = script('publish', (s) => s.id === 'record-visits');
+
+	/** A working directory whose `.github/scripts/commit-visits.sh` records its env and exits with `status`. */
+	function fakeRepo(status = 0): { cwd: string; calls: () => string[] } {
+		const cwd = mkdtempSync(join(tmpdir(), 'bgt-repo-'));
+		mkdirSync(join(cwd, '.github', 'scripts'), { recursive: true });
+		const log = join(cwd, 'calls');
+		const path = join(cwd, '.github', 'scripts', 'commit-visits.sh');
+		writeFileSync(path, `#!/usr/bin/env bash\nprintf 'header=%s gh=%s\\n' "$GIT_AUTH_HEADER" "\${GH_TOKEN:-}" >> "${log}"\nexit ${status}\n`);
+		chmodSync(path, 0o755);
+		return { cwd, calls: () => (existsSync(log) ? readFileSync(log, 'utf8').split('\n').filter((l) => l !== '') : []) };
+	}
+
+	it('no visits file (e.g. the tests failed before collect): nothing to record, exits 0', () => {
+		const repo = fakeRepo();
+		const result = runStep(run, { GH_TOKEN: 'tok' }, { cwd: repo.cwd });
+		expect(result.code).toBe(0);
+		expect(result.stdout).toContain('nothing to record');
+		expect(repo.calls()).toEqual([]);
+	});
+
+	it.each(['[]\n', '[ ]', '[]'])('an empty visits array %j: nothing to record, exits 0', (visits) => {
+		const repo = fakeRepo();
+		const result = runStep(run, { GH_TOKEN: 'tok' }, { cwd: repo.cwd, visits });
+		expect(result.code).toBe(0);
+		expect(result.stdout).toContain('nothing to record');
+		expect(repo.calls()).toEqual([]);
+	});
+
+	it('visits to record: runs commit-visits.sh with the auth header and without GH_TOKEN', () => {
+		const repo = fakeRepo();
+		const result = runStep(run, { GH_TOKEN: 'tok' }, { cwd: repo.cwd, visits: '[{"host":"a.de","at":"2026-10-29T05:17:00.000Z"}]\n' });
+		expect(result.code).toBe(0);
+		const basic = Buffer.from('x-access-token:tok').toString('base64');
+		expect(result.stdout).toContain(`::add-mask::${basic}`);
+		expect(repo.calls()).toEqual([`header=AUTHORIZATION: basic ${basic} gh=`]);
+	});
+
+	it('an invalid visits file is passed on, so record-visits.ts rejects it', () => {
+		const repo = fakeRepo();
+		expect(runStep(run, { GH_TOKEN: 'tok' }, { cwd: repo.cwd, visits: '{nope' }).code).toBe(0);
+		expect(repo.calls()).toHaveLength(1);
+	});
+
+	it('fails when commit-visits.sh fails', () => {
+		const repo = fakeRepo(1);
+		const result = runStep(run, { GH_TOKEN: 'tok' }, { cwd: repo.cwd, visits: '[{"host":"a.de","at":"2026-10-29T05:17:00.000Z"}]' });
+		expect(result.code).toBe(1);
 	});
 });

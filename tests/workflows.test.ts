@@ -61,11 +61,80 @@ describe('pipeline.yml', () => {
 		expect(on.push).toEqual({ branches: ['main'] });
 	});
 
+	describe('collects only on schedule and dispatch (Story 3.11)', () => {
+		type Step = { id?: string; name?: string; if?: string; uses?: string; run?: string; with?: Record<string, unknown>; env?: Record<string, string> };
+		type Job = { needs?: string | string[]; if?: string; steps: Step[] };
+		const jobs = (parse(pipeline) as { jobs: Record<string, Job> }).jobs;
+
+		it('runs the collecting publish job on main for the schedule and dispatch only (an allow-list)', () => {
+			expect(jobs.publish!.if).toBe("github.ref == 'refs/heads/main' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')");
+		});
+
+		it('runs the pipeline (fetch, Nominatim) in the publish job only', () => {
+			for (const name of ['build', 'deploy', 'monitor']) expect(job(pipeline, name)).not.toContain('npm run pipeline');
+			expect(publish).toContain('npm run pipeline');
+		});
+
+		it('checks out the current tip of main, without credentials, in the collecting job', () => {
+			const checkout = jobs.publish!.steps.find((s) => s.id === 'checkout')!;
+			expect(checkout.uses).toMatch(/^actions\/checkout@v\d+$/);
+			expect(checkout.with).toEqual({ ref: 'refs/heads/main', 'persist-credentials': false });
+			expect(publish).not.toContain('github.sha');
+		});
+
+		it('saves this run\'s visits from the pipeline step', () => {
+			const step = jobs.publish!.steps.find((s) => s.id === 'pipeline')!;
+			expect(step.run).toContain('--save-visits "$RUNNER_TEMP/visits.json"');
+		});
+
+		it('records the visits on failure or cancellation, after all-failed and before stage, with only the push credential handling of the commit step', () => {
+			const steps = jobs.publish!.steps;
+			const ids = steps.map((s) => s.id);
+			const record = ids.indexOf('record-visits');
+			expect(record).toBe(ids.indexOf('all-failed') + 1);
+			expect(ids[record + 1]).toBe('stage');
+			const step = steps[record]!;
+			expect(step.if).toBe('failure() || cancelled()');
+			expect(step.env).toEqual({
+				GH_TOKEN: '${{ github.token }}',
+				RECORD_CMD: 'node pipeline/stages/record-visits.ts "$RUNNER_TEMP/visits.json"',
+			});
+			expect(step.run).toContain('unset GH_TOKEN');
+			expect(step.run).toContain('::add-mask::');
+			expect(step.run).toContain('GIT_AUTH_HEADER="AUTHORIZATION: basic $basic" .github/scripts/commit-visits.sh');
+			expect(step.run).not.toContain('npm ci');
+		});
+
+		it('builds only after a successful publish, or a skipped one on a push; deploys only a successful build', () => {
+			expect(jobs.build!.needs).toBe('publish');
+			const buildIf = jobs.build!.if!.replace(/\s+/g, ' ');
+			expect(buildIf).toMatch(/^always\(\) && /);
+			expect(buildIf).toContain("needs.publish.result == 'success'");
+			expect(buildIf).toContain("github.event_name == 'push'");
+			expect(buildIf).toContain("needs.publish.result == 'skipped'");
+			expect(jobs.deploy!.needs).toBe('build');
+			expect(jobs.deploy!.if).toBe("always() && needs.build.result == 'success'");
+		});
+
+		it('type-checks and tests a pushed SHA in build, before building it; schedule and dispatch skip them (publish ran them)', () => {
+			const steps = jobs.build!.steps;
+			const typecheck = steps.findIndex((s) => s.run === 'npm run typecheck');
+			const test = steps.findIndex((s) => s.run === 'npm test');
+			const ci = steps.findIndex((s) => s.run === 'npm ci');
+			const buildStep = steps.findIndex((s) => s.run === 'npm run build');
+			expect(ci).toBeGreaterThanOrEqual(0);
+			expect([ci, typecheck, test, buildStep]).toEqual([...[ci, typecheck, test, buildStep]].sort((a, b) => a - b));
+			expect(steps[typecheck]!.if).toBe("github.event_name == 'push'");
+			expect(steps[test]!.if).toBe("github.event_name == 'push'");
+			expect(steps[buildStep]!.if).toBeUndefined();
+		});
+	});
+
 	it('runs from main or dispatch in one non-cancelling concurrency group, and only for main', () => {
 		expect(pipeline).toMatch(/^  push:\n    branches: \[main\]\n/m);
 		expect(pipeline).toContain('workflow_dispatch:');
 		expect(pipeline).toMatch(/concurrency:\n\s+group: pipeline\n\s+cancel-in-progress: false/);
-		expect(publish).toMatch(/^    if: github\.ref == 'refs\/heads\/main'$/m);
+		expect(publish).toMatch(/^    if: github\.ref == 'refs\/heads\/main' && /m);
 		expect(deploy).toMatch(/uses: actions\/deploy-pages@v\d+/);
 	});
 
@@ -79,7 +148,7 @@ describe('pipeline.yml', () => {
 			'run: npm ci',
 			'run: npm run typecheck',
 			'run: npm test',
-			'run: npm run pipeline -- --save-collect "$RUNNER_TEMP/collect.json" --report "$RUNNER_TEMP/report.json"',
+			'run: npm run pipeline -- --save-collect "$RUNNER_TEMP/collect.json" --report "$RUNNER_TEMP/report.json" --save-visits "$RUNNER_TEMP/visits.json"',
 			'.github/scripts/commit-public.sh',
 		].map((s) => publish.indexOf(s));
 		expect(steps.every((i) => i >= 0)).toBe(true);
@@ -95,9 +164,9 @@ describe('pipeline.yml', () => {
 		expect(match?.[1]).not.toContain('npm ci');
 	});
 
-	it('builds and deploys exactly the SHA the publish job pushed', () => {
-		expect(build).toContain('ref: ${{ needs.publish.outputs.sha }}');
-		expect(build).not.toContain('github.sha');
+	it('builds and deploys exactly the SHA the publish job pushed, or the pushed SHA on a push', () => {
+		expect(build).toContain("ref: ${{ github.event_name == 'push' && github.sha || needs.publish.outputs.sha }}");
+		expect(build.match(/github\.sha/g)).toHaveLength(1);
 		expect(build.indexOf('run: npm ci')).toBeLessThan(build.indexOf('run: npm run build'));
 	});
 

@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { FetchImpl } from '../pipeline/fetch/index.ts';
+import { kuferwebReader } from '../pipeline/readers/kuferweb/index.ts';
 import { parseCliArgs, runPipeline, type RunOptions } from '../pipeline/stages/run.ts';
 import type { Centre } from '../shared/directory.ts';
 import { snapshotSchema, type Snapshot } from '../shared/snapshot.ts';
@@ -713,6 +714,102 @@ describe('runPipeline: the run report (Story 3.4)', () => {
 	});
 });
 
+describe('runPipeline: --save-visits (Story 3.11)', () => {
+	afterEach(() => {
+		vi.doUnmock('../pipeline/stages/publish.ts');
+		vi.resetModules();
+	});
+
+	const readVisits = (path: string): Visit[] => JSON.parse(readFileSync(path, 'utf8')) as Visit[];
+
+	it('writes this run\'s visits on success: the hosts contacted, at the run clock', async () => {
+		const paths = setup();
+		const visitsFile = join(paths.dir, 'tmp', 'visits.json');
+		const replayFile = join(paths.dir, 'collect.json');
+		const { code } = await pipeline(paths, { saveVisits: visitsFile, saveCollect: replayFile });
+		expect(code).toBe(0);
+		const visits = readVisits(visitsFile);
+		expect(visits.length).toBeGreaterThan(0);
+		expect(visits.every((v) => v.at === RUN_AT.toISOString())).toBe(true);
+		expect(visits.map((v) => v.host)).toContain('www.vhs-moosburg.de');
+		expect(visits).toEqual(JSON.parse(readFileSync(replayFile, 'utf8')).visits);
+	});
+
+	it('writes the visits made before collect threw', async () => {
+		const directory = [centre('moosburg', { reader_config: { list_url: MOOSBURG_LIST } }), centre('ebersberg', { reader: 'itemkg', reader_config: { list_url: EBERSBERG_LIST } })];
+		const paths = setup({ directory, state: null, log: null });
+		const visitsFile = join(paths.dir, 'visits.json');
+		const readers = {
+			kuferweb: kuferwebReader,
+			get itemkg(): never {
+				throw new Error('boom');
+			},
+		} as RunOptions['readers'];
+		const { code, errors } = await pipeline(paths, { saveVisits: visitsFile, readers });
+		expect(code).toBe(1);
+		expect(errors.join('\n')).toContain('collect failed');
+		expect(readVisits(visitsFile)).toEqual([{ host: 'www.vhs-moosburg.de', at: RUN_AT.toISOString() }]);
+		expect(existsSync(paths.visitLogPath)).toBe(false);
+	});
+
+	it('writes an empty array when collect threw before any request', async () => {
+		const paths = setup();
+		const visitsFile = join(paths.dir, 'visits.json');
+		const throwing = new Proxy({}, { get: () => { throw new Error('boom'); } }) as RunOptions['readers'];
+		const { code } = await pipeline(paths, { saveVisits: visitsFile, readers: throwing });
+		expect(code).toBe(1);
+		expect(readVisits(visitsFile)).toEqual([]);
+	});
+
+	it('writes the visits before a later step fails (publish validation)', async () => {
+		const paths = setup();
+		vi.resetModules();
+		vi.doMock('../pipeline/stages/publish.ts', async (importOriginal) => {
+			const original = await importOriginal<typeof import('../pipeline/stages/publish.ts')>();
+			return {
+				...original,
+				writeSnapshot: () => {
+					throw new Error('snapshot fails the schema');
+				},
+			};
+		});
+		const { runPipeline: mocked } = await import('../pipeline/stages/run.ts');
+		const visitsFile = join(paths.dir, 'visits.json');
+		const code = await mocked({
+			...paths,
+			saveVisits: visitsFile,
+			now: () => RUN_AT,
+			clientOptions: { fetchImpl: fakeNetwork().fetchImpl, delayMs: 0, timeoutMs: 1000, sleep: async () => {} },
+			locate: { fetchImpl: fakeNominatim().fetchImpl, timeoutMs: 1000, sleep: async () => {} },
+			log: () => {},
+			error: () => {},
+		});
+		expect(code).toBe(1);
+		expect(readVisits(visitsFile).map((v) => v.host)).toContain('www.vhs-moosburg.de');
+	});
+
+	it('writes nothing on --from-collect, and no file without the flag', async () => {
+		const original = setup();
+		const replayFile = join(original.dir, 'collect.json');
+		expect((await pipeline(original, { saveCollect: replayFile })).code).toBe(0);
+		expect(readdirSync(original.dir).sort()).toEqual(['collect.json', 'directory', 'public', 'state']);
+		const replayed = setup();
+		const visitsFile = join(replayed.dir, 'visits.json');
+		expect((await pipeline(replayed, { fromCollect: replayFile, saveVisits: visitsFile }, fakeNetwork({}))).code).toBe(0);
+		expect(existsSync(visitsFile)).toBe(false);
+	});
+
+	it('logs a visits file that cannot be written and still completes the run', async () => {
+		const paths = setup();
+		writeFileSync(join(paths.dir, 'blocker'), '');
+		const visitsFile = join(paths.dir, 'blocker', 'visits.json');
+		const { code, errors } = await pipeline(paths, { saveVisits: visitsFile });
+		expect(code).toBe(0);
+		expect(errors.join('\n')).toContain(`cannot save the visits file ${visitsFile}`);
+		expect(existsSync(paths.snapshotPath)).toBe(true);
+	});
+});
+
 describe('npm run pipeline (CLI)', () => {
 	const RUN = join(REPO, 'pipeline/stages/run.ts');
 
@@ -725,6 +822,9 @@ describe('npm run pipeline (CLI)', () => {
 		expect(() => parseCliArgs(['stray'])).toThrow();
 		expect(parseCliArgs(['--save-collect', 'a.json', '--report', 'r.json'])).toEqual({ saveCollect: 'a.json', fromCollect: undefined, reportPath: 'r.json' });
 		expect(() => parseCliArgs(['--report'])).toThrow();
+		expect(parseCliArgs(['--save-visits', 'v.json'])).toMatchObject({ saveVisits: 'v.json' });
+		expect(parseCliArgs([])).toMatchObject({ saveVisits: undefined });
+		expect(() => parseCliArgs(['--save-visits'])).toThrow();
 	});
 
 	it.each([

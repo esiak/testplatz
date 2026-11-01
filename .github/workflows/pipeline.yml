@@ -1,7 +1,9 @@
 name: pipeline
 
 on:
-  # Once a day at 05:17 UTC (operator decision 2026-10-29; freshness threshold 36 h).
+  # Once a day at 05:17 UTC (operator decision 2026-10-29; freshness threshold 36 h). Only the
+  # schedule and a manual dispatch collect (Story 3.11): a push to main tests, builds and deploys
+  # the pushed SHA from the committed data, so code changes use none of the sites' visit budget.
   schedule:
     - cron: '17 5 * * *'
   push:
@@ -20,9 +22,10 @@ permissions:
 
 jobs:
   # Test, run the pipeline (saving this run's reader results), then commit data/state/ and
-  # data/public/ once (if they changed) and push them to main.
+  # data/public/ once (if they changed) and push them to main. Collects on schedule and dispatch
+  # only, from the current tip of main (a run queued behind another sees that run's visits).
   publish:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -35,7 +38,7 @@ jobs:
       - id: checkout
         uses: actions/checkout@v7
         with:
-          ref: ${{ github.sha }}
+          ref: refs/heads/main
           persist-credentials: false
       - id: setup-node
         uses: actions/setup-node@v7
@@ -49,7 +52,7 @@ jobs:
       - id: test
         run: npm test
       - id: pipeline
-        run: npm run pipeline -- --save-collect "$RUNNER_TEMP/collect.json" --report "$RUNNER_TEMP/report.json"
+        run: npm run pipeline -- --save-collect "$RUNNER_TEMP/collect.json" --report "$RUNNER_TEMP/report.json" --save-visits "$RUNNER_TEMP/visits.json"
       - id: commit
         name: Commit and push data/state/ and data/public/
         env:
@@ -81,6 +84,27 @@ jobs:
             echo "::error::every fetched centre failed; the data was committed, nothing is deployed"
             exit 1
           fi
+      # When the job failed or was cancelled (or timed out) after contacting sites (collect threw,
+      # publish failed, the push was rejected for good, …), this run's visits are not on main yet: reset to the newest main, add
+      # them to data/state/visits.json and push only that file, so the visit budget never
+      # under-counts (Story 3.11). Idempotent: visits already on main change nothing. No `npm ci`
+      # here either (the push credential is in this step's environment).
+      - id: record-visits
+        name: Record this run's visits on main after a failure
+        if: failure() || cancelled()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RECORD_CMD: node pipeline/stages/record-visits.ts "$RUNNER_TEMP/visits.json"
+        run: |
+          visits="$RUNNER_TEMP/visits.json"
+          if [ ! -f "$visits" ] || [ "$(jq -c . "$visits" 2>/dev/null || true)" = '[]' ]; then
+            echo "no visits from this run, nothing to record"
+            exit 0
+          fi
+          basic="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 | tr -d '\n')"
+          echo "::add-mask::$basic"
+          unset GH_TOKEN
+          GIT_AUTH_HEADER="AUTHORIZATION: basic $basic" .github/scripts/commit-visits.sh
       # Names the first failed stage for the monitor job and passes the run report on.
       - id: stage
         if: always()
@@ -115,21 +139,32 @@ jobs:
           echo "stage=$stage" >> "$GITHUB_OUTPUT"
           echo "report=$report" >> "$GITHUB_OUTPUT"
 
-  # Build exactly the SHA the publish job pushed (pushes made with the workflow token do not
-  # trigger another workflow run, so there is no loop).
+  # On schedule/dispatch: build exactly the SHA the publish job pushed (pushes made with the
+  # workflow token do not trigger another workflow run, so there is no loop); publish tested it.
+  # On a push to main: publish is skipped; build type-checks, tests and builds the pushed SHA with
+  # the committed data (no provider site or Nominatim is contacted). `always()`, because a skipped
+  # publish would otherwise skip build and deploy too.
   build:
     needs: publish
+    if: >-
+      always() && (needs.publish.result == 'success' ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.publish.result == 'skipped'))
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ needs.publish.outputs.sha }}
+          ref: ${{ github.event_name == 'push' && github.sha || needs.publish.outputs.sha }}
           persist-credentials: false
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      # Nothing else tested a pushed SHA (ci.yml skips data-only pushes); publish tested its own.
+      - if: github.event_name == 'push'
+        run: npm run typecheck
+      - if: github.event_name == 'push'
+        run: npm test
       - run: npm run build
       - name: Check build output
         run: |
@@ -145,6 +180,7 @@ jobs:
 
   deploy:
     needs: build
+    if: always() && needs.build.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       pages: write
@@ -158,8 +194,10 @@ jobs:
 
   # Alerts (Story 3.4): opens or comments on a "Pipeline failed: <stage>" issue for a failed run,
   # opens, comments on or closes one "Reader <reader>: needs attention" issue per reader system,
-  # and pings the dead-man check (healthchecks.io) after a fully successful run. No `npm ci`: no
-  # install scripts run next to the issues token; tools/alerts.ts imports only Node built-ins.
+  # and pings the dead-man check (healthchecks.io) after a fully successful run (a publish skipped
+  # on a push counts as successful; such a run has no report, so reader issues are left alone). No
+  # `npm ci`: no install scripts run next to the issues token; tools/alerts.ts imports only Node
+  # built-ins.
   monitor:
     needs: [publish, build, deploy]
     if: always() && github.ref == 'refs/heads/main'
