@@ -497,6 +497,86 @@ describe('status signals', () => {
 	});
 });
 
+describe('near-misses from the coverage cache (Story 4.4)', () => {
+	const ECHING: FixtureCentre = {
+		centre: centre('volkshochschule-eching-e-v', 'https://www.vhs-eching.de/programm/sprachen/kategorie/Einbuergerungstest/364'),
+		dir: 'eching',
+		detailBase: 'https://www.vhs-eching.de/programm/sprachen/kurs/Einbuergerungstest/',
+		courses: ['27-4103', '27-4110'],
+	};
+	const AMBERG_URL = 'https://www.vhs-as.de/kurssuche/kurs/Einbuergerungstest/W40432S';
+	const INGOLSTADT_URL = 'https://www.inlingua-ingolstadt.de/pruefungen/einbuergerungstests/';
+	const ingolstadtCourse = (knr: string, hash: string) =>
+		`${INGOLSTADT_URL}?kathaupt=11&katid=36&knr=${knr}&kursname=Pruefung%20Einbuergerungstest&cHash=${hash}`;
+	const INGOLSTADT_COURSES = [
+		ingolstadtCourse('26IPRDE164', 'b7adf4925a56359d218f19e7224d1024'),
+		ingolstadtCourse('26IPRDE166', '6db0e2b883d4f141af6cc177d372d39e'),
+		ingolstadtCourse('27IPRDE106', '34f254522f3058ea5fc79ab0e803bbc4'),
+		ingolstadtCourse('27IPRDE112', 'd1aefb40d8107c0d4244d85618e03265'),
+		ingolstadtCourse('27IPRDE118', '6823abb9e4d267681fdc14b70b10931b'),
+		ingolstadtCourse('27IPRDE124', '341e5475065880d4387f834e9c0de106'),
+	];
+	const listPage = (file: string, url: string): FetchedPage => ({ url, role: 'list', status: 200, html: readFileSync(join(FIXTURES_DIR, file), 'utf8'), finalUrl: url });
+
+	it('Eching: a single `Termin` value (no Beginn, no session table) gives date and time; screen-reader hints stay out of the place', () => {
+		const eching = { place: 'Eching, Rathaus, großer Sitzungssaal im EG', address: null, status: 'unknown', registration_method: 'online', eligibility: null } as const;
+		expect(run(ECHING)).toEqual({
+			kind: 'ok',
+			listings: [
+				{ date: '2026-12-04', time: '09:00', ...eching, deadline: '2026-11-09', source_url: detailUrl(ECHING, '27-4103') },
+				{ date: '2027-07-16', time: '10:00', ...eching, deadline: '2027-06-21', source_url: detailUrl(ECHING, '27-4110') },
+			],
+		});
+	});
+
+	it('Amberg-Sulzbach: a test page that is itself the course page is read as its detail page; its own toggle links are not fetched', () => {
+		const c = centre('vhs-landkreis-amberg-sulzbach', AMBERG_URL);
+		const html = readFileSync(join(FIXTURES_DIR, 'amberg/list.html'), 'utf8');
+		expect(html).toContain('W40432S?size=1');
+		expect(selectDetailUrls(kuferwebReader.plan(c), [listPage('amberg/list.html', AMBERG_URL)])).toEqual([]);
+		expect(runReaderOnFixtures(kuferwebReader, c, { [AMBERG_URL]: { file: 'amberg/list.html' } }, CTX, FIXTURES_DIR)).toEqual({
+			kind: 'ok',
+			listings: [
+				{
+					date: '2026-12-03',
+					time: '16:00',
+					place: 'Vortragssaal 208',
+					address: 'Obere Gartenstr. 3, 92237 Sulzbach-Rosenberg',
+					status: 'unknown',
+					deadline: null,
+					registration_method: 'in_person',
+					eligibility: null,
+					source_url: AMBERG_URL,
+				},
+			],
+		});
+	});
+
+	it('inlingua Ingolstadt: query course links (`?kathaupt=11&knr=…&kursname=…`) are the detail pages; sort links are not', () => {
+		const plan = kuferwebReader.plan(centre('inlingua-sprachenschule-e-k', INGOLSTADT_URL));
+		expect(selectDetailUrls(plan, [listPage('ingolstadt/list.html', INGOLSTADT_URL)])).toEqual(INGOLSTADT_COURSES);
+	});
+
+	it('inlingua Ingolstadt without its detail pages (not cached yet) → failed(detail-page)', () => {
+		const c = centre('inlingua-sprachenschule-e-k', INGOLSTADT_URL);
+		const fixtures: Fixtures = { [INGOLSTADT_URL]: { file: 'ingolstadt/list.html' } };
+		for (const url of INGOLSTADT_COURSES) fixtures[url] = { file: null, status: null };
+		expect(runReaderOnFixtures(kuferwebReader, c, fixtures, CTX, FIXTURES_DIR)).toEqual({ kind: 'failed', reason: 'detail-page' });
+	});
+
+	it('a query link needs kathaupt=11, a course number and a test kursname', () => {
+		const html = [
+			'<a href="?kathaupt=11&knr=A1&kursname=Einb%C3%BCrgerungstest">a</a>',
+			'<a href="?kathaupt=6&knr=A2&kursname=Einbuergerungstest&browse=forward">paging</a>',
+			'<a href="?kathaupt=11&kursname=Einbuergerungstest">no knr</a>',
+			'<a href="?kathaupt=11&knr=A3&kursname=BCE%202611">other course</a>',
+			'<a href="?kathaupt=1&katid=36&orderby=ptitel">sort</a>',
+		].join('');
+		const plan = kuferwebReader.plan(centre('x', 'https://a.de/l/'));
+		expect(plan.selectDetailUrls([{ url: 'https://a.de/l/', role: 'list', status: 200, html, finalUrl: null }])).toEqual(['https://a.de/l/?kathaupt=11&knr=A1&kursname=Einb%C3%BCrgerungstest']);
+	});
+});
+
 describe('directory', () => {
 	const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
 	const centres = JSON.parse(readFileSync(join(ROOT, 'data/directory/centres.json'), 'utf8')) as Centre[];

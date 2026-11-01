@@ -31,6 +31,11 @@ committed files. Instructor names appear in the pages as published; the reader n
 | `muehldorf/E36901.html` | https://www.vhs-muehldorf.de/programm/sprachen-verstaendigung/kurs/Deutsch-Einbuergerungstest/E36901 | `13.00 Uhr` time; "Anmeldung bis 13.11.2026"; Kursort without street → address null |
 | `no-tests/list.html` | https://www.vhs-mainburg.de/programm/sprachen | course list without Einbürgerungstest links |
 | `structure-missing/list.html` | https://www.vhs-neumarkt.de/ | KuferWeb homepage, no course list container |
+| `eching/list.html` | https://www.vhs-eching.de/programm/sprachen/kategorie/Einbuergerungstest/364 | trimmed (Story 4.4): course list with two of its eight test rows |
+| `eching/27-4103.html`, `27-4110.html` | https://www.vhs-eching.de/programm/sprachen/kurs/Einbuergerungstest/<id> | trimmed: single `Termin` value, no `Beginn`, no session table; `sr-only` hint in the Kursort link; "Anmeldeschluss: 21.06.27" |
+| `amberg/list.html` | https://www.vhs-as.de/kurssuche/kurs/Einbuergerungstest/W40432S | trimmed: test page that is itself a course page; its font-size / dark-mode toggle links; instructor row removed |
+| `ingolstadt/list.html` | https://www.inlingua-ingolstadt.de/pruefungen/einbuergerungstests/ | trimmed: course list without speaking URLs (`?kathaupt=11&knr=…&kursname=…` links) |
 
-All files fetched 2026-10-28. No fixture states a rule except Aichach's list page (and its detail
+All files fetched 2026-10-28, except the Story 4.4 files: trimmed copies (only the course list or
+detail container and the links the reader needs) of pages from the coverage cache fetched 2026-11-01. No fixture states a rule except Aichach's list page (and its detail
 pages outside `.kw-kursdetails`).

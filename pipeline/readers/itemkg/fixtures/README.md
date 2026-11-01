@@ -28,5 +28,9 @@ Detail pages are named after their course id; each one's URL is the row link on 
 | `bamberg/list.html` | https://www.vhs-bamberg.de/einbuergerungstests | course list container without rows |
 | `bamberg-land/list.html` | https://www.vhs-bamberg-land.de/p/488-CAT-KAT4512071 | one test row without a date |
 | `structure-missing/list.html` | https://www.vhs-don.de/einbuergerungstests | Donauwörth info page, no course list |
+| `deggendorf/list.html` | https://www.vhs-deggendorf.de/fachbereich//deutsch-und-integration/einbuergerungstest?upcoming=1 | trimmed (Story 4.4): newer theme, `.course-list[data-arguments]` with 3 `article` cards (`h2.title`, `.start-date`, `.start-time`), `bk-notbookable` |
+| `suedost/list.html` | https://www.vhs-suedost.de/fachbereich/vhs/deutsch-integration/pruefungen? | trimmed: newer theme, `h2.course-title`, "Die Anmeldung ist ausschließlich persönlich" in the card text |
 
-All files fetched 2026-10-29. No fixture states a residence rule.
+All files fetched 2026-10-29, except the Story 4.4 files: trimmed copies of pages from the coverage
+cache fetched 2026-11-01 (only the course list; lecturer names and `data-*` attributes holding them
+removed). Newer-theme cards are read from the card alone; no detail page is fetched for them. No fixture states a residence rule.

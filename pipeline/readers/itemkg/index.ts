@@ -1,10 +1,13 @@
 /**
  * ITEM KG (TYPO3 `itemkg_connect`) reader. The list page is the centre's course list (a category
  * or a search-word page, `#category-courses`); every course on it is a `.course-item` card with
- * the title, the date and the booking flags (`i.bk-icon` classes). One listing is read per dated
+ * the title, the date and the booking flags (`i.bk-icon` classes). The newer theme
+ * (`itemkgtheme_itmhead`) lists the same fields as `article` cards in `.course-list[data-arguments]`
+ * (`.start-date`, `.start-time`, `.course-location`). One listing is read per dated
  * Einbürgerungstest row: date, time and flags from the row, venue, start-time fallback, deadline,
- * registration text and eligibility from the row's detail page (`.course-show-wrap`). Pure (AD-4):
- * no I/O, no clock, failures returned as values.
+ * registration text and eligibility from the row's detail page (`.course-show-wrap`). Newer-theme
+ * cards are read from the card alone: their detail pages (never seen yet) are not fetched. Pure
+ * (AD-4): no I/O, no clock, failures returned as values.
  */
 import { load, type CheerioAPI } from 'cheerio';
 import type { Centre } from '../../../shared/directory.ts';
@@ -15,9 +18,12 @@ import type { FetchedPage, ParseResult, Reader, ReaderPlan } from '../../../shar
 export const ITEMKG_MAX_DETAIL_PAGES = 30;
 
 /** An ITEM KG course list; a list page without one is not a page this reader knows. */
-const LIST_CONTAINER = '#category-courses, .category-courses-container';
+const NEW_LIST = '.course-list[data-arguments]';
+const LIST_CONTAINER = `#category-courses, .category-courses-container, ${NEW_LIST}`;
 const DETAIL_CONTAINER = '.course-show-wrap';
-const ROW = '.course-item';
+const OLD_ROW = '.course-item';
+const NEW_ROW = `${NEW_LIST} > article`;
+const ROW = `${OLD_ROW}, ${NEW_ROW}`;
 const TEST_TITLE = /einb(ü|ue)rgerungstest/i;
 const PREPARATION = /vorbereitung/i;
 
@@ -115,6 +121,8 @@ function resolveUrl(href: string, base: string): string | null {
 interface TestRow {
 	$: CheerioAPI;
 	row: Selection;
+	/** A newer-theme card (`article` in `.course-list`), read from the card alone (no detail page). */
+	newTheme: boolean;
 	url: string;
 	/** The row's date as `YYYY-MM-DD`; null when the date text holds no real `D.M.YYYY` date. */
 	date: string | null;
@@ -125,26 +133,31 @@ function testRows($: CheerioAPI, base: string): TestRow[] {
 	const rows: TestRow[] = [];
 	$(ROW).each((_, element) => {
 		const row = $(element);
-		const title = collapse(row.find('.course-title').first().text());
+		const newTheme = row.is(NEW_ROW);
+		const title = collapse(row.find(newTheme ? '.course-title, h2.title' : '.course-title').first().text());
 		if (!TEST_TITLE.test(title) || PREPARATION.test(title)) return;
-		const dateText = collapse(row.find('.course-list-item-date').first().text());
+		const dateText = newTheme
+			? collapse(`${row.find('.start-date').first().text()} ${row.find('.start-time').first().text()}`)
+			: collapse(row.find('.course-list-item-date').first().text());
 		if (dateText === '') return; // "dates on request"
 		const match = DATE.exec(dateText);
-		const href = row.find('a.card-list-item[href]').first().attr('href');
+		// Newer theme: the title link, else the card's first link (never a later map or booking link).
+		const link = newTheme ? row.find('h2 a[href], h3 a[href], .course-title a[href], .title a[href]').first() : row.find('a.card-list-item[href]').first();
+		const href = (newTheme && link.length === 0 ? row.find('a[href]').first() : link).attr('href');
 		const url = href === undefined ? null : resolveUrl(href, base);
 		if (url === null) return;
 		if (match === null) {
-			rows.push({ $, row, url, date: null, time: null }); // a date text that is no D.M.YYYY
+			rows.push({ $, row, newTheme, url, date: null, time: null }); // a date text that is no D.M.YYYY
 			return;
 		}
 		const time = findTime(dateText.slice(match.index + match[0].length));
-		rows.push({ $, row, url, date: toLocalDate(match[1]!, match[2]!, match[3]!), time });
+		rows.push({ $, row, newTheme, url, date: toLocalDate(match[1]!, match[2]!, match[3]!), time });
 	});
 	return rows;
 }
 
 function selectDetailUrls(listPages: readonly FetchedPage[]): string[] {
-	return listPages.flatMap((page) => (page.html === null ? [] : testRows(load(page.html), pageBase(page)).map((row) => row.url)));
+	return listPages.flatMap((page) => (page.html === null ? [] : testRows(load(page.html), pageBase(page)).filter((row) => !row.newTheme).map((row) => row.url)));
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -262,7 +275,7 @@ const containsToken = (text: string, token: string): boolean =>
 function placeAndAddress(wrap: Selection, row: Selection): { place: string | null; address: string | null } {
 	const venue = wrap.find('.venueContainer').first();
 	if (venue.length === 0) {
-		const location = collapse(row.find('.course-list-item-location').first().text());
+		const location = collapse(row.find('.course-list-item-location, .course-location').first().text());
 		return { place: location === '' ? null : location, address: null };
 	}
 	const name = collapse(venue.find('.venueName').first().text());
@@ -341,11 +354,12 @@ function parse(pages: readonly FetchedPage[]): ParseResult {
 		const key = pageKey(page.url);
 		if (!detailPages.has(key)) detailPages.set(key, page);
 	}
-	const pagesOfRows = rows.map((row) => detailPages.get(row.url));
-	if (pagesOfRows.some((page) => page === undefined || !isOk(page.status) || page.html === null)) return failed('detail-page');
+	// Newer-theme cards have no detail page (`null`); every other row needs its own.
+	const pagesOfRows = rows.map((row) => (row.newTheme ? null : detailPages.get(row.url)));
+	if (pagesOfRows.some((page) => page === undefined || (page !== null && (!isOk(page.status) || page.html === null)))) return failed('detail-page');
 	const details = new Map<FetchedPage, { $: CheerioAPI; wrap: Selection }>();
-	for (const page of pagesOfRows as FetchedPage[]) {
-		if (details.has(page)) continue;
+	for (const page of pagesOfRows) {
+		if (page === null || page === undefined || details.has(page)) continue;
 		const $ = load(page.html!);
 		const wrap = $(DETAIL_CONTAINER).first();
 		if (wrap.length === 0) return failed('structure-missing');
@@ -355,8 +369,9 @@ function parse(pages: readonly FetchedPage[]): ParseResult {
 	const pageRule = lists.map(listRule).find((rule) => rule !== null) ?? null;
 	const listings: RawListing[] = [];
 	for (const [index, row] of rows.entries()) {
-		const page = pagesOfRows[index]!;
-		const { $, wrap } = details.get(page)!;
+		const page = pagesOfRows[index] ?? null;
+		// A newer-theme card: no detail page, so an empty detail selection (fields only from the card).
+		const { $, wrap } = page === null ? { $: row.$, wrap: row.$([]) } : details.get(page)!;
 		if (row.date === null) return failed('date-unparseable');
 		const time = row.time ?? startTime($, wrap, row.date);
 		if (time === null) return failed('date-unparseable');
@@ -376,8 +391,8 @@ function parse(pages: readonly FetchedPage[]): ParseResult {
 			status: mapStatus(flagSignals(flags, method, waitlistOffer)),
 			deadline: deadlineIn(detailLines.join(' ')) ?? deadlineIn(rowLines.join(' ')),
 			registration_method: method,
-			eligibility: clampEligibility(eligibilityIn($, wrap.find(LEAF_CANDIDATES)) ?? pageRule),
-			source_url: pageBase(page),
+			eligibility: clampEligibility(page === null ? eligibilityIn($, row.row.find(LEAF_CANDIDATES)) : (eligibilityIn($, wrap.find(LEAF_CANDIDATES)) ?? pageRule)),
+			source_url: page === null ? row.url : pageBase(page),
 		});
 	}
 	return { kind: 'ok', listings };

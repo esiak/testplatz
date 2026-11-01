@@ -257,6 +257,7 @@ describe('runPipeline: one collection run end to end', () => {
 		});
 
 		expect(snapshot.systems).toEqual([
+			{ reader: 'cmx', centres_covered: 0, centres_ok: 0, centres_failed: 0, last_success_at: null },
 			{ reader: 'itemkg', centres_covered: 2, centres_ok: 1, centres_failed: 1, last_success_at: at },
 			{ reader: 'kuferweb', centres_covered: 3, centres_ok: 2, centres_failed: 0, last_success_at: at },
 		]);
@@ -657,6 +658,7 @@ describe('runPipeline: the run report (Story 3.4)', () => {
 			runAt: RUN_AT.toISOString(),
 			all_fetched_failed: false,
 			systems: [
+				{ reader: 'cmx', problem_down: null, disappeared: [] },
 				{ reader: 'itemkg', problem_down: null, disappeared: [] },
 				{ reader: 'kuferweb', problem_down: null, disappeared: [] },
 			],
@@ -733,8 +735,9 @@ describe('runPipeline: the run report (Story 3.4)', () => {
 		expect(existsSync(paths.snapshotPath)).toBe(true);
 		const report = readReport(reportPath);
 		expect(report).toMatchObject({ stage: null, all_fetched_failed: true });
-		// Never succeeded: both systems are down at once.
+		// Never succeeded: both systems with centres are down at once; cmx has none, so it is not down.
 		expect(report.systems).toEqual([
+			{ reader: 'cmx', problem_down: null, disappeared: [] },
 			{ reader: 'itemkg', problem_down: { since: null }, disappeared: [] },
 			{ reader: 'kuferweb', problem_down: { since: null }, disappeared: [] },
 		]);

@@ -559,6 +559,58 @@ describe('registration method', () => {
 	});
 });
 
+describe('newer theme (`.course-list[data-arguments]`), from the coverage cache (Story 4.4)', () => {
+	const DEGGENDORF_URL = 'https://www.vhs-deggendorf.de/fachbereich//deutsch-und-integration/einbuergerungstest?upcoming=1';
+	const DEGGENDORF_COURSE = 'https://www.vhs-deggendorf.de/kurs/deutsch-und-integration/einbuergerungstest/einbuergerungstest/';
+	const SUEDOST_URL = 'https://www.vhs-suedost.de/fachbereich/vhs/deutsch-integration/pruefungen?';
+	const SUEDOST_COURSE = 'https://www.vhs-suedost.de/kurs/vhs/deutsch-integration/pruefungen/';
+	const deggendorf = centre('vhs-deggendorfer-land-e-v', DEGGENDORF_URL);
+	const suedost = centre('volkshochschule-suedost-im-lkr-muenchen', SUEDOST_URL);
+	const deggendorfCourses = ['9980624', '9980650', '9980676'].map((id) => `${DEGGENDORF_COURSE}${id}`);
+	const suedostCourses = [`${SUEDOST_COURSE}einbuergerungstest-1-gruppe/262-47092`, `${SUEDOST_COURSE}einbuergerungstest-2-gruppe/262-47093`];
+	const page = (file: string, url: string): FetchedPage => ({ url, role: 'list', status: 200, html: readFileSync(join(FIXTURES_DIR, file), 'utf8'), finalUrl: url });
+	const listOnly = (url: string, file: string): Fixtures => ({ [url]: { file } });
+
+	it('plan selects no detail page for newer-theme cards (they are read from the card alone)', () => {
+		expect(selectDetailUrls(itemkgReader.plan(deggendorf), [page('deggendorf/list.html', DEGGENDORF_URL)])).toEqual([]);
+		expect(selectDetailUrls(itemkgReader.plan(suedost), [page('suedost/list.html', SUEDOST_URL)])).toEqual([]);
+	});
+
+	it('Deggendorf (`h2.title`): date, time and place from the card; `bk-notbookable` → booked_out; source_url the card link', () => {
+		const result = runReaderOnFixtures(itemkgReader, deggendorf, listOnly(DEGGENDORF_URL, 'deggendorf/list.html'), CTX, FIXTURES_DIR);
+		const rest = { place: 'Volkshochschule', address: null, status: 'booked_out', deadline: null, registration_method: null, eligibility: null } as const;
+		expect(result).toEqual({
+			kind: 'ok',
+			listings: [
+				{ date: '2026-11-13', time: '09:00', ...rest, source_url: deggendorfCourses[0] },
+				{ date: '2026-12-11', time: '09:00', ...rest, source_url: deggendorfCourses[1] },
+				{ date: '2027-01-29', time: '09:00', ...rest, source_url: deggendorfCourses[2] },
+			],
+		});
+	});
+
+	it('Südost (`h2.course-title`): "Einbürgerungstest 1/2 Gruppe", in-person registration from the card text → unknown', () => {
+		const result = runReaderOnFixtures(itemkgReader, suedost, listOnly(SUEDOST_URL, 'suedost/list.html'), CTX, FIXTURES_DIR);
+		const rest = { place: 'Otb, Wolf-Ferrari-Haus, OG, Ratssaal', address: null, status: 'unknown', deadline: null, registration_method: 'in_person', eligibility: null } as const;
+		expect(result).toEqual({
+			kind: 'ok',
+			listings: [
+				{ date: '2026-12-17', time: '09:00', ...rest, source_url: suedostCourses[0] },
+				{ date: '2026-12-17', time: '10:30', ...rest, source_url: suedostCourses[1] },
+			],
+		});
+	});
+
+	it('a newer-theme card whose first link is not the title link takes the title link', () => {
+		const card =
+			'<div class="course-list" data-arguments="[]"><article><a href="/karte/1">Karte</a><h2 class="title"><a href="/kurs/einbuergerungstest/1">Einbürgerungstest</a></h2>' +
+			'<span class="start-date">13.11.2026</span><span class="start-time">09:00</span></article></div>';
+		const list: FetchedPage = { url: 'https://a.de/l', role: 'list', status: 200, html: card, finalUrl: null };
+		const result = itemkgReader.parse([list], deggendorf, CTX);
+		expect(result.kind === 'ok' && result.listings.map((l) => l.source_url)).toEqual(['https://a.de/kurs/einbuergerungstest/1']);
+	});
+});
+
 describe('directory', () => {
 	const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
 	const centres = JSON.parse(readFileSync(join(ROOT, 'data/directory/centres.json'), 'utf8')) as Centre[];

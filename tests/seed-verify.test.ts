@@ -214,6 +214,8 @@ describe('verify: page helpers', () => {
 		expect(detectReader(['<a href="/p/einbuergerungstest-123-CAT-KAT7">'])).toBe('itemkg');
 		expect(detectReader(['typo3conf/ext/itemkg_x', '/fileadmin/kuferweb/webbasys/'])).toBe('none');
 		expect(detectReader(['<p>plain</p>'])).toBe('none');
+		expect(detectReader(['<script src="/cmx/interpreter/js/index.js"></script>'])).toBe('cmx');
+		expect(detectReader(['<script src="/cmx/interpreter/js/index.js"></script>', '/fileadmin/kuferweb/webbasys/'])).toBe('none');
 	});
 
 	it('reads organisation-type JSON-LD nodes at any depth, whitespace-collapsed', () => {
@@ -534,7 +536,7 @@ describe('verify: runVerify', () => {
 		expect(note).toContain('- Checked this run: 7 (opted out, never fetched: 1)');
 		expect(note).toContain('- Verified: 3');
 		expect(note).toContain('- Unverified: 5');
-		expect(note).toContain('- Reader kuferweb: 0, itemkg: 1, none: 7');
+		expect(note).toContain('- Reader kuferweb: 0, itemkg: 1, cmx: 0, none: 7');
 		expect(note).toContain('- Most page gets to one host: 2');
 		expect(note).toContain('- vhs-down (https://down.example/): robots.txt unavailable: HTTP 503');
 		expect(note).toContain('- `address.street`: Hirschenstr. 27/29 → Hirschenstraße 27/29');

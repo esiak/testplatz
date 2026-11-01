@@ -38,6 +38,7 @@ import type { State } from '../../shared/state.ts';
 import type { Venues } from '../../shared/venues.ts';
 import type { Visit } from '../../shared/visits.ts';
 import { readVisitLog } from '../fetch/visits.ts';
+import { cmxReader } from '../readers/cmx/index.ts';
 import { itemkgReader } from '../readers/itemkg/index.ts';
 import { kuferwebReader } from '../readers/kuferweb/index.ts';
 import { CollectError, collectRun, type CollectOptions, type ReaderRegistry } from './collect.ts';
@@ -50,7 +51,7 @@ import { loadReplay, saveReplay, saveVisits, type Replay } from './replay.ts';
 import { buildRunReport, failedReport, writeReport, type RunReport } from './report.ts';
 
 /** The readers a scheduled run uses. */
-export const READER_REGISTRY: ReaderRegistry = { kuferweb: kuferwebReader, itemkg: itemkgReader };
+export const READER_REGISTRY: ReaderRegistry = { kuferweb: kuferwebReader, itemkg: itemkgReader, cmx: cmxReader };
 
 export interface RunOptions {
 	directoryPath?: string;

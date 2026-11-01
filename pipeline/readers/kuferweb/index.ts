@@ -1,9 +1,11 @@
 /**
  * KuferWeb (TYPO3 "webbasys") reader. The list page is the centre's test page (an Einbürgerungstest
- * or wider language category); each Einbürgerungstest course on it has a detail page under `/kurs/`, and one listing is
+ * or wider language category); each Einbürgerungstest course on it has a detail page, under `/kurs/`
+ * or, on sites without speaking URLs, a `?kathaupt=11&knr=…&kursname=…` query link. One listing is
  * read per detail page from the shared detail template (`.kw-kursdetails`, the `Beginn`/`Kursort`
- * labels and the `.kw-kurstageuebersicht` session table). List rows are used only for the links
- * and their traffic-light labels. Pure (AD-4): no I/O, no clock, failures returned as values.
+ * labels and the `.kw-kurstageuebersicht` session table). A test page that is itself an
+ * Einbürgerungstest course page is read as that course's detail page. List rows are used only for
+ * the links and their traffic-light labels. Pure (AD-4): no I/O, no clock, failures returned as values.
  */
 import { load, type CheerioAPI } from 'cheerio';
 import type { Centre } from '../../../shared/directory.ts';
@@ -18,7 +20,7 @@ const LIST_CONTAINER = '.kw-kursuebersicht, .kw-kat-kurs-ueb, .hauptseite_kurse'
 const DETAIL_CONTAINER = '.kw-kursdetails';
 const SESSION_TABLE = '.kw-kurstageuebersicht';
 const TRAFFIC_LIGHT = '[class*="ampel"]';
-/** Matched against the decoded course title segment right after `/kurs/`. */
+/** Matched against the course title: the decoded segment right after `/kurs/`, or the `kursname` parameter. */
 const TEST_TITLE = /einb(ue|ü)rger/i;
 
 // ---------------------------------------------------------------------------------------------
@@ -99,19 +101,27 @@ function findTime(text: string): string | null {
 // Course links
 // ---------------------------------------------------------------------------------------------
 
-/** The absolute course URL (fragment dropped) for a link, or null when it is not a `/kurs/` link. */
+/** A course detail link without speaking URLs: `?kathaupt=11` (the detail view) with a course number `knr`. */
+const isQueryCourse = (url: URL): boolean => url.searchParams.get('kathaupt') === '11' && (url.searchParams.get('knr') ?? '') !== '';
+
+/**
+ * The absolute course URL (fragment dropped) for a link, or null when it is neither a `/kurs/` link
+ * nor a query course link.
+ */
 function courseUrl(href: string, base: string): string | null {
 	if (!URL.canParse(href, base)) return null;
 	const url = new URL(href, base);
 	if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
-	if (!url.pathname.includes('/kurs/')) return null;
+	if (!url.pathname.includes('/kurs/') && !isQueryCourse(url)) return null;
 	url.hash = '';
 	return url.href;
 }
 
-/** Whether the course title segment right after `/kurs/` names an Einbürgerungstest. */
+/** Whether the course title (segment right after `/kurs/`, else the `kursname` parameter) names an Einbürgerungstest. */
 function isTestCourse(url: string): boolean {
-	const { pathname } = new URL(url);
+	const parsed = new URL(url);
+	const { pathname } = parsed;
+	if (!pathname.includes('/kurs/')) return TEST_TITLE.test(parsed.searchParams.get('kursname') ?? '');
 	const segment = pathname.slice(pathname.indexOf('/kurs/') + '/kurs/'.length).split('/')[0] ?? '';
 	let decoded: string;
 	try {
@@ -124,14 +134,32 @@ function isTestCourse(url: string): boolean {
 
 const pageBase = (page: FetchedPage): string => page.finalUrl ?? page.url;
 
-/** Einbürgerungstest course URLs on one list page, in document order (may repeat). */
+/**
+ * Whether `url` is the course page at `base` itself (same origin, path and course number `knr`),
+ * e.g. a font-size or dark-mode toggle on a course page.
+ */
+function isSamePage(url: string, base: string): boolean {
+	if (!URL.canParse(base)) return false;
+	const [a, b] = [new URL(url), new URL(base)];
+	const path = (u: URL) => u.pathname.replace(/\/+$/, '');
+	return a.origin === b.origin && path(a) === path(b) && a.searchParams.get('knr') === b.searchParams.get('knr');
+}
+
+/** Einbürgerungstest course URLs on one list page, in document order (may repeat); links back to the page itself are skipped. */
 function testLinks($: CheerioAPI, base: string): string[] {
 	const urls: string[] = [];
 	$('a[href]').each((_, a) => {
 		const url = courseUrl($(a).attr('href') ?? '', base);
-		if (url !== null && isTestCourse(url)) urls.push(url);
+		if (url !== null && isTestCourse(url) && !isSamePage(url, base)) urls.push(url);
 	});
 	return urls;
+}
+
+/** Whether a list page is itself an Einbürgerungstest course page (detail template, test course URL). */
+function isSelfDetail($: CheerioAPI, base: string): boolean {
+	if ($(DETAIL_CONTAINER).length === 0) return false;
+	const url = courseUrl(base, base);
+	return url !== null && isTestCourse(url);
 }
 
 function selectDetailUrls(listPages: readonly FetchedPage[]): string[] {
@@ -319,12 +347,20 @@ function sessions($: CheerioAPI, details: ReturnType<CheerioAPI>): Session[] {
 	return result;
 }
 
-/** Start date and time per the `Beginn` label, falling back to the session table; null when unreadable. */
+/**
+ * Start date and time per the `Beginn` label, falling back to the session table, then to a single
+ * `Termin` value ("Fr. 16.07.2027 (10:00 - 11:00 Uhr)"); null when unreadable.
+ */
 function startOf(lines: readonly string[], table: readonly Session[]): { date: string; time: string } | null {
 	const begin = labelValue(lines, ['Beginn', 'Kursbeginn']);
 	if (begin === null) {
 		const first = table[0];
-		return first?.date && first.time ? { date: first.date, time: first.time } : null;
+		if (first?.date && first.time) return { date: first.date, time: first.time };
+		if (first !== undefined) return null;
+		const termin = labelValue(lines, ['Termin']);
+		const found = termin === null ? null : findDate(termin);
+		const time = found?.date ? findTime(found.rest) : null;
+		return found?.date && time ? { date: found.date, time } : null;
 	}
 	const found = findDate(begin);
 	if (found === null || found.date === null) return null;
@@ -460,27 +496,35 @@ const isOk = (status: number | null): boolean => status !== null && status >= 20
 
 function parse(pages: readonly FetchedPage[]): ParseResult {
 	const lists: ParsedList[] = [];
+	const selfDetails: { page: FetchedPage; $: CheerioAPI; root: ReturnType<CheerioAPI> }[] = [];
 	for (const page of pages.filter((p) => p.role === 'list')) {
 		if (page.html === null) return failed('structure-missing');
 		const $ = load(page.html);
 		if ($(LIST_CONTAINER).length === 0) return failed('structure-missing');
 		lists.push({ $, base: pageBase(page) });
+		if (isSelfDetail($, pageBase(page))) selfDetails.push({ page, $, root: $(DETAIL_CONTAINER).first() });
 	}
 	const selected = lists.flatMap(({ $, base }) => testLinks($, base));
-	if (selected.length === 0) return { kind: 'ok', listings: [] };
+	if (selected.length === 0 && selfDetails.length === 0) return { kind: 'ok', listings: [] };
 
-	const detailPages = pages.filter((p) => p.role === 'detail');
+	const detailPages = selected.length === 0 ? [] : pages.filter((p) => p.role === 'detail');
 	if (detailPages.some((page) => !isOk(page.status) || page.html === null)) return failed('detail-page');
-	const details = detailPages.map((page) => {
-		const $ = load(page.html!);
-		return { page, $, root: $(DETAIL_CONTAINER).first() };
-	});
+	const details = [
+		...selfDetails,
+		...detailPages.map((page) => {
+			const $ = load(page.html!);
+			return { page, $, root: $(DETAIL_CONTAINER).first() };
+		}),
+	];
 	if (details.some(({ root }) => root.length === 0)) return failed('structure-missing');
 
 	const listRule = lists.map(({ $ }) => eligibilityIn($, listRuleScope($))).find((rule) => rule !== null) ?? null;
 	const listings: RawListing[] = [];
 	for (const { page, $, root } of details) {
-		const lines = textLines(root.get(0) as unknown as DomNode);
+		// Screen-reader-only hints ("- Mehr Details zum Raum öffnen") are not part of the visible values.
+		const visible = root.clone();
+		visible.find('.sr-only, .visually-hidden').remove();
+		const lines = textLines(visible.get(0) as unknown as DomNode);
 		const table = sessions($, root);
 		const start = startOf(lines, table);
 		if (start === null) return failed('date-unparseable');

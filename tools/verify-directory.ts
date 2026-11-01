@@ -20,6 +20,7 @@ import { CENTRES_FILE, DIRECTORY_DIR, REVIEW_NOTE_FILE } from './paths.ts';
 export { siteHost, TEST_PATTERN };
 const KUFERWEB_FINGERPRINT = /\/fileadmin\/kuferweb\/webbasys\//i;
 const ITEMKG_FINGERPRINT = /typo3conf\/ext\/itemkg_|\/p\/[a-z0-9-]+-\d+-CAT-KAT\d+/i;
+const CMX_FINGERPRINT = /\/cmx\/interpreter\/js\//i;
 const HOST_CONCURRENCY = 4;
 
 /** schema.org types whose address may correct a centre's name and address. */
@@ -105,11 +106,15 @@ export const postcodeInText = (postcode: string, text: string): boolean =>
 export const findTestLink = (html: string, baseUrl: string, hosts: readonly string[]): string | null =>
 	findLink(html, baseUrl, hosts, TEST_PATTERN)?.url ?? null;
 
+/** The one reader whose fingerprint the pages show; `none` when none or several match. */
 export function detectReader(htmls: readonly string[]): Reader {
-	const kuferweb = htmls.some((html) => KUFERWEB_FINGERPRINT.test(html));
-	const itemkg = htmls.some((html) => ITEMKG_FINGERPRINT.test(html));
-	if (kuferweb === itemkg) return 'none';
-	return kuferweb ? 'kuferweb' : 'itemkg';
+	const fingerprints = [
+		['kuferweb', KUFERWEB_FINGERPRINT],
+		['itemkg', ITEMKG_FINGERPRINT],
+		['cmx', CMX_FINGERPRINT],
+	] as const;
+	const found = fingerprints.filter(([, pattern]) => htmls.some((html) => pattern.test(html))).map(([reader]) => reader);
+	return found.length === 1 ? found[0]! : 'none';
 }
 
 /** An organisation's name and postal address from JSON-LD, whitespace-collapsed. */
@@ -351,7 +356,7 @@ export function reviewNote(input: ReviewNoteInput): string {
 		`- Checked this run: ${results.length} (opted out, never fetched: ${optedOut})`,
 		`- Verified: ${verified}`,
 		`- Unverified: ${directory.length - verified}`,
-		`- Reader kuferweb: ${readerCount('kuferweb')}, itemkg: ${readerCount('itemkg')}, none: ${readerCount('none')}`,
+		`- Reader kuferweb: ${readerCount('kuferweb')}, itemkg: ${readerCount('itemkg')}, cmx: ${readerCount('cmx')}, none: ${readerCount('none')}`,
 		`- Website hosts checked: ${input.hostsChecked}`,
 		`- HTTP requests: ${stats.robotsRequests} robots.txt, ${sum(stats.pageGets)} page gets, ${stats.redirectHops} redirect hops; ${sum(stats.rawRequests)} in total`,
 		`- Most page gets to one host: ${maxPages}${maxPageHost ? ` (${maxPageHost})` : ''}`,

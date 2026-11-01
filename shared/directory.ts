@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 /** Reader systems a centre can be read with. `none` = not read automatically. */
-export const READERS = ['kuferweb', 'itemkg', 'none'] as const;
+export const READERS = ['kuferweb', 'itemkg', 'cmx', 'none'] as const;
 export type Reader = (typeof READERS)[number];
 
 /** Where a directory entry came from. */

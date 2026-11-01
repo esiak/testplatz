@@ -149,6 +149,10 @@ npm run coverage -- --json data/coverage/report.json   # … and also write the 
   `reader` in `centres.json` (add `reader_config.list_url` only when the list is not the
   `test_page_url`), run `npm run check:directory` and `npm test`, re-run `npm run coverage` to see
   it parse under the new reader, and commit the directory change.
+- **Readers tried.** Every reader in `READER_REGISTRY`: `kuferweb`, `itemkg` and `cmx` (Story 4.4,
+  sites on the CMX CMS; it reads the test page only, so it fetches no detail page). When you assign
+  a reader, add the centre to its note (`data/directory/<reader>-note.md`); unparsed centres and
+  why are in `data/directory/coverage-note.md`.
 - **Discovering test pages.** `--discover` (Story 4.3) looks for the Einbürgerungstest page of every
   centre without a `test_page_url` (not opted out, not `pdf_only`). Per centre it tries, stopping at
   the first match: the origin's `/sitemap.xml` (first `<loc>` naming the test), the `website` page
