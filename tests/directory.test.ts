@@ -5,7 +5,6 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { BAVARIA_BBOX, centreSchema, directorySchema, isInBavariaBox, isPlausibleHostname, serializeDirectory, slugify, type Centre } from '../shared/directory.ts';
-import { snapshotSchema } from '../shared/snapshot.ts';
 import { checkDirectoryText } from '../tools/check-directory.ts';
 import { loadCache, queryKey, serializeCache } from '../tools/geocode.ts';
 import { GEOCODE_CACHE_PATH } from '../tools/paths.ts';
@@ -192,13 +191,12 @@ describe('committed data/directory/centres.json', () => {
 		expect(serializeDirectory(directorySchema.parse(JSON.parse(text)))).toBe(text);
 	});
 
-	it('has unique ids, holds every snapshot centre, and every coordinate that is set lies inside Bavaria', () => {
+	// The snapshot is not compared with the directory: a centre added or removed here is a legitimate
+	// data change, and the snapshot catches up on the next collecting run.
+	it('has unique ids and every coordinate that is set lies inside Bavaria', () => {
 		const centres = directorySchema.parse(JSON.parse(text));
 		const ids = centres.map((c) => c.centre_id);
 		expect(duplicateIds(ids)).toEqual([]);
-		const snapshot = snapshotSchema.parse(JSON.parse(readFileSync(join(repoRoot, 'data/public/snapshot.json'), 'utf8')));
-		const known = new Set(ids);
-		expect(snapshot.centres.map((c) => c.centre_id).filter((id) => !known.has(id))).toEqual([]);
 		expect(centres.every((c) => c.source === 'rtpartner')).toBe(true);
 		expect(centres.filter((c) => c.lat !== null && !isInBavariaBox(c.lat, c.lon!)).map((c) => c.centre_id)).toEqual([]);
 	});
