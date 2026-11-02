@@ -73,10 +73,22 @@
 			"lon": 10.486929,
 			"reason": null
 		},
+		"pfarrer - seidl - str 1, 93413 cham": {
+			"fetched_at": "2026-11-02T07:17:38.989Z",
+			"lat": 49.226342,
+			"lon": 12.657157,
+			"reason": null
+		},
 		"pfarrstr 6, 86316 friedberg": {
 			"fetched_at": "2026-10-30T10:11:16.287Z",
 			"lat": 48.355491,
 			"lon": 10.980517,
+			"reason": null
+		},
+		"theodor-heuss-str 29, 85764 oberschleißheim": {
+			"fetched_at": "2026-11-02T07:17:38.989Z",
+			"lat": 48.255008,
+			"lon": 11.554026,
 			"reason": null
 		},
 		"winkelser str 42, 97688 bad kissingen": {
