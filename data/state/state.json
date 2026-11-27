@@ -6,7 +6,7 @@
 			"last_checked_at": null,
 			"last_success_at": null,
 			"last_skip_reason": "no-reader",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
 			"last_robots_skip_at": null,
 			"listings": []
 		},
@@ -15,7 +15,7 @@
 			"last_checked_at": null,
 			"last_success_at": null,
 			"last_skip_reason": "no-reader",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
 			"last_robots_skip_at": null,
 			"listings": []
 		},
@@ -24,7 +24,7 @@
 			"last_checked_at": null,
 			"last_success_at": null,
 			"last_skip_reason": "no-reader",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
 			"last_robots_skip_at": null,
 			"listings": []
 		},
@@ -33,7 +33,7 @@
 			"last_checked_at": null,
 			"last_success_at": null,
 			"last_skip_reason": "no-reader",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
 			"last_robots_skip_at": null,
 			"listings": []
 		},
@@ -42,7 +42,7 @@
 			"last_checked_at": null,
 			"last_success_at": null,
 			"last_skip_reason": "no-reader",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
 			"last_robots_skip_at": null,
 			"listings": []
 		},
@@ -51,7 +51,7 @@
 			"last_checked_at": null,
 			"last_success_at": null,
 			"last_skip_reason": "no-reader",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
 			"last_robots_skip_at": null,
 			"listings": []
 		},
@@ -60,7 +60,7 @@
 			"last_checked_at": null,
 			"last_success_at": null,
 			"last_skip_reason": "no-reader",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
 			"last_robots_skip_at": null,
 			"listings": []
 		},
@@ -69,14 +69,14 @@
 			"last_checked_at": null,
 			"last_success_at": null,
 			"last_skip_reason": "no-reader",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
 			"last_robots_skip_at": null,
 			"listings": []
 		},
 		"muenchner-vhs-gmbh": {
 			"last_result": "ok",
-			"last_checked_at": "2026-11-26T15:09:00.478Z",
-			"last_success_at": "2026-11-26T15:09:00.478Z",
+			"last_checked_at": "2026-11-27T15:00:38.585Z",
+			"last_success_at": "2026-11-27T15:00:38.585Z",
 			"last_skip_reason": null,
 			"last_skip_at": null,
 			"last_robots_skip_at": null,
@@ -128,14 +128,14 @@
 			"last_checked_at": null,
 			"last_success_at": null,
 			"last_skip_reason": "no-reader",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
 			"last_robots_skip_at": null,
 			"listings": []
 		},
 		"vhs-aichach-friedberg-e-v": {
 			"last_result": "ok",
-			"last_checked_at": "2026-11-26T15:09:00.478Z",
-			"last_success_at": "2026-11-26T15:09:00.478Z",
+			"last_checked_at": "2026-11-27T15:00:38.585Z",
+			"last_success_at": "2026-11-27T15:00:38.585Z",
 			"last_skip_reason": "robots",
 			"last_skip_at": "2026-11-05T13:10:11.220Z",
 			"last_robots_skip_at": "2026-11-05T13:10:11.220Z",
@@ -187,7 +187,7 @@
 			"last_checked_at": null,
 			"last_success_at": null,
 			"last_skip_reason": "no-reader",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
 			"last_robots_skip_at": null,
 			"listings": []
 		},
@@ -196,8 +196,8 @@
 			"last_checked_at": "2026-11-15T12:43:01.925Z",
 			"last_success_at": "2026-11-15T12:43:01.925Z",
 			"last_skip_reason": "robots",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
-			"last_robots_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
+			"last_robots_skip_at": "2026-11-27T15:00:38.585Z",
 			"listings": [
 				{
 					"id": "vhs-arberland@2026-12-10T18:00",
@@ -243,8 +243,8 @@
 		},
 		"vhs-aschaffenburg": {
 			"last_result": "ok",
-			"last_checked_at": "2026-11-26T15:09:00.478Z",
-			"last_success_at": "2026-11-26T15:09:00.478Z",
+			"last_checked_at": "2026-11-27T15:00:38.585Z",
+			"last_success_at": "2026-11-27T15:00:38.585Z",
 			"last_skip_reason": null,
 			"last_skip_at": null,
 			"last_robots_skip_at": null,
@@ -356,7 +356,7 @@
 			"last_checked_at": null,
 			"last_success_at": null,
 			"last_skip_reason": "no-reader",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
 			"last_robots_skip_at": null,
 			"listings": []
 		},
@@ -364,9 +364,9 @@
 			"last_result": "ok",
 			"last_checked_at": "2026-11-26T15:09:00.478Z",
 			"last_success_at": "2026-11-26T15:09:00.478Z",
-			"last_skip_reason": null,
-			"last_skip_at": null,
-			"last_robots_skip_at": null,
+			"last_skip_reason": "robots",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
+			"last_robots_skip_at": "2026-11-27T15:00:38.585Z",
 			"listings": [
 				{
 					"id": "vhs-bad-kisingen-und-hammelburg@2026-12-03T14:30",
@@ -432,7 +432,7 @@
 		},
 		"vhs-bad-reichenhall": {
 			"last_result": "failed",
-			"last_checked_at": "2026-11-26T15:09:00.478Z",
+			"last_checked_at": "2026-11-27T15:00:38.585Z",
 			"last_success_at": "2026-11-16T13:36:40.622Z",
 			"last_skip_reason": null,
 			"last_skip_at": null,
@@ -582,7 +582,7 @@
 		},
 		"vhs-bamberg": {
 			"last_result": "failed",
-			"last_checked_at": "2026-11-26T15:09:00.478Z",
+			"last_checked_at": "2026-11-27T15:00:38.585Z",
 			"last_success_at": "2026-11-11T12:41:51.728Z",
 			"last_skip_reason": null,
 			"last_skip_at": null,
@@ -591,7 +591,7 @@
 		},
 		"vhs-bamberg-land-e-v": {
 			"last_result": "failed",
-			"last_checked_at": "2026-11-26T15:09:00.478Z",
+			"last_checked_at": "2026-11-27T15:00:38.585Z",
 			"last_success_at": "2026-11-11T12:41:51.728Z",
 			"last_skip_reason": null,
 			"last_skip_at": null,
@@ -603,13 +603,13 @@
 			"last_checked_at": null,
 			"last_success_at": null,
 			"last_skip_reason": "no-reader",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
 			"last_robots_skip_at": null,
 			"listings": []
 		},
 		"vhs-beilngries-e-v": {
 			"last_result": "failed",
-			"last_checked_at": "2026-11-26T15:09:00.478Z",
+			"last_checked_at": "2026-11-27T15:00:38.585Z",
 			"last_success_at": "2026-11-15T12:43:01.925Z",
 			"last_skip_reason": null,
 			"last_skip_at": null,
@@ -759,8 +759,8 @@
 		},
 		"vhs-buchloe-e-v": {
 			"last_result": "ok",
-			"last_checked_at": "2026-11-26T15:09:00.478Z",
-			"last_success_at": "2026-11-26T15:09:00.478Z",
+			"last_checked_at": "2026-11-27T15:00:38.585Z",
+			"last_success_at": "2026-11-27T15:00:38.585Z",
 			"last_skip_reason": null,
 			"last_skip_at": null,
 			"last_robots_skip_at": null,
@@ -792,13 +792,13 @@
 			"last_checked_at": null,
 			"last_success_at": null,
 			"last_skip_reason": "no-reader",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
 			"last_robots_skip_at": null,
 			"listings": []
 		},
 		"vhs-coburg-ggmbh": {
 			"last_result": "failed",
-			"last_checked_at": "2026-11-26T15:09:00.478Z",
+			"last_checked_at": "2026-11-27T15:00:38.585Z",
 			"last_success_at": "2026-11-09T13:52:07.041Z",
 			"last_skip_reason": "robots",
 			"last_skip_at": "2026-11-10T13:27:14.704Z",
@@ -928,8 +928,8 @@
 		},
 		"vhs-dachau-gmbh": {
 			"last_result": "ok",
-			"last_checked_at": "2026-11-26T15:09:00.478Z",
-			"last_success_at": "2026-11-26T15:09:00.478Z",
+			"last_checked_at": "2026-11-27T15:00:38.585Z",
+			"last_success_at": "2026-11-27T15:00:38.585Z",
 			"last_skip_reason": null,
 			"last_skip_at": null,
 			"last_robots_skip_at": null,
@@ -1178,8 +1178,8 @@
 		},
 		"vhs-deggendorfer-land-e-v": {
 			"last_result": "ok",
-			"last_checked_at": "2026-11-26T15:09:00.478Z",
-			"last_success_at": "2026-11-26T15:09:00.478Z",
+			"last_checked_at": "2026-11-27T15:00:38.585Z",
+			"last_success_at": "2026-11-27T15:00:38.585Z",
 			"last_skip_reason": null,
 			"last_skip_at": null,
 			"last_robots_skip_at": null,
@@ -1231,8 +1231,8 @@
 			"last_checked_at": "2026-11-10T13:27:14.704Z",
 			"last_success_at": "2026-11-03T12:45:57.831Z",
 			"last_skip_reason": "robots",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
-			"last_robots_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
+			"last_robots_skip_at": "2026-11-27T15:00:38.585Z",
 			"listings": []
 		},
 		"vhs-der-stadt-landsberg-lech": {
@@ -1240,7 +1240,7 @@
 			"last_checked_at": null,
 			"last_success_at": null,
 			"last_skip_reason": "no-reader",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
 			"last_robots_skip_at": null,
 			"listings": []
 		},
@@ -1249,7 +1249,7 @@
 			"last_checked_at": null,
 			"last_success_at": null,
 			"last_skip_reason": "no-reader",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
 			"last_robots_skip_at": null,
 			"listings": []
 		},
@@ -1258,7 +1258,7 @@
 			"last_checked_at": null,
 			"last_success_at": null,
 			"last_skip_reason": "no-reader",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
 			"last_robots_skip_at": null,
 			"listings": []
 		},
@@ -1267,8 +1267,8 @@
 			"last_checked_at": "2026-11-11T12:41:51.728Z",
 			"last_success_at": "2026-11-09T13:52:07.041Z",
 			"last_skip_reason": "robots",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
-			"last_robots_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
+			"last_robots_skip_at": "2026-11-27T15:00:38.585Z",
 			"listings": [
 				{
 					"id": "vhs-des-landkreises-forchheim@2026-12-10T18:30",
@@ -1297,8 +1297,8 @@
 			"last_checked_at": "2026-11-11T12:41:51.728Z",
 			"last_success_at": "2026-11-09T13:52:07.041Z",
 			"last_skip_reason": "robots",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
-			"last_robots_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
+			"last_robots_skip_at": "2026-11-27T15:00:38.585Z",
 			"listings": [
 				{
 					"id": "vhs-des-landkreises-wunsiedel@2026-12-08T13:00",
@@ -1567,7 +1567,7 @@
 			"last_checked_at": null,
 			"last_success_at": null,
 			"last_skip_reason": "no-reader",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
 			"last_robots_skip_at": null,
 			"listings": []
 		},
@@ -1576,14 +1576,14 @@
 			"last_checked_at": null,
 			"last_success_at": null,
 			"last_skip_reason": "no-reader",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
 			"last_robots_skip_at": null,
 			"listings": []
 		},
 		"vhs-dingolfing-e-v": {
 			"last_result": "ok",
-			"last_checked_at": "2026-11-26T15:09:00.478Z",
-			"last_success_at": "2026-11-26T15:09:00.478Z",
+			"last_checked_at": "2026-11-27T15:00:38.585Z",
+			"last_success_at": "2026-11-27T15:00:38.585Z",
 			"last_skip_reason": null,
 			"last_skip_at": null,
 			"last_robots_skip_at": null,
@@ -1715,8 +1715,8 @@
 			"last_checked_at": "2026-11-22T13:18:50.677Z",
 			"last_success_at": "2026-11-22T13:18:50.677Z",
 			"last_skip_reason": "robots",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
-			"last_robots_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
+			"last_robots_skip_at": "2026-11-27T15:00:38.585Z",
 			"listings": [
 				{
 					"id": "vhs-donauwoerth@2026-12-18T18:00",
@@ -1762,7 +1762,7 @@
 		},
 		"vhs-ebersberger-land-grafing-bei-muenchen": {
 			"last_result": "failed",
-			"last_checked_at": "2026-11-26T15:09:00.478Z",
+			"last_checked_at": "2026-11-27T15:00:38.585Z",
 			"last_success_at": "2026-11-16T13:36:40.622Z",
 			"last_skip_reason": null,
 			"last_skip_at": null,
@@ -1795,8 +1795,8 @@
 			"last_checked_at": "2026-11-15T12:43:01.925Z",
 			"last_success_at": "2026-11-15T12:43:01.925Z",
 			"last_skip_reason": "robots",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
-			"last_robots_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
+			"last_robots_skip_at": "2026-11-27T15:00:38.585Z",
 			"listings": [
 				{
 					"id": "vhs-erlangen@2027-01-14T15:00",
@@ -1962,7 +1962,7 @@
 		},
 		"vhs-f-d-landkreis-regensburg-e-v": {
 			"last_result": "failed",
-			"last_checked_at": "2026-11-26T15:09:00.478Z",
+			"last_checked_at": "2026-11-27T15:00:38.585Z",
 			"last_success_at": "2026-11-03T12:45:57.831Z",
 			"last_skip_reason": "robots",
 			"last_skip_at": "2026-11-09T13:52:07.041Z",
@@ -2175,8 +2175,8 @@
 			"last_checked_at": "2026-11-11T12:41:51.728Z",
 			"last_success_at": "2026-11-09T13:52:07.041Z",
 			"last_skip_reason": "robots",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
-			"last_robots_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
+			"last_robots_skip_at": "2026-11-27T15:00:38.585Z",
 			"listings": [
 				{
 					"id": "vhs-fichtelgebirge@2026-12-08T13:00",
@@ -2445,13 +2445,13 @@
 			"last_checked_at": null,
 			"last_success_at": null,
 			"last_skip_reason": "no-reader",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
 			"last_robots_skip_at": null,
 			"listings": []
 		},
 		"vhs-fuerth-ggmbh": {
 			"last_result": "failed",
-			"last_checked_at": "2026-11-26T15:09:00.478Z",
+			"last_checked_at": "2026-11-27T15:00:38.585Z",
 			"last_success_at": "2026-11-04T12:58:21.646Z",
 			"last_skip_reason": "robots",
 			"last_skip_at": "2026-11-09T13:52:07.041Z",
@@ -2504,14 +2504,14 @@
 			"last_checked_at": null,
 			"last_success_at": null,
 			"last_skip_reason": "no-reader",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
 			"last_robots_skip_at": null,
 			"listings": []
 		},
 		"vhs-germering-e-v": {
 			"last_result": "ok",
-			"last_checked_at": "2026-11-26T15:09:00.478Z",
-			"last_success_at": "2026-11-26T15:09:00.478Z",
+			"last_checked_at": "2026-11-27T15:00:38.585Z",
+			"last_success_at": "2026-11-27T15:00:38.585Z",
 			"last_skip_reason": null,
 			"last_skip_at": null,
 			"last_robots_skip_at": null,
@@ -2640,8 +2640,8 @@
 		},
 		"vhs-geschaeftsstelle-neufarn-hallbergmoos": {
 			"last_result": "ok",
-			"last_checked_at": "2026-11-26T15:09:00.478Z",
-			"last_success_at": "2026-11-26T15:09:00.478Z",
+			"last_checked_at": "2026-11-27T15:00:38.585Z",
+			"last_success_at": "2026-11-27T15:00:38.585Z",
 			"last_skip_reason": null,
 			"last_skip_at": null,
 			"last_robots_skip_at": null,
@@ -2790,8 +2790,8 @@
 		},
 		"vhs-groebenzell-e-v": {
 			"last_result": "ok",
-			"last_checked_at": "2026-11-26T15:09:00.478Z",
-			"last_success_at": "2026-11-26T15:09:00.478Z",
+			"last_checked_at": "2026-11-27T15:00:38.585Z",
+			"last_success_at": "2026-11-27T15:00:38.585Z",
 			"last_skip_reason": null,
 			"last_skip_at": null,
 			"last_robots_skip_at": null,
@@ -2843,7 +2843,7 @@
 			"last_checked_at": null,
 			"last_success_at": null,
 			"last_skip_reason": "no-reader",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
 			"last_robots_skip_at": null,
 			"listings": []
 		},
@@ -2852,7 +2852,7 @@
 			"last_checked_at": null,
 			"last_success_at": null,
 			"last_skip_reason": "no-reader",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
 			"last_robots_skip_at": null,
 			"listings": []
 		},
@@ -2861,14 +2861,14 @@
 			"last_checked_at": null,
 			"last_success_at": null,
 			"last_skip_reason": "no-reader",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
 			"last_robots_skip_at": null,
 			"listings": []
 		},
 		"vhs-im-norden-des-landkreises-muenchen": {
 			"last_result": "ok",
-			"last_checked_at": "2026-11-26T15:09:00.478Z",
-			"last_success_at": "2026-11-26T15:09:00.478Z",
+			"last_checked_at": "2026-11-27T15:00:38.585Z",
+			"last_success_at": "2026-11-27T15:00:38.585Z",
 			"last_skip_reason": null,
 			"last_skip_at": null,
 			"last_robots_skip_at": null,
@@ -2940,14 +2940,14 @@
 			"last_checked_at": null,
 			"last_success_at": null,
 			"last_skip_reason": "no-reader",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
 			"last_robots_skip_at": null,
 			"listings": []
 		},
 		"vhs-kaufbeuren-e-v": {
 			"last_result": "ok",
-			"last_checked_at": "2026-11-26T15:09:00.478Z",
-			"last_success_at": "2026-11-26T15:09:00.478Z",
+			"last_checked_at": "2026-11-27T15:00:38.585Z",
+			"last_success_at": "2026-11-27T15:00:38.585Z",
 			"last_skip_reason": null,
 			"last_skip_at": null,
 			"last_robots_skip_at": null,
@@ -2979,7 +2979,7 @@
 			"last_checked_at": null,
 			"last_success_at": null,
 			"last_skip_reason": "no-reader",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
 			"last_robots_skip_at": null,
 			"listings": []
 		},
@@ -2988,13 +2988,13 @@
 			"last_checked_at": null,
 			"last_success_at": null,
 			"last_skip_reason": "no-reader",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
 			"last_robots_skip_at": null,
 			"listings": []
 		},
 		"vhs-kreis-kronach-e-v": {
 			"last_result": "failed",
-			"last_checked_at": "2026-11-26T15:09:00.478Z",
+			"last_checked_at": "2026-11-27T15:00:38.585Z",
 			"last_success_at": "2026-11-16T13:36:40.622Z",
 			"last_skip_reason": null,
 			"last_skip_at": null,
@@ -3044,7 +3044,7 @@
 		},
 		"vhs-landkreis-amberg-sulzbach": {
 			"last_result": "failed",
-			"last_checked_at": "2026-11-26T15:09:00.478Z",
+			"last_checked_at": "2026-11-27T15:00:38.585Z",
 			"last_success_at": "2026-11-10T13:27:14.704Z",
 			"last_skip_reason": null,
 			"last_skip_at": null,
@@ -3077,13 +3077,13 @@
 			"last_checked_at": null,
 			"last_success_at": null,
 			"last_skip_reason": "no-reader",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
 			"last_robots_skip_at": null,
 			"listings": []
 		},
 		"vhs-landshut-e-v": {
-			"last_result": "ok",
-			"last_checked_at": "2026-11-26T15:09:00.478Z",
+			"last_result": "failed",
+			"last_checked_at": "2026-11-27T15:00:38.585Z",
 			"last_success_at": "2026-11-26T15:09:00.478Z",
 			"last_skip_reason": null,
 			"last_skip_at": null,
@@ -3213,8 +3213,8 @@
 		},
 		"vhs-lindau": {
 			"last_result": "ok",
-			"last_checked_at": "2026-11-26T15:09:00.478Z",
-			"last_success_at": "2026-11-26T15:09:00.478Z",
+			"last_checked_at": "2026-11-27T15:00:38.585Z",
+			"last_success_at": "2026-11-27T15:00:38.585Z",
 			"last_skip_reason": null,
 			"last_skip_at": null,
 			"last_robots_skip_at": null,
@@ -3225,7 +3225,7 @@
 			"last_checked_at": null,
 			"last_success_at": null,
 			"last_skip_reason": "no-reader",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
 			"last_robots_skip_at": null,
 			"listings": []
 		},
@@ -3234,7 +3234,7 @@
 			"last_checked_at": null,
 			"last_success_at": null,
 			"last_skip_reason": "no-reader",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
 			"last_robots_skip_at": null,
 			"listings": []
 		},
@@ -3243,14 +3243,14 @@
 			"last_checked_at": null,
 			"last_success_at": null,
 			"last_skip_reason": "no-reader",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
 			"last_robots_skip_at": null,
 			"listings": []
 		},
 		"vhs-moosburg-e-v": {
 			"last_result": "ok",
-			"last_checked_at": "2026-11-26T15:09:00.478Z",
-			"last_success_at": "2026-11-26T15:09:00.478Z",
+			"last_checked_at": "2026-11-27T15:00:38.585Z",
+			"last_success_at": "2026-11-27T15:00:38.585Z",
 			"last_skip_reason": null,
 			"last_skip_at": null,
 			"last_robots_skip_at": null,
@@ -3279,8 +3279,8 @@
 		},
 		"vhs-muehldorf-e-v": {
 			"last_result": "ok",
-			"last_checked_at": "2026-11-26T15:09:00.478Z",
-			"last_success_at": "2026-11-26T15:09:00.478Z",
+			"last_checked_at": "2026-11-27T15:00:38.585Z",
+			"last_success_at": "2026-11-27T15:00:38.585Z",
 			"last_skip_reason": null,
 			"last_skip_at": null,
 			"last_robots_skip_at": null,
@@ -3332,7 +3332,7 @@
 			"last_checked_at": null,
 			"last_success_at": null,
 			"last_skip_reason": "no-reader",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
 			"last_robots_skip_at": null,
 			"listings": []
 		},
@@ -3341,13 +3341,13 @@
 			"last_checked_at": null,
 			"last_success_at": null,
 			"last_skip_reason": "no-reader",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
 			"last_robots_skip_at": null,
 			"listings": []
 		},
 		"vhs-oberschleissheim-e-v": {
 			"last_result": "failed",
-			"last_checked_at": "2026-11-26T15:09:00.478Z",
+			"last_checked_at": "2026-11-27T15:00:38.585Z",
 			"last_success_at": "2026-11-22T13:18:50.677Z",
 			"last_skip_reason": null,
 			"last_skip_at": null,
@@ -3397,8 +3397,8 @@
 		},
 		"vhs-puchheim-e-v": {
 			"last_result": "ok",
-			"last_checked_at": "2026-11-26T15:09:00.478Z",
-			"last_success_at": "2026-11-26T15:09:00.478Z",
+			"last_checked_at": "2026-11-27T15:00:38.585Z",
+			"last_success_at": "2026-11-27T15:00:38.585Z",
 			"last_skip_reason": null,
 			"last_skip_at": null,
 			"last_robots_skip_at": null,
@@ -3450,14 +3450,14 @@
 			"last_checked_at": null,
 			"last_success_at": null,
 			"last_skip_reason": "no-reader",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
 			"last_robots_skip_at": null,
 			"listings": []
 		},
 		"vhs-rieser-noerdlingen-e-v": {
 			"last_result": "ok",
-			"last_checked_at": "2026-11-26T15:09:00.478Z",
-			"last_success_at": "2026-11-26T15:09:00.478Z",
+			"last_checked_at": "2026-11-27T15:00:38.585Z",
+			"last_success_at": "2026-11-27T15:00:38.585Z",
 			"last_skip_reason": null,
 			"last_skip_at": null,
 			"last_robots_skip_at": null,
@@ -3489,7 +3489,7 @@
 			"last_checked_at": null,
 			"last_success_at": null,
 			"last_skip_reason": "no-reader",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
 			"last_robots_skip_at": null,
 			"listings": []
 		},
@@ -3498,14 +3498,14 @@
 			"last_checked_at": null,
 			"last_success_at": null,
 			"last_skip_reason": "no-reader",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
 			"last_robots_skip_at": null,
 			"listings": []
 		},
 		"vhs-schwabach": {
 			"last_result": "ok",
-			"last_checked_at": "2026-11-25T15:34:00.772Z",
-			"last_success_at": "2026-11-25T15:34:00.772Z",
+			"last_checked_at": "2026-11-27T15:00:38.585Z",
+			"last_success_at": "2026-11-27T15:00:38.585Z",
 			"last_skip_reason": "robots",
 			"last_skip_at": "2026-11-26T15:09:00.478Z",
 			"last_robots_skip_at": "2026-11-26T15:09:00.478Z",
@@ -3534,8 +3534,8 @@
 		},
 		"vhs-schwarzachtal": {
 			"last_result": "ok",
-			"last_checked_at": "2026-11-26T15:09:00.478Z",
-			"last_success_at": "2026-11-26T15:09:00.478Z",
+			"last_checked_at": "2026-11-27T15:00:38.585Z",
+			"last_success_at": "2026-11-27T15:00:38.585Z",
 			"last_skip_reason": null,
 			"last_skip_at": null,
 			"last_robots_skip_at": null,
@@ -3584,8 +3584,8 @@
 		},
 		"vhs-stadt-fuerstenfeldbruck-e-v": {
 			"last_result": "ok",
-			"last_checked_at": "2026-11-26T15:09:00.478Z",
-			"last_success_at": "2026-11-26T15:09:00.478Z",
+			"last_checked_at": "2026-11-27T15:00:38.585Z",
+			"last_success_at": "2026-11-27T15:00:38.585Z",
 			"last_skip_reason": null,
 			"last_skip_at": null,
 			"last_robots_skip_at": null,
@@ -3674,8 +3674,8 @@
 		},
 		"vhs-staedtedreieck-e-v": {
 			"last_result": "ok",
-			"last_checked_at": "2026-11-26T15:09:00.478Z",
-			"last_success_at": "2026-11-26T15:09:00.478Z",
+			"last_checked_at": "2026-11-27T15:00:38.585Z",
+			"last_success_at": "2026-11-27T15:00:38.585Z",
 			"last_skip_reason": null,
 			"last_skip_at": null,
 			"last_robots_skip_at": null,
@@ -3747,8 +3747,8 @@
 			"last_checked_at": "2026-11-10T13:27:14.704Z",
 			"last_success_at": "2026-11-10T13:27:14.704Z",
 			"last_skip_reason": "robots",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
-			"last_robots_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
+			"last_robots_skip_at": "2026-11-27T15:00:38.585Z",
 			"listings": [
 				{
 					"id": "vhs-starnberger-see-e-v@2026-12-11T15:30",
@@ -3877,13 +3877,13 @@
 			"last_checked_at": null,
 			"last_success_at": null,
 			"last_skip_reason": "no-reader",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
 			"last_robots_skip_at": null,
 			"listings": []
 		},
 		"vhs-straubing-ggmbh": {
 			"last_result": "failed",
-			"last_checked_at": "2026-11-26T15:09:00.478Z",
+			"last_checked_at": "2026-11-27T15:00:38.585Z",
 			"last_success_at": "2026-11-03T12:45:57.831Z",
 			"last_skip_reason": "robots",
 			"last_skip_at": "2026-11-09T13:52:07.041Z",
@@ -3913,8 +3913,8 @@
 		},
 		"vhs-taufkirchen": {
 			"last_result": "ok",
-			"last_checked_at": "2026-11-26T15:09:00.478Z",
-			"last_success_at": "2026-11-26T15:09:00.478Z",
+			"last_checked_at": "2026-11-27T15:00:38.585Z",
+			"last_success_at": "2026-11-27T15:00:38.585Z",
 			"last_skip_reason": null,
 			"last_skip_at": null,
 			"last_robots_skip_at": null,
@@ -4003,8 +4003,8 @@
 		},
 		"vhs-traunreut-e-v": {
 			"last_result": "ok",
-			"last_checked_at": "2026-11-26T15:09:00.478Z",
-			"last_success_at": "2026-11-26T15:09:00.478Z",
+			"last_checked_at": "2026-11-27T15:00:38.585Z",
+			"last_success_at": "2026-11-27T15:00:38.585Z",
 			"last_skip_reason": null,
 			"last_skip_at": null,
 			"last_robots_skip_at": null,
@@ -4036,7 +4036,7 @@
 			"last_checked_at": null,
 			"last_success_at": null,
 			"last_skip_reason": "no-reader",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
 			"last_robots_skip_at": null,
 			"listings": []
 		},
@@ -4045,14 +4045,14 @@
 			"last_checked_at": null,
 			"last_success_at": null,
 			"last_skip_reason": "no-reader",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
 			"last_robots_skip_at": null,
 			"listings": []
 		},
 		"vhs-unterhaching-e-v": {
 			"last_result": "ok",
-			"last_checked_at": "2026-11-26T15:09:00.478Z",
-			"last_success_at": "2026-11-26T15:09:00.478Z",
+			"last_checked_at": "2026-11-27T15:00:38.585Z",
+			"last_success_at": "2026-11-27T15:00:38.585Z",
 			"last_skip_reason": null,
 			"last_skip_at": null,
 			"last_robots_skip_at": null,
@@ -4076,13 +4076,33 @@
 					"lat": 48.062004,
 					"lon": 11.613817,
 					"location": "centre"
+				},
+				{
+					"id": "vhs-unterhaching-e-v@2027-03-10T16:00",
+					"centre_id": "vhs-unterhaching-e-v",
+					"starts_at": "2027-03-10T16:00:00+01:00",
+					"time_known": true,
+					"place": "Bildungshaus, großer Saal gesamt, 2. Stock, Hans-Durach-Str. 17",
+					"address": "Jahnstr. 1, 82008 Unterhaching",
+					"status": "unknown",
+					"deadline": null,
+					"registration_method": "online",
+					"source_url": "https://www.vhs-unterhaching.de/programm/sprachen/kurs/Einbuergerungstest/P19097",
+					"link_ok": true,
+					"eligibility": null,
+					"first_seen_at": "2026-11-27T15:00:38.585Z",
+					"removed_at": null,
+					"baseline": false,
+					"lat": 48.062004,
+					"lon": 11.613817,
+					"location": "centre"
 				}
 			]
 		},
 		"vhs-verband-landau-e-v": {
 			"last_result": "ok",
-			"last_checked_at": "2026-11-26T15:09:00.478Z",
-			"last_success_at": "2026-11-26T15:09:00.478Z",
+			"last_checked_at": "2026-11-27T15:00:38.585Z",
+			"last_success_at": "2026-11-27T15:00:38.585Z",
 			"last_skip_reason": null,
 			"last_skip_at": null,
 			"last_robots_skip_at": null,
@@ -4131,8 +4151,8 @@
 		},
 		"vhs-vilsbiburg": {
 			"last_result": "ok",
-			"last_checked_at": "2026-11-26T15:09:00.478Z",
-			"last_success_at": "2026-11-26T15:09:00.478Z",
+			"last_checked_at": "2026-11-27T15:00:38.585Z",
+			"last_success_at": "2026-11-27T15:00:38.585Z",
 			"last_skip_reason": null,
 			"last_skip_at": null,
 			"last_robots_skip_at": null,
@@ -4161,8 +4181,8 @@
 		},
 		"vhs-waldkraiburg-e-v": {
 			"last_result": "ok",
-			"last_checked_at": "2026-11-26T15:09:00.478Z",
-			"last_success_at": "2026-11-26T15:09:00.478Z",
+			"last_checked_at": "2026-11-27T15:00:38.585Z",
+			"last_success_at": "2026-11-27T15:00:38.585Z",
 			"last_skip_reason": null,
 			"last_skip_at": null,
 			"last_robots_skip_at": null,
@@ -4234,7 +4254,7 @@
 			"last_checked_at": null,
 			"last_success_at": null,
 			"last_skip_reason": "no-reader",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
 			"last_robots_skip_at": null,
 			"listings": []
 		},
@@ -4243,7 +4263,7 @@
 			"last_checked_at": null,
 			"last_success_at": null,
 			"last_skip_reason": "no-reader",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
 			"last_robots_skip_at": null,
 			"listings": []
 		},
@@ -4252,8 +4272,8 @@
 			"last_checked_at": "2026-11-18T13:55:21.288Z",
 			"last_success_at": "2026-11-18T13:55:21.288Z",
 			"last_skip_reason": "robots",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
-			"last_robots_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
+			"last_robots_skip_at": "2026-11-27T15:00:38.585Z",
 			"listings": [
 				{
 					"id": "vhs-weiterbildungsakademie-kehlheim-e-v@2027-01-15T14:00",
@@ -4322,8 +4342,8 @@
 			"last_checked_at": "2026-11-15T12:43:01.925Z",
 			"last_success_at": "2026-11-15T12:43:01.925Z",
 			"last_skip_reason": "robots",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
-			"last_robots_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
+			"last_robots_skip_at": "2026-11-27T15:00:38.585Z",
 			"listings": [
 				{
 					"id": "vhs-wuerzburg@2027-01-14T09:15",
@@ -4392,7 +4412,7 @@
 			"last_checked_at": null,
 			"last_success_at": null,
 			"last_skip_reason": "no-reader",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
 			"last_robots_skip_at": null,
 			"listings": []
 		},
@@ -4401,7 +4421,7 @@
 			"last_checked_at": null,
 			"last_success_at": null,
 			"last_skip_reason": "no-reader",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
 			"last_robots_skip_at": null,
 			"listings": []
 		},
@@ -4410,7 +4430,7 @@
 			"last_checked_at": null,
 			"last_success_at": null,
 			"last_skip_reason": "no-reader",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
 			"last_robots_skip_at": null,
 			"listings": []
 		},
@@ -4419,7 +4439,7 @@
 			"last_checked_at": null,
 			"last_success_at": null,
 			"last_skip_reason": "no-reader",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
 			"last_robots_skip_at": null,
 			"listings": []
 		},
@@ -4428,7 +4448,7 @@
 			"last_checked_at": null,
 			"last_success_at": null,
 			"last_skip_reason": "no-reader",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
 			"last_robots_skip_at": null,
 			"listings": []
 		},
@@ -4437,7 +4457,7 @@
 			"last_checked_at": null,
 			"last_success_at": null,
 			"last_skip_reason": "no-reader",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
 			"last_robots_skip_at": null,
 			"listings": []
 		},
@@ -4446,14 +4466,14 @@
 			"last_checked_at": null,
 			"last_success_at": null,
 			"last_skip_reason": "no-reader",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
 			"last_robots_skip_at": null,
 			"listings": []
 		},
 		"volkshochschule-eching-e-v": {
 			"last_result": "ok",
-			"last_checked_at": "2026-11-26T15:09:00.478Z",
-			"last_success_at": "2026-11-26T15:09:00.478Z",
+			"last_checked_at": "2026-11-27T15:00:38.585Z",
+			"last_success_at": "2026-11-27T15:00:38.585Z",
 			"last_skip_reason": null,
 			"last_skip_at": null,
 			"last_robots_skip_at": null,
@@ -4622,8 +4642,8 @@
 		},
 		"volkshochschule-guenzburg": {
 			"last_result": "ok",
-			"last_checked_at": "2026-11-26T15:09:00.478Z",
-			"last_success_at": "2026-11-26T15:09:00.478Z",
+			"last_checked_at": "2026-11-27T15:00:38.585Z",
+			"last_success_at": "2026-11-27T15:00:38.585Z",
 			"last_skip_reason": null,
 			"last_skip_at": null,
 			"last_robots_skip_at": null,
@@ -4675,7 +4695,7 @@
 					"time_known": true,
 					"place": "Günzburg",
 					"address": "Bgm.-Landmann-Platz 2, 89312 Günzburg",
-					"status": "free",
+					"status": "booked_out",
 					"deadline": null,
 					"registration_method": null,
 					"source_url": "https://vhs-landkreis-guenzburg.de/Veranstaltung/cmx6abe0a58a6bf2.html",
@@ -4735,7 +4755,7 @@
 			"last_checked_at": null,
 			"last_success_at": null,
 			"last_skip_reason": "no-reader",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
 			"last_robots_skip_at": null,
 			"listings": []
 		},
@@ -4744,8 +4764,8 @@
 			"last_checked_at": "2026-11-10T13:27:14.704Z",
 			"last_success_at": "2026-11-10T13:27:14.704Z",
 			"last_skip_reason": "robots",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
-			"last_robots_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
+			"last_robots_skip_at": "2026-11-27T15:00:38.585Z",
 			"listings": [
 				{
 					"id": "volkshochschule-im-landkreis-cham-e-v@2026-12-17T16:00",
@@ -4831,8 +4851,8 @@
 		},
 		"volkshochschule-im-landkreis-unterallgaeu-e-v": {
 			"last_result": "ok",
-			"last_checked_at": "2026-11-26T15:09:00.478Z",
-			"last_success_at": "2026-11-26T15:09:00.478Z",
+			"last_checked_at": "2026-11-27T15:00:38.585Z",
+			"last_success_at": "2026-11-27T15:00:38.585Z",
 			"last_skip_reason": null,
 			"last_skip_at": null,
 			"last_robots_skip_at": null,
@@ -4843,7 +4863,7 @@
 			"last_checked_at": null,
 			"last_success_at": null,
 			"last_skip_reason": "no-reader",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
 			"last_robots_skip_at": null,
 			"listings": []
 		},
@@ -4852,14 +4872,14 @@
 			"last_checked_at": null,
 			"last_success_at": null,
 			"last_skip_reason": "no-reader",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
 			"last_robots_skip_at": null,
 			"listings": []
 		},
 		"volkshochschule-rottenburg-an-der-laaber-e-v": {
 			"last_result": "ok",
-			"last_checked_at": "2026-11-26T15:09:00.478Z",
-			"last_success_at": "2026-11-26T15:09:00.478Z",
+			"last_checked_at": "2026-11-27T15:00:38.585Z",
+			"last_success_at": "2026-11-27T15:00:38.585Z",
 			"last_skip_reason": null,
 			"last_skip_at": null,
 			"last_robots_skip_at": null,
@@ -4888,8 +4908,8 @@
 		},
 		"volkshochschule-straubing-bogen-ggmbh": {
 			"last_result": "ok",
-			"last_checked_at": "2026-11-26T15:09:00.478Z",
-			"last_success_at": "2026-11-26T15:09:00.478Z",
+			"last_checked_at": "2026-11-27T15:00:38.585Z",
+			"last_success_at": "2026-11-27T15:00:38.585Z",
 			"last_skip_reason": null,
 			"last_skip_at": null,
 			"last_robots_skip_at": null,
@@ -4918,8 +4938,8 @@
 		},
 		"volkshochschule-suedost-im-lkr-muenchen": {
 			"last_result": "ok",
-			"last_checked_at": "2026-11-26T15:09:00.478Z",
-			"last_success_at": "2026-11-26T15:09:00.478Z",
+			"last_checked_at": "2026-11-27T15:00:38.585Z",
+			"last_success_at": "2026-11-27T15:00:38.585Z",
 			"last_skip_reason": null,
 			"last_skip_at": null,
 			"last_robots_skip_at": null,
@@ -5011,13 +5031,13 @@
 			"last_checked_at": null,
 			"last_success_at": null,
 			"last_skip_reason": "no-reader",
-			"last_skip_at": "2026-11-26T15:09:00.478Z",
+			"last_skip_at": "2026-11-27T15:00:38.585Z",
 			"last_robots_skip_at": null,
 			"listings": []
 		},
 		"zweckverband-vhs-im-landkreis-erding": {
 			"last_result": "failed",
-			"last_checked_at": "2026-11-26T15:09:00.478Z",
+			"last_checked_at": "2026-11-27T15:00:38.585Z",
 			"last_success_at": "2026-11-03T12:45:57.831Z",
 			"last_skip_reason": "robots",
 			"last_skip_at": "2026-11-09T13:52:07.041Z",
